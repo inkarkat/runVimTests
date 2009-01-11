@@ -51,29 +51,66 @@ if exist "%testmsgout%" del "%testmsgout%"
 
 echo.Running %testname%:
 call vim -n -c "set nomore verbosefile=%testmsgoutForSet%" -c "runtime incubator/CommandWithMutableRange.vim" -S "%testfile%"
-set /A cntRun+=1
+
+set /A thisOk=0
+set /A thisError=0
+set /A thisFail=0
 if exist "%testok%" (
     if exist "%testout%" (
-	call :compareFiles "%testok%" "%testout%"
+	call :compareOutput "%testok%" "%testout%"
     ) else (
-	set /A cntError+=1
+	set /A thisError+=1
 	echo.ERROR: No test output. 
     )
-) else (
+)
+
+if exist "%testmsgok%" (
+    if exist "%testmsgout%" (
+	call :compareMessages "%testmsgok%" "%testmsgout%"
+    ) else (
+	set /A thisError+=1
+	echo.ERROR: No test messages. 
+    )
+)
+
+set /A thisAll=%thisOk% + %thisError% + %thisFail%
+if %thisAll% EQU 0 (
+    echo.ERROR: No test results at all. 
+)
+if %thisError% GEQ 1 (
     set /A cntError+=1
-    echo.ERROR: No success criteria. 
+) else if %thisFail% GEQ 1 (
+    set /A cntFail+=1
+) else if %thisOk% GEQ 1 (
+    set /A cntOk+=1
+)
+set /A cntRun+=1
+(goto:EOF)
+
+:compareOutput
+diff -q %1 %2 >NUL
+if %ERRORLEVEL% EQU 0 (
+    set /A thisOk+=1
+    echo.OK
+) else if %ERRORLEVEL% EQU 1 (
+    set /A thisFail+=1
+    echo.FAIL: expected output                   + actual output
+    diff --side-by-side --width 80 %1 %2
+) else (
+    set /A thisError+=1
+    echo.ERROR: diff operation failed. 
 )
 (goto:EOF)
 
-:compareFiles
-diff -q %1 %2
-if %ERRORLEVEL% EQU 0 (
-    set /A cntOk+=1
+:compareMessages
+for /F "delims=" %%l in ('diff -U 1 %1 %2 ^| grep -e "^-[^-]" ^| wc -l') do set missingLines=%%l
+if %missingLines% EQU 0 (
+    set /A thisOk+=1
     echo.OK
 ) else (
-    set /A cntFail+=1
-    echo.FAIL: 
-    diff --side-by-side --width 80 %1 %2
+    set /A thisFail+=1
+    echo.FAIL: The following messages were missing in the output: 
+    diff -U 1 %1 %2 | grep -e "^-[^-]" | sed "s/^-//"
 )
 (goto:EOF)
 
