@@ -7,7 +7,7 @@
 ::* DATE CREATED:   12-Jan-2009
 ::*
 ::*******************************************************************************
-::* CONTENTS: 
+::* DESCRIPTION: 
 ::	This script implements a small unit testing framework for VIM. 
 ::
 ::	Similar to the tests that are part of VIM's source distribution, each
@@ -46,6 +46,9 @@
 ::	  filespecs to test scripts, one filespec per line. (Commented lines
 ::	  start with #.) 
 ::
+::	The script returns 0 if all tests were successful, 1 if any errors or
+::	failures occurred. 
+::
 ::* REMARKS: 
 ::       	
 ::* DEPENDENCIES:
@@ -53,6 +56,7 @@
 ::
 ::* REVISION	DATE		REMARKS 
 ::	002	13-Jan-2009	Generalized and documented. 
+::				Addded summary of failed / error test names. 
 ::	001	12-Jan-2009	file creation
 ::*******************************************************************************
 setlocal enableextensions
@@ -92,6 +96,8 @@ set /A cntRun=0
 set /A cntOk=0
 set /A cntFail=0
 set /A cntError=0
+set listFailed=
+set listError=
 
 if defined vimArguments (
     echo.Starting test run with these VIM options: 
@@ -122,7 +128,13 @@ if not "%~1" == "" (goto:commandLineLoop)
 
 if %cntFail% NEQ 1 set pluralFail=s
 if %cntError% NEQ 1 set pluralError=s
+echo.
 echo.%cntRun% run: %cntOk% OK, %cntFail% failure%pluralFail%, %cntError% error%pluralError%. 
+if defined listFailed (echo.Failed tests: %listFailed:~0,-2%)
+if defined listError (echo.Tests with errors: %listError:~0,-2%)
+
+set /A cntAllProblems=%cntError% + %cntFail%
+if %cntAllProblems% NEQ 0 (exit /B 1)
 (goto:EOF)
 
 ::------------------------------------------------------------------------------
@@ -188,7 +200,7 @@ set /A thisError=0
 set /A thisFail=0
 if exist "%testok%" (
     if exist "%testout%" (
-	call :compareOutput "%testok%" "%testout%"
+	call :compareOutput "%testok%" "%testout%" "%testname%"
     ) else (
 	set /A thisError+=1
 	echo.ERROR: No test output. 
@@ -197,7 +209,7 @@ if exist "%testok%" (
 
 if exist "%testmsgok%" (
     if exist "%testmsgout%" (
-	call :compareMessages "%testmsgok%" "%testmsgout%"
+	call :compareMessages "%testmsgok%" "%testmsgout%" "%testname%"
     ) else (
 	set /A thisError+=1
 	echo.ERROR: No test messages. 
@@ -227,10 +239,12 @@ if %ERRORLEVEL% EQU 0 (
     echo.OK ^(out^)
 ) else if %ERRORLEVEL% EQU 1 (
     set /A thisFail+=1
+    set listFailed=%listFailed%%~3^, 
     echo.FAIL: expected output                 ^|   actual output
     diff --side-by-side --width 80 %1 %2
 ) else (
     set /A thisError+=1
+    set listError=%listError%%~3^, 
     echo.ERROR: diff operation failed. 
 )
 (goto:EOF)
@@ -242,6 +256,7 @@ if %missingLines% EQU 0 (
     echo.OK ^(msgout^)
 ) else (
     set /A thisFail+=1
+    set listFailed=%listFailed%%~3^, 
     echo.FAIL: The following messages were missing in the output: 
     diff -U 1 %1 %2 | grep -e "^-[^-]" | sed "s/^-//"
 )
