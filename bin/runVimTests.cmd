@@ -56,7 +56,8 @@
 ::
 ::* REVISION	DATE		REMARKS 
 ::	002	13-Jan-2009	Generalized and documented. 
-::				Addded summary of failed / error test names. 
+::				Addded summary of failed / error test names and
+::				optional suppression of test transcript. 
 ::	001	12-Jan-2009	file creation
 ::*******************************************************************************
 setlocal enableextensions
@@ -64,6 +65,7 @@ setlocal enableextensions
 call unix --quiet || goto:prerequisiteError
 
 set vimArguments=
+set EXECUTIONOUTPUT=
 :commandLineOptions
 set arg=%~1
 :: Allow both /option and --option syntax. 
@@ -79,6 +81,9 @@ if not "%arg%" == "" (
     ) else if /I "%arg%" == "--source" (
 	set vimArguments=%vimArguments% -S %2
 	shift /1
+	shift /1
+    ) else if /I "%arg%" == "--summaryonly" (
+	set EXECUTIONOUTPUT=rem
 	shift /1
     ) else if /I "%~1" == "--" (
 	shift /1
@@ -99,13 +104,14 @@ set /A cntError=0
 set listFailed=
 set listError=
 
+%EXECUTIONOUTPUT% echo.
 if defined vimArguments (
-    echo.Starting test run with these VIM options: 
-    echo.%vimArguments%
+    %EXECUTIONOUTPUT% echo.Starting test run with these VIM options: 
+    %EXECUTIONOUTPUT% echo.%vimArguments%
 ) else (
-    echo.Starting test run. 
+    %EXECUTIONOUTPUT% echo.Starting test run. 
 )
-echo.
+%EXECUTIONOUTPUT% echo.
 
 :commandLineLoop
 set arg=%~1
@@ -144,11 +150,13 @@ exit /B 1
 (goto:EOF)
 
 :printUsage
-(echo."%~nx0" [--pure] [--source filespec [--source filespec [...]]] [--help] test001.vim^|testsuite.txt^|path\to\testdir\ [...])
+(echo."%~nx0" [--pure] [--source filespec [--source filespec [...]]] [--summaryonly] [--help] test001.vim^|testsuite.txt^|path\to\testdir\ [...])
 (echo.    --pure		Start VIM without loading .vimrc and plugins,)
 (echo.    			but in nocompatible mode. )
 (echo.    --source filespec	Source filespec before test execution. Important to)
 (echo.    			load the script-under-test when using --pure.)
+(echo.    --summaryonly	Do not show detailed transcript and differences,)
+(echo.    			during test run, only summary. )
 (goto:EOF)
 
 
@@ -186,7 +194,7 @@ pushd "%testdirspec%"
 if exist "%testout%" del "%testout%"
 if exist "%testmsgout%" del "%testmsgout%"
 
-echo.Running %testname%:
+%EXECUTIONOUTPUT% echo.Running %testname%:
 
 :: Default VIM arguments and options:
 :: -n		No swapfile. 
@@ -203,7 +211,7 @@ if exist "%testok%" (
 	call :compareOutput "%testok%" "%testout%" "%testname%"
     ) else (
 	set /A thisError+=1
-	echo.ERROR: No test output. 
+	%EXECUTIONOUTPUT% echo.ERROR: No test output. 
     )
 )
 
@@ -212,14 +220,14 @@ if exist "%testmsgok%" (
 	call :compareMessages "%testmsgok%" "%testmsgout%" "%testname%"
     ) else (
 	set /A thisError+=1
-	echo.ERROR: No test messages. 
+	%EXECUTIONOUTPUT% echo.ERROR: No test messages. 
     )
 )
 
 set /A thisAll=%thisOk% + %thisError% + %thisFail%
 if %thisAll% EQU 0 (
     set /A thisError+=1
-    echo.ERROR: No test results at all. 
+    %EXECUTIONOUTPUT% echo.ERROR: No test results at all. 
 )
 if %thisError% GEQ 1 (
     set /A cntError+=1
@@ -236,16 +244,16 @@ popd
 diff -q %1 %2 >NUL
 if %ERRORLEVEL% EQU 0 (
     set /A thisOk+=1
-    echo.OK ^(out^)
+    %EXECUTIONOUTPUT% echo.OK ^(out^)
 ) else if %ERRORLEVEL% EQU 1 (
     set /A thisFail+=1
     set listFailed=%listFailed%%~3^, 
-    echo.FAIL: expected output                 ^|   actual output
-    diff --side-by-side --width 80 %1 %2
+    %EXECUTIONOUTPUT% echo.FAIL: expected output                 ^|   actual output
+    %EXECUTIONOUTPUT% diff --side-by-side --width 80 %1 %2
 ) else (
     set /A thisError+=1
     set listError=%listError%%~3^, 
-    echo.ERROR: diff operation failed. 
+    %EXECUTIONOUTPUT% echo.ERROR: diff operation failed. 
 )
 (goto:EOF)
 
@@ -253,12 +261,12 @@ if %ERRORLEVEL% EQU 0 (
 for /F "delims=" %%l in ('diff -U 1 %1 %2 ^| grep -e "^-[^-]" ^| wc -l') do set missingLines=%%l
 if %missingLines% EQU 0 (
     set /A thisOk+=1
-    echo.OK ^(msgout^)
+    %EXECUTIONOUTPUT% echo.OK ^(msgout^)
 ) else (
     set /A thisFail+=1
     set listFailed=%listFailed%%~3^, 
-    echo.FAIL: The following messages were missing in the output: 
-    diff -U 1 %1 %2 | grep -e "^-[^-]" | sed "s/^-//"
+    %EXECUTIONOUTPUT% echo.FAIL: The following messages were missing in the output: 
+    %EXECUTIONOUTPUT% diff -U 1 %1 %2 | grep -e "^-[^-]" | sed "s/^-//"
 )
 (goto:EOF)
 
