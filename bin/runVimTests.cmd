@@ -55,6 +55,7 @@
 ::  - GNU grep, sed, diff, wc tools available through 'unix.cmd' script. 
 ::
 ::* REVISION	DATE		REMARKS 
+::	003	15-Jan-2009	Improved accuracy of :compareMessages algorithm. 
 ::	002	13-Jan-2009	Generalized and documented. 
 ::				Addded summary of failed / error test names and
 ::				optional suppression of test transcript. 
@@ -258,7 +259,7 @@ if %ERRORLEVEL% EQU 0 (
 (goto:EOF)
 
 :compareMessages
-for /F "delims=" %%l in ('diff -U 1 %1 %2 ^| grep -e "^-[^-]" ^| wc -l') do set missingLines=%%l
+for /F "delims=" %%l in ('diff -U 1 %1 %2 ^| sed "1,2d; /^-/!d" ^| wc -l') do set missingLines=%%l
 if %missingLines% EQU 0 (
     set /A thisOk+=1
     %EXECUTIONOUTPUT% echo.OK ^(msgout^)
@@ -266,7 +267,7 @@ if %missingLines% EQU 0 (
     set /A thisFail+=1
     set listFailed=%listFailed%%~3^, 
     %EXECUTIONOUTPUT% echo.FAIL: The following messages were missing in the output: 
-    %EXECUTIONOUTPUT% diff -U 1 %1 %2 | grep -e "^-[^-]" | sed "s/^-//"
+    %EXECUTIONOUTPUT% diff -U 1 %1 %2 | sed "1,2d; /^-/!d; s/^-//"
 )
 (goto:EOF)
 
