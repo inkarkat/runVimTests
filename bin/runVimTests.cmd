@@ -33,6 +33,23 @@
 ::	before, after and in between, so that you can omit irrelevant or
 ::	platform-specific messages from the testXXX.msgok file.)
 ::
+::	TAP unit tests)
+::	If a testXXX.tap file exists at the end of a test execution, it is
+::	assumed to represent unit test output in the Test Anything Protocol [1],
+::	which is then parsed and incorporated into the test run. This method
+::	allows detailed verification also of internal functions; the entire
+::	determination of the test result is done in VIM script. 
+::	Each TAP unit test counts as one test, even though all those test
+::	results are produced by a single testXXX.vim file. If a plan announced
+::	more tests than what was found in the test output, the test is assumed
+::	to be erroneous. 
+::
+::	[1]
+::	web site: http://testanything.org,
+::	original implementation: http://search.cpan.org/~petdance/TAP-1.00/TAP.pm,
+::	TAP protocol for VIM: http://www.vim.org/scripts/script.php?script_id=2213
+::
+::
 ::	A test causes an error if none of these ok-files exist for a test, or if
 ::	the test execution does not produce the corresponding output files. 
 ::
@@ -55,6 +72,7 @@
 ::  - GNU grep, sed, diff, wc tools available through 'unix.cmd' script. 
 ::
 ::* REVISION	DATE		REMARKS 
+::	004	15-Jan-2009	Added support for TAP unit tests. 
 ::	003	15-Jan-2009	Improved accuracy of :compareMessages algorithm. 
 ::	002	13-Jan-2009	Generalized and documented. 
 ::				Addded summary of failed / error test names and
@@ -187,6 +205,7 @@ set testok=%testname%.ok
 set testout=%testname%.out
 set testmsgok=%testname%.msgok
 set testmsgout=%testname%.msgout
+set testtap=%testname%.tap
 :: Escape for VIM :set command. 
 set testmsgoutForSet=%testmsgout:\=/%
 set testmsgoutForSet=%testmsgout: =\ %
@@ -194,6 +213,7 @@ set testmsgoutForSet=%testmsgout: =\ %
 pushd "%testdirspec%"
 if exist "%testout%" del "%testout%"
 if exist "%testmsgout%" del "%testmsgout%"
+if exist "%testtap%" del "%testtap%"
 
 %EXECUTIONOUTPUT% echo.Running %testname%:
 
@@ -225,7 +245,12 @@ if exist "%testmsgok%" (
     )
 )
 
-set /A thisAll=%thisOk% + %thisError% + %thisFail%
+set /A tapTestCnt=0
+if exist "%testtap%" (
+    call :parseTapOutput "%testtap%" "%testname%"
+)
+
+set /A thisAll=%thisOk% + %thisError% + %thisFail% + %tapTestCnt%
 if %thisAll% EQU 0 (
     set /A thisError+=1
     %EXECUTIONOUTPUT% echo.ERROR: No test results at all. 
@@ -237,7 +262,9 @@ if %thisError% GEQ 1 (
 ) else if %thisOk% GEQ 1 (
     set /A cntOk+=1
 )
-set /A cntRun+=1
+:: The TAP unit tests increase the test count themselves. 
+set /A thisNonTap=%thisOk% + %thisError% + %thisFail%
+if %thisNonTap% GTR 0 (set /A cntRun+=1)
 popd
 (goto:EOF)
 
@@ -268,6 +295,39 @@ if %missingLines% EQU 0 (
     set listFailed=%listFailed%%~3^, 
     %EXECUTIONOUTPUT% echo.FAIL: The following messages were missing in the output: 
     %EXECUTIONOUTPUT% diff -U 1 %1 %2 | sed "1,2d; /^-/!d; s/^-//"
+)
+(goto:EOF)
+
+:parseTapLine
+if "%~1" == "ok" (
+    set /A cntOk+=1
+    set /A cntRun+=1
+    set /A tapTestCnt+=1
+    (goto:EOF)
+)
+if "%~1 %~2" == "not ok" (
+    set /A cntFail+=1
+    set /A cntRun+=1
+    set /A tapTestCnt+=1
+    (goto:EOF)
+)
+echo.%~1|grep -q -e "^[0-9][0-9]*\.\.[0-9][0-9]*$" || (goto:EOF)
+for /F "tokens=1,2 delims=." %%a in ("%~1") do set /A tapTestNum=%%b - %%a + 1
+(goto:EOF)
+
+:parseTapOutput
+set tapTestNum=
+set /A tapTestCnt=0
+for /F "eol=# tokens=1-3 delims= " %%i in (%~1) do call :parseTapLine %%i %%j %%k
+%EXECUTIONOUTPUT% type "%~1"
+
+if not defined tapTestNum (goto:EOF)
+if %tapTestCnt% LSS %tapTestNum% (
+    %EXECUTIONOUTPUT% echo.ERROR: Not all planned tests have been executed. 
+    set /A cntError+=1
+) else if %tapTestCnt% GTR %tapTestNum% (
+    %EXECUTIONOUTPUT% echo.ERROR: More test executions than planned. 
+    set /A cntError+=1
 )
 (goto:EOF)
 
