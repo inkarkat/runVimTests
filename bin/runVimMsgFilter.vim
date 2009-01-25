@@ -20,7 +20,7 @@
 " Maintainer:	Ingo Karkat <ingo@karkat.de>
 "
 " REVISION	DATE		REMARKS 
-"	001	00-Jan-2009	file creation
+"	001	26-Jan-2009	file creation
 
 " Avoid installing twice or when in unsupported VIM version. 
 " if exists('g:loaded_runVimMsgFilter') || (v:version < 700)
@@ -29,7 +29,7 @@
 " let g:loaded_runVimMsgFilter = 1
 
 function! s:ProcessLine( line )
-    if a:line =~# '^\([^0-9a-zA-Z \t\\"]\).*\1$'
+    if a:line =~# '^\([^0-9a-zA-Z \t\\"]\)\1\@!.*\1$'
 	let l:regExpDelimiter = strpart(a:line, 0, 1)
 	" Extract the regexp out of the delimiters. 
 	let l:regExp = strpart(a:line, 1, strlen(a:line) - 2)
@@ -64,9 +64,11 @@ endfunction
 function! s:LoadMsgAssertions()
     let l:msgAssertions = []
     let l:lineNum = 1
-    while l:lineNum <= line('$')
+    while 1
 	let l:msgAssertion = s:LoadMsgAssertion(l:lineNum) 
-	if ! empty(l:msgAssertion)
+	if empty(l:msgAssertion)
+	    break
+	else
 	    let l:lineNum = l:msgAssertion.endline + 1
 	    call add(l:msgAssertions, l:msgAssertion)
 	endif
@@ -100,6 +102,7 @@ function! s:ApplyMsgAssertions( msgAssertions )
 	    let l:startLineNum = l:endLineNum + 1
 	endif
     endfor
+    call s:SetEndLineNum(l:failures, line('$'))
 
     return [l:failures, l:successes]
 endfunction
@@ -113,7 +116,8 @@ function! s:Run( msgokBufNr, msgoutBufNr, resultBufNr )
 echomsg string(l:failures)
 echomsg string(l:successes)
 endfunction
-function! s:Load()
+
+function! s:LoadAndRun()
     let l:baseFilespec = expand('%:p:r')
     if expand('%:e') !=# 'msgok'
 	echohl ErrorMsg
@@ -133,6 +137,6 @@ function! s:Load()
     call s:Run(l:msgokBufNr, l:msgoutBufNr, l:resultBufNr)
 endfunction
 
-call s:Load()
+command! -bar RunVimMsgFilter call <SID>LoadAndRun()
 
 " vim: set sts=4 sw=4 noexpandtab ff=unix fdm=syntax :
