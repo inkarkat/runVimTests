@@ -104,8 +104,18 @@ function! s:ApplyMsgAssertions( msgAssertions )
     return [l:failures, l:successes]
 endfunction
 
-function! s:Run( msgokFilespec )
-    if fnamemodify(a:msgokFilespec, ':e') !=# 'msgok'
+function! s:Run( msgokBufNr, msgoutBufNr, resultBufNr )
+    execute 'buffer' a:msgokBufNr
+    let l:msgAssertions = s:LoadMsgAssertions()
+
+    execute 'buffer' a:msgoutBufNr
+    let [l:failures, l:successes] = s:ApplyMsgAssertions(l:msgAssertions)
+echomsg string(l:failures)
+echomsg string(l:successes)
+endfunction
+function! s:Load()
+    let l:baseFilespec = expand('%:p:r')
+    if expand('%:e') !=# 'msgok'
 	echohl ErrorMsg
 	let v:errmsg = 'VimMsgFilter must be supplied a *.msgok file'
 	echomsg v:errmsg
@@ -113,16 +123,16 @@ function! s:Run( msgokFilespec )
 	return
     endif
 
-    let l:msgAssertions = s:LoadMsgAssertions()
+    execute 'edit' l:baseFilespec . '.msgok'
+    let l:msgokBufNr = bufnr('')
+    execute 'edit' l:baseFilespec . '.msgout'
+    let l:msgoutBufNr = bufnr('')
+    enew
+    let l:resultBufNr = bufnr('')
 
-    let l:msgoutFilespec = fnamemodify(a:msgokFilespec, ':p:r') . '.msgout'
-    execute 'edit' l:msgoutFilespec
-    let [l:failures, l:successes] = s:ApplyMsgAssertions(l:msgAssertions)
-    echomsg string(l:failures)
-    echomsg string(l:successes)
-
+    call s:Run(l:msgokBufNr, l:msgoutBufNr, l:resultBufNr)
 endfunction
 
-call s:Run(expand('%'))
+call s:Load()
 
 " vim: set sts=4 sw=4 noexpandtab ff=unix fdm=syntax :
