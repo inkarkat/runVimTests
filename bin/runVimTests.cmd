@@ -88,6 +88,8 @@
 ::				and dirspecs). 
 ::				BF: Still forgot to add to fail and error lists
 ::				when TAP test failed or errored. 
+::				Added autoload/vimtest.vim to essential VIM
+::				scripts sourced with --pure. 
 ::	005	16-Jan-2009	BF: Added testname twice to fail and error lists
 ::				when both output and saved messages tests failed. 
 ::				Forgot to add when TAP test failed or errored. 
@@ -105,7 +107,11 @@ setlocal enableextensions
 
 call unix --quiet || goto:prerequisiteError
 
-set vimtapPlugin=$HOME/.vim/autoload/vimtap.vim
+set essentialVimScripts=
+for %%s in (
+autoload/vimtap.vim
+autoload/vimtest.vim
+) do call :addEssentialVimScripts "$HOME/.vim/%%s"
 
 set vimArguments=
 set EXECUTIONOUTPUT=
@@ -119,7 +125,7 @@ if not "%arg%" == "" (
     ) else if /I "%arg%" == "--?" (
 	(goto:printUsage)
     ) else if /I "%arg%" == "--pure" (
-	set vimArguments=%vimArguments% -N -u NONE -S "%vimtapPlugin%"
+	set vimArguments=%vimArguments% -N -u NONE %essentialVimScripts%
 	shift /1
     ) else if /I "%arg%" == "--source" (
 	set vimArguments=%vimArguments% -S %2
@@ -200,6 +206,10 @@ exit /B 1
 (echo.    			load the script-under-test when using --pure.)
 (echo.    --summaryonly	Do not show detailed transcript and differences,)
 (echo.    			during test run, only summary. )
+(goto:EOF)
+
+:addEssentialVimScripts
+set essentialVimScripts=%essentialVimScripts% -S %1
 (goto:EOF)
 
 :addToListError
