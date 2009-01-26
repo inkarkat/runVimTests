@@ -72,6 +72,12 @@
 ::  - GNU grep, sed, diff, wc tools available through 'unix.cmd' script. 
 ::
 ::* REVISION	DATE		REMARKS 
+::	005	16-Jan-2009	BF: Added testname twice to fail and error lists
+::				when both output and saved messages tests failed. 
+::				Forgot to add when TAP test failed or errored. 
+::				Moved adding to fail and error lists from the
+::				individual test methods to :runTest. 
+::				Now explicitly sourcing vimtap.vim in pure mode. 
 ::	004	15-Jan-2009	Added support for TAP unit tests. 
 ::	003	15-Jan-2009	Improved accuracy of :compareMessages algorithm. 
 ::	002	13-Jan-2009	Generalized and documented. 
@@ -82,6 +88,8 @@
 setlocal enableextensions
 
 call unix --quiet || goto:prerequisiteError
+
+set vimtapPlugin=$HOME/.vim/autoload/vimtap.vim
 
 set vimArguments=
 set EXECUTIONOUTPUT=
@@ -95,7 +103,7 @@ if not "%arg%" == "" (
     ) else if /I "%arg%" == "--?" (
 	(goto:printUsage)
     ) else if /I "%arg%" == "--pure" (
-	set vimArguments=%vimArguments% -N -u NONE
+	set vimArguments=%vimArguments% -N -u NONE -S "%vimtapPlugin%"
 	shift /1
     ) else if /I "%arg%" == "--source" (
 	set vimArguments=%vimArguments% -S %2
@@ -257,8 +265,10 @@ if %thisAll% EQU 0 (
 )
 if %thisError% GEQ 1 (
     set /A cntError+=1
+    set listError=%listError%%testname%, 
 ) else if %thisFail% GEQ 1 (
     set /A cntFail+=1
+    set listFailed=%listFailed%%testname%, 
 ) else if %thisOk% GEQ 1 (
     set /A cntOk+=1
 )
@@ -275,12 +285,10 @@ if %ERRORLEVEL% EQU 0 (
     %EXECUTIONOUTPUT% echo.OK ^(out^)
 ) else if %ERRORLEVEL% EQU 1 (
     set /A thisFail+=1
-    set listFailed=%listFailed%%~3^, 
     %EXECUTIONOUTPUT% echo.FAIL: expected output                 ^|   actual output
     %EXECUTIONOUTPUT% diff --side-by-side --width 80 %1 %2
 ) else (
     set /A thisError+=1
-    set listError=%listError%%~3^, 
     %EXECUTIONOUTPUT% echo.ERROR: diff operation failed. 
 )
 (goto:EOF)
@@ -292,7 +300,6 @@ if %missingLines% EQU 0 (
     %EXECUTIONOUTPUT% echo.OK ^(msgout^)
 ) else (
     set /A thisFail+=1
-    set listFailed=%listFailed%%~3^, 
     %EXECUTIONOUTPUT% echo.FAIL: The following messages were missing in the output: 
     %EXECUTIONOUTPUT% diff -U 1 %1 %2 | sed "1,2d; /^-/!d; s/^-//"
 )
