@@ -109,7 +109,9 @@ function! s:ApplyMsgAssertions( msgAssertions )
 endfunction
 
 function! s:Print( text )
+    set paste
     execute 'normal! i' . a:text . "\<CR>" 
+    set nopaste
 endfunction
 function! s:LineRangeText( startLine, endLine )
     let l:isOneLine = (a:startLine == a:endLine)
@@ -117,15 +119,16 @@ function! s:LineRangeText( startLine, endLine )
 endfunction
 function! s:ReportFailures( failures )
     for l:failure in a:failures
-	call s:Print('     Message assertion ' . (l:failure.assertion.index + 1) . ' from ' . s:LineRangeText(l:failure.assertion.startline, l:failure.assertion.endline) . ' did not match in output ' . s:LineRangeText(l:failure.startline, l:failure.endline))
+	call s:Print(' --> Message assertion ' . (l:failure.assertion.index + 1) . ' from ' . s:LineRangeText(l:failure.assertion.startline, l:failure.assertion.endline) . ' did not match in output ' . s:LineRangeText(l:failure.startline, l:failure.endline))
 	" Strip off leading ^. 
 	let l:pattern = strpart(l:failure.assertion.regexp, 1)
-	" Convert \n atom into both visible and actual newline. 
-	let l:pattern = substitute(l:pattern, '\\n', '\\n\n', 'g')
-	" Strip off "very nomagic" from literal patterns and end those with \n. 
-	let l:pattern = substitute(l:pattern, '\\V\(.\{-}\)\\m\\n\n', '\1\\n\n', 'g')
+	" Convert \n atom into both visible and actual newline, and indent pattern. 
+	let l:pattern = '     ' . substitute(l:pattern, '\\n', '\\n\n     ', 'g')
+	" Strip off "very nomagic" from literal patterns and end those with '$'
+	" to indicate the literalness. 
+	let l:pattern = substitute(l:pattern, '\\V\(.\{-}\)\\m\\n\n', '\1$\n', 'g')
 	" Strip off last \n. 
-	let l:pattern = strpart(l:pattern, 0, strlen(l:pattern) - 1)
+	let l:pattern = substitute(l:pattern, '\n\s*$', '', '')
 	call s:Print(l:pattern)
     endfor
 endfunction
