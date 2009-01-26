@@ -294,15 +294,26 @@ if %ERRORLEVEL% EQU 0 (
 (goto:EOF)
 
 :compareMessages
-for /F "delims=" %%l in ('diff -U 1 %1 %2 ^| sed "1,2d; /^-/!d" ^| wc -l') do set missingLines=%%l
-if %missingLines% EQU 0 (
-    set /A thisOk+=1
-    %EXECUTIONOUTPUT% echo.OK ^(msgout^)
-) else (
-    set /A thisFail+=1
-    %EXECUTIONOUTPUT% echo.FAIL: The following messages were missing in the output: 
-    %EXECUTIONOUTPUT% diff -U 1 %1 %2 | sed "1,2d; /^-/!d; s/^-//"
+set testmsgresult=%~3.msgresult
+if exist "%testmsgresult%" del "%testmsgresult%"
+call vim -n -c "set nomore" -S "%~dp0runVimMsgFilter.vim" -c "RunVimMsgFilter" -c "quitall!" "%testmsgok%"
+if not exist "%testmsgresult%" (
+    set /A thisError+=1
+    %EXECUTIONOUTPUT% echo.ERROR: Evaluation of test messages failed. 
+    (goto:EOF)
 )
+for /F "delims=" %%r in ('sed -n "1s/^\([A-Z][A-Z]*\).*/\1/p" "%testmsgresult%"') do set result=%%r
+if "%result%" == "OK" (
+    set /A thisOk+=1
+) else if "%result%" == "FAIL" (
+    set /A thisFail+=1
+) else if "%result%" == "ERROR" (
+    set /A thisError+=1
+) else (
+    (echo.Assert: Received unknown result "%result%" from RunVimMsgFilter.)
+    exit 1
+)
+%EXECUTIONOUTPUT% type "%testmsgresult%"
 (goto:EOF)
 
 :parseTapLine
