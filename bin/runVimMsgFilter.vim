@@ -70,6 +70,7 @@ function! s:LoadMsgAssertions()
 	    break
 	else
 	    let l:lineNum = l:msgAssertion.endline + 1
+	    let l:msgAssertion.index = len(l:msgAssertions)
 	    call add(l:msgAssertions, l:msgAssertion)
 	endif
     endwhile
@@ -107,14 +108,55 @@ function! s:ApplyMsgAssertions( msgAssertions )
     return [l:failures, l:successes]
 endfunction
 
+function! s:Print( text )
+    execute 'normal! i' . a:text . "\<CR>" 
+endfunction
+function! s:LineRangeText( startLine, endLine )
+    let l:isOneLine = (a:startLine == a:endLine)
+    return (l:isOneLine ? 'line' : 'lines') . ' ' . a:startLine . (l:isOneLine ? '' : '-' . a:endLine)
+endfunction
+function! s:ReportFailures( failures )
+    for l:failure in a:failures
+	call s:Print('      Message assertion ' . (l:failure.assertion.index + 1) . ' from ' . s:LineRangeText(l:failure.assertion.startline, l:failure.assertion.endline) . ' did not match in output ' . s:LineRangeText(l:failure.startline, l:failure.endline))
+	call s:Print(substitute(l:failure.assertion.regexp, '\\n\ze.', '\\n\n', 'g'))
+    endfor
+endfunction
+function! s:ReportResults( failures, successes )
+    normal! ggdG
+    if len(a:failures) == 0
+	if len(a:successes) > 1
+	    call s:Print('OK: All ' . len(a:successes) . ' message assertions were satisfied by the output. ' )
+	elseif len(a:successes) == 1
+	    call s:Print('OK: The message assertion was satisfied by the output. ' )
+	else
+	    call s:Print('ERROR: No message assertions were found. ' )
+	endif
+    else
+	let l:msgAssertionNum = len(a:failures) + len(a:successes)
+	if len(a:successes) == 0 && len(a:failures) > 1
+	    call s:Print('FAIL: ALL ' . l:msgAssertionNum . ' message assertions were not satisfied by the output. ')
+	elseif l:msgAssertionNum == 1
+	    call s:Print('FAIL: The message assertion was not satisfied by the output: ')
+	    call s:ReportFailures(a:failures)
+	else
+	    call s:Print('FAIL: ' . len(a:failures) . ' of ' . l:msgAssertionNum . ' message assertions ' . (len(a:failures) > 1 ? 'were' : 'was') . ' not satisfied by the output: ')
+	    call s:ReportFailures(a:failures)
+	endif
+    endif
+endfunction
+
 function! s:Run( msgokBufNr, msgoutBufNr, resultBufNr )
     execute 'buffer' a:msgokBufNr
     let l:msgAssertions = s:LoadMsgAssertions()
 
     execute 'buffer' a:msgoutBufNr
     let [l:failures, l:successes] = s:ApplyMsgAssertions(l:msgAssertions)
-echomsg string(l:failures)
-echomsg string(l:successes)
+"****D echomsg '**** failures  ' . string(l:failures)
+"****D echomsg '**** successes ' . string(l:successes)
+
+    execute 'buffer' a:resultBufNr
+    call s:ReportResults(l:failures, l:successes)
+    write
 endfunction
 
 function! s:LoadAndRun()
@@ -131,7 +173,7 @@ function! s:LoadAndRun()
     let l:msgokBufNr = bufnr('')
     execute 'edit' l:baseFilespec . '.msgout'
     let l:msgoutBufNr = bufnr('')
-    enew
+    execute 'edit' l:baseFilespec . '.msgresult'
     let l:resultBufNr = bufnr('')
 
     call s:Run(l:msgokBufNr, l:msgoutBufNr, l:resultBufNr)
