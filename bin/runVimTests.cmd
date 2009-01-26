@@ -28,10 +28,14 @@
 ::	If a testXXX.msgok file is provided, the testXXX.vim file should
 ::	generate VIM messages (from built-in VIM commands, or via :echomsg),
 ::	which are captured during test execution in a testXXX.msgout file. 
-::	All lines of testXXX.msgok must appear identically and in the same order
-::	in the captured VIM messages. (But there can be additional VIM messages
-::	before, after and in between, so that you can omit irrelevant or
+::	The testXXX.msgok file contains multiple message assertions (separated
+::	by empty lines), each of which is compiled into a VIM regexp and then
+::	matched against the captured messages. Each assertion can match exactly
+::	once, and all assertions must match in the same order in the captured
+::	VIM messages. (But there can be additional VIM messages before, after
+::	and in between matches, so that you can omit irrelevant or
 ::	platform-specific messages from the testXXX.msgok file.)
+::	For details, cp. runVimMsgFilter.vim. 
 ::
 ::	TAP unit tests)
 ::	If a testXXX.tap file exists at the end of a test execution, it is
@@ -70,8 +74,20 @@
 ::       	
 ::* DEPENDENCIES:
 ::  - GNU grep, sed, diff, wc tools available through 'unix.cmd' script. 
+::  - runVimMsgFilter.vim, located in this script's directory. 
 ::
 ::* REVISION	DATE		REMARKS 
+::	006	27-Jan-2009	ENH: Now supporting enhanced matching of
+::				captured messages by filtering through custom
+::				'runVimMsgFilter.vim' functionality instead of a
+::				plain diff. The previous line-by-line comparison
+::				was too limited and prompted test writers to
+::				re-echo canonicalized messages or manipulate the
+::				msgout themselves (e.g. to get rid of platform-
+::				and system-specific strings like path separators
+::				and dirspecs). 
+::				BF: Still forgot to add to fail and error lists
+::				when TAP test failed or errored. 
 ::	005	16-Jan-2009	BF: Added testname twice to fail and error lists
 ::				when both output and saved messages tests failed. 
 ::				Forgot to add when TAP test failed or errored. 
@@ -186,6 +202,12 @@ exit /B 1
 (echo.    			during test run, only summary. )
 (goto:EOF)
 
+:addToListError
+echo.%listError% | findstr /C:%1 >NUL || set listError=%listError%%~1, 
+(goto:EOF)
+:addToListFailed
+echo.%listFailed% | findstr /C:%1 >NUL || set listFailed=%listFailed%%~1, 
+(goto:EOF)
 
 ::------------------------------------------------------------------------------
 :runDir
@@ -265,10 +287,10 @@ if %thisAll% EQU 0 (
 )
 if %thisError% GEQ 1 (
     set /A cntError+=1
-    set listError=%listError%%testname%, 
+    call :addToListError "%testname%"
 ) else if %thisFail% GEQ 1 (
     set /A cntFail+=1
-    set listFailed=%listFailed%%testname%, 
+    call :addToListFailed "%testname%"
 ) else if %thisOk% GEQ 1 (
     set /A cntOk+=1
 )
@@ -327,6 +349,7 @@ if "%~1 %~2" == "not ok" (
     set /A cntFail+=1
     set /A cntRun+=1
     set /A tapTestCnt+=1
+    call :addToListFailed %4
     (goto:EOF)
 )
 echo.%~1|grep -q -e "^[0-9][0-9]*\.\.[0-9][0-9]*$" || (goto:EOF)
@@ -336,16 +359,18 @@ for /F "tokens=1,2 delims=." %%a in ("%~1") do set /A tapTestNum=%%b - %%a + 1
 :parseTapOutput
 set tapTestNum=
 set /A tapTestCnt=0
-for /F "eol=# tokens=1-3 delims= " %%i in (%~1) do call :parseTapLine %%i %%j %%k
+for /F "eol=# tokens=1-3 delims= " %%i in (%~1) do call :parseTapLine "%%i" "%%j" "%%k" %2
 %EXECUTIONOUTPUT% type "%~1"
 
 if not defined tapTestNum (goto:EOF)
 if %tapTestCnt% LSS %tapTestNum% (
     %EXECUTIONOUTPUT% echo.ERROR: Not all planned tests have been executed. 
     set /A cntError+=1
+    call :addToListError %2
 ) else if %tapTestCnt% GTR %tapTestNum% (
     %EXECUTIONOUTPUT% echo.ERROR: More test executions than planned. 
     set /A cntError+=1
+    call :addToListError %2
 )
 (goto:EOF)
 
