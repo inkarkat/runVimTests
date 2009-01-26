@@ -85,13 +85,22 @@ function! s:SetEndLineNum( failures, endLineNum )
     endfor
 endfunction
 function! s:ApplyMsgAssertions( msgAssertions )
-    normal! gg
+    normal! G$
+    let l:isFirstSearch = 1
     let l:startLineNum = 1
     let l:failures = []
     let l:successes = []
 
     for l:msgAssertion in a:msgAssertions
-	if ! search(l:msgAssertion.regexp, 'cW')
+	" If the regexp begins with an empty line (\n), VIM doesn't match an
+	" empty first line in the buffer, even when the 'c' flag is set. So
+	" start from the very end and wrap around on the first search. 
+	if ! search(l:msgAssertion.regexp, (l:isFirstSearch ? 'w' : 'cW'))
+	    if l:isFirstSearch
+		" The first search from the last character in the buffer didn't
+		" succeed, so jump to start of buffer manually. 
+		normal! gg
+	    endif
 	    let l:failure = { 'startline': l:startLineNum, 'assertion': l:msgAssertion }
 	    call add(l:failures, l:failure)
 	else
@@ -102,6 +111,7 @@ function! s:ApplyMsgAssertions( msgAssertions )
 	    call add(l:successes, l:success)
 	    let l:startLineNum = l:endLineNum + 1
 	endif
+	let l:isFirstSearch = 0
     endfor
     call s:SetEndLineNum(l:failures, line('$'))
 
