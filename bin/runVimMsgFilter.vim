@@ -117,29 +117,35 @@ function! s:LineRangeText( startLine, endLine )
 endfunction
 function! s:ReportFailures( failures )
     for l:failure in a:failures
-	call s:Print('      Message assertion ' . (l:failure.assertion.index + 1) . ' from ' . s:LineRangeText(l:failure.assertion.startline, l:failure.assertion.endline) . ' did not match in output ' . s:LineRangeText(l:failure.startline, l:failure.endline))
-	call s:Print(substitute(l:failure.assertion.regexp, '\\n\ze.', '\\n\n', 'g'))
+	call s:Print('     Message assertion ' . (l:failure.assertion.index + 1) . ' from ' . s:LineRangeText(l:failure.assertion.startline, l:failure.assertion.endline) . ' did not match in output ' . s:LineRangeText(l:failure.startline, l:failure.endline))
+	" Strip off leading ^. 
+	let l:pattern = strpart(l:failure.assertion.regexp, 1)
+	" Convert \n atom into both visible and actual newline. 
+	let l:pattern = substitute(l:pattern, '\\n', '\\n\n', 'g')
+	" Strip off "very nomagic" from literal patterns and end those with \n. 
+	let l:pattern = substitute(l:pattern, '\\V\(.\{-}\)\\m\\n\n', '\1\\n\n', 'g')
+	" Strip off last \n. 
+	let l:pattern = strpart(l:pattern, 0, strlen(l:pattern) - 1)
+	call s:Print(l:pattern)
     endfor
 endfunction
 function! s:ReportResults( failures, successes )
     normal! ggdG
     if len(a:failures) == 0
-	if len(a:successes) > 1
-	    call s:Print('OK: All ' . len(a:successes) . ' message assertions were satisfied by the output. ' )
-	elseif len(a:successes) == 1
-	    call s:Print('OK: The message assertion was satisfied by the output. ' )
+	if len(a:successes) > 0
+	    call s:Print('OK (msgout): ' . len(a:successes) . ' message assertion' . (len(a:successes) > 1 ? 's' : '') )
 	else
-	    call s:Print('ERROR: No message assertions were found. ' )
+	    call s:Print('ERROR (msgout): No message assertions were found. ' )
 	endif
     else
 	let l:msgAssertionNum = len(a:failures) + len(a:successes)
 	if len(a:successes) == 0 && len(a:failures) > 1
-	    call s:Print('FAIL: ALL ' . l:msgAssertionNum . ' message assertions were not satisfied by the output. ')
+	    call s:Print('FAIL (msgout): ALL ' . l:msgAssertionNum . ' message assertions were not satisfied by the output. ')
 	elseif l:msgAssertionNum == 1
-	    call s:Print('FAIL: The message assertion was not satisfied by the output: ')
+	    call s:Print('FAIL (msgout): The message assertion was not satisfied by the output: ')
 	    call s:ReportFailures(a:failures)
 	else
-	    call s:Print('FAIL: ' . len(a:failures) . ' of ' . l:msgAssertionNum . ' message assertions ' . (len(a:failures) > 1 ? 'were' : 'was') . ' not satisfied by the output: ')
+	    call s:Print('FAIL (msgout): ' . len(a:failures) . ' of ' . l:msgAssertionNum . ' message assertions ' . (len(a:failures) > 1 ? 'were' : 'was') . ' not satisfied by the output: ')
 	    call s:ReportFailures(a:failures)
 	endif
     endif
