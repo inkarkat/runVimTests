@@ -54,8 +54,10 @@
 ::	TAP protocol for VIM: http://www.vim.org/scripts/script.php?script_id=2213
 ::
 ::
-::	A test causes an error if none of these ok-files exist for a test, or if
-::	the test execution does not produce the corresponding output files. 
+::	A test causes an error if none of these ok-files exist for a test, and
+::	no testXXX.tap file was generated (so actually no verification is
+::	possible), or if the test execution does not produce the corresponding
+::	output files. 
 ::
 ::* USAGE: 
 ::	The tests are specified through these three methods, which can be
@@ -88,8 +90,10 @@
 ::				and dirspecs). 
 ::				BF: Still forgot to add to fail and error lists
 ::				when TAP test failed or errored. 
-::				Added autoload/vimtest.vim to essential VIM
-::				scripts sourced with --pure. 
+::				Added autoload/vimtest.vim and
+::				plugin/SidTools.vim to essential VIM scripts
+::				sourced with --pure (if they exist). 
+::				Added --reallypure option. 
 ::	005	16-Jan-2009	BF: Added testname twice to fail and error lists
 ::				when both output and saved messages tests failed. 
 ::				Forgot to add when TAP test failed or errored. 
@@ -109,9 +113,10 @@ call unix --quiet || goto:prerequisiteError
 
 set essentialVimScripts=
 for %%s in (
-autoload/vimtap.vim
-autoload/vimtest.vim
-) do call :addEssentialVimScripts "$HOME/.vim/%%s"
+autoload\vimtap.vim
+autoload\vimtest.vim
+plugin\SidTools.vim
+) do call :addEssentialVimScripts "%HOME%\.vim\%%s"
 
 set vimArguments=
 set EXECUTIONOUTPUT=
@@ -126,6 +131,9 @@ if not "%arg%" == "" (
 	(goto:printUsage)
     ) else if /I "%arg%" == "--pure" (
 	set vimArguments=%vimArguments% -N -u NONE %essentialVimScripts%
+	shift /1
+    ) else if /I "%arg%" == "--reallypure" (
+	set vimArguments=%vimArguments% -N -u NONE
 	shift /1
     ) else if /I "%arg%" == "--source" (
 	set vimArguments=%vimArguments% -S %2
@@ -199,9 +207,13 @@ exit /B 1
 (goto:EOF)
 
 :printUsage
-(echo."%~nx0" [--pure] [--source filespec [--source filespec [...]]] [--summaryonly] [--help] test001.vim^|testsuite.txt^|path\to\testdir\ [...])
+(echo."%~nx0" [--pure^|--reallypure] [--source filespec [--source filespec [...]]] [--summaryonly] [--help] test001.vim^|testsuite.txt^|path\to\testdir\ [...])
 (echo.    --pure		Start VIM without loading .vimrc and plugins,)
-(echo.    			but in nocompatible mode. )
+(echo.    			but in nocompatible mode and with some essential)
+(echo.    			test support scripts sourced. )
+(echo.    --reallypure	Start VIM without loading .vimrc and plugins,)
+(echo.    			but in nocompatible mode. Some essential scripts may)
+(echo.    			be missing and must be sourced manually.)
 (echo.    --source filespec	Source filespec before test execution. Important to)
 (echo.    			load the script-under-test when using --pure.)
 (echo.    --summaryonly	Do not show detailed transcript and differences,)
@@ -209,7 +221,7 @@ exit /B 1
 (goto:EOF)
 
 :addEssentialVimScripts
-set essentialVimScripts=%essentialVimScripts% -S %1
+if exist %1 (set essentialVimScripts=%essentialVimScripts% -S %1)
 (goto:EOF)
 
 :addToListError
