@@ -1,4 +1,5 @@
-" TODO: summary
+" runVimMsgFilter.vim: Matching of *.msgok message assumptions against *.msgout
+" file, writing results into *.msgresult. 
 "
 " DESCRIPTION:
 " USAGE:
