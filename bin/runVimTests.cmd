@@ -284,7 +284,7 @@ if exist "%testok%" (
 	call :compareOutput "%testok%" "%testout%" "%testname%"
     ) else (
 	set /A thisError+=1
-	%EXECUTIONOUTPUT% echo.ERROR: No test output. 
+	%EXECUTIONOUTPUT% echo.ERROR ^(out^): No test output. 
     )
 )
 
@@ -293,7 +293,7 @@ if exist "%testmsgok%" (
 	call :compareMessages "%testmsgok%" "%testmsgout%" "%testname%"
     ) else (
 	set /A thisError+=1
-	%EXECUTIONOUTPUT% echo.ERROR: No test messages. 
+	%EXECUTIONOUTPUT% echo.ERROR ^(msgout^): No test messages. 
     )
 )
 
@@ -308,17 +308,19 @@ if %thisAll% EQU 0 (
     %EXECUTIONOUTPUT% echo.ERROR: No test results at all. 
 )
 if %thisError% GEQ 1 (
-    set /A cntError+=1
+    set /A cntError+=%thisError%
     call :addToListError "%testname%"
-) else if %thisFail% GEQ 1 (
-    set /A cntFail+=1
+)
+if %thisFail% GEQ 1 (
+    set /A cntFail+=%thisFail%
     call :addToListFailed "%testname%"
-) else if %thisOk% GEQ 1 (
-    set /A cntOk+=1
+)
+if %thisOk% GEQ 1 (
+    set /A cntOk+=%thisOk%
 )
 :: The TAP unit tests increase the test count themselves. 
 set /A thisNonTap=%thisOk% + %thisError% + %thisFail%
-if %thisNonTap% GTR 0 (set /A cntRun+=1)
+if %thisNonTap% GTR 0 (set /A cntRun+=%thisNonTap%)
 popd
 (goto:EOF)
 
@@ -329,11 +331,11 @@ if %ERRORLEVEL% EQU 0 (
     %EXECUTIONOUTPUT% echo.OK ^(out^)
 ) else if %ERRORLEVEL% EQU 1 (
     set /A thisFail+=1
-    %EXECUTIONOUTPUT% echo.FAIL: expected output                 ^|   actual output
+    %EXECUTIONOUTPUT% echo.FAIL ^(out^): expected output           ^|   actual output
     %EXECUTIONOUTPUT% diff --side-by-side --width 80 %1 %2
 ) else (
     set /A thisError+=1
-    %EXECUTIONOUTPUT% echo.ERROR: diff operation failed. 
+    %EXECUTIONOUTPUT% echo.ERROR ^(out^): diff operation failed. 
 )
 (goto:EOF)
 
@@ -343,7 +345,7 @@ if exist "%testmsgresult%" del "%testmsgresult%"
 call vim -n -c "set nomore" -S "%~dp0runVimMsgFilter.vim" -c "RunVimMsgFilter" -c "quitall!" "%testmsgok%"
 if not exist "%testmsgresult%" (
     set /A thisError+=1
-    %EXECUTIONOUTPUT% echo.ERROR: Evaluation of test messages failed. 
+    %EXECUTIONOUTPUT% echo.ERROR ^(msgout^): Evaluation of test messages failed. 
     (goto:EOF)
 )
 for /F "delims=" %%r in ('sed -n "1s/^\([A-Z][A-Z]*\).*/\1/p" "%testmsgresult%"') do set result=%%r
@@ -386,11 +388,11 @@ for /F "eol=# tokens=1-3 delims= " %%i in (%~1) do call :parseTapLine "%%i" "%%j
 
 if not defined tapTestNum (goto:EOF)
 if %tapTestCnt% LSS %tapTestNum% (
-    %EXECUTIONOUTPUT% echo.ERROR: Not all planned tests have been executed. 
+    %EXECUTIONOUTPUT% echo.ERROR ^(tap^): Not all planned tests have been executed. 
     set /A cntError+=1
     call :addToListError %2
 ) else if %tapTestCnt% GTR %tapTestNum% (
-    %EXECUTIONOUTPUT% echo.ERROR: More test executions than planned. 
+    %EXECUTIONOUTPUT% echo.ERROR ^(tap^): More test executions than planned. 
     set /A cntError+=1
     call :addToListError %2
 )
