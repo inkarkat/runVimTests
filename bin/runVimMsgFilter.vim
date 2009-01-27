@@ -200,6 +200,9 @@ function! s:ReportResults( failures, successes )
 	    call s:ReportFailures(a:failures)
 	endif
     endif
+
+    " Delete trailing empty line. 
+    $g/^$/d
 endfunction
 
 function! s:Run( msgokBufNr, msgoutBufNr, resultBufNr )
