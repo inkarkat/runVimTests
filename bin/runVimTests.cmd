@@ -72,6 +72,17 @@
 ::	The script returns 0 if all tests were successful, 1 if any errors or
 ::	failures occurred. 
 ::
+::	After test execution, a summary is printed like this:
+::	    33 tests, 27 run: 16 OK, 11 failures, 6 errors.
+::	    Failed tests: test002, test012, test014, test022, test032, test033
+::	    Tests with errors: test003, test013, test023, test033
+::	A test is counted as each existing *.[msg]ok file, or by an announcement
+::	of the planned tests by a TAP test. Tests have "run" when corresponding
+::	output has been produced. If it hasn't, that's an error, as well as when
+::	there were neither *.[msg]ok files nor any TAP output, or if the test
+::	result evaluation had a problem. The result of a correct test evaluation
+::	is either OK or FAIL. 
+::
 ::* REMARKS: 
 ::       	
 ::* DEPENDENCIES:
@@ -79,6 +90,15 @@
 ::  - runVimMsgFilter.vim, located in this script's directory. 
 ::
 ::* REVISION	DATE		REMARKS 
+::	007	28-Jan-2009	Changed counting of tests and algorithm to
+::				determine whether any test results have been
+::				supplied: Added counter for tests (vs. tests
+::				run) and removed the special handling for the
+::				TAP method. 
+::				ENH: In case of a TAP test count mismatch, the
+::				difference is included in the error message. 
+::				ENH: All method-specific messages include the
+::				method (out, msgout, tap) now. 
 ::	006	27-Jan-2009	ENH: Now supporting enhanced matching of
 ::				captured messages by filtering through custom
 ::				'runVimMsgFilter.vim' functionality instead of a
@@ -154,6 +174,7 @@ if not "%arg%" == "" (
 :commandLineArguments
 if "%~1" == "" (goto:printUsage)
 
+set /A cntTests=0
 set /A cntRun=0
 set /A cntOk=0
 set /A cntFail=0
@@ -189,10 +210,11 @@ if exist "%argAsDirspec%" (
 )
 if not "%~1" == "" (goto:commandLineLoop)
 
+if %cntTests% NEQ 1 set pluralTests=s
 if %cntFail% NEQ 1 set pluralFail=s
 if %cntError% NEQ 1 set pluralError=s
 echo.
-echo.%cntRun% run: %cntOk% OK, %cntFail% failure%pluralFail%, %cntError% error%pluralError%. 
+echo.%cntTests% test%pluralTests%, %cntRun% run: %cntOk% OK, %cntFail% failure%pluralFail%, %cntError% error%pluralError%. 
 if defined listFailed (echo.Failed tests: %listFailed:~0,-2%)
 if defined listError (echo.Tests with errors: %listError:~0,-2%)
 
@@ -276,11 +298,17 @@ if exist "%testtap%" del "%testtap%"
 :: :set verbosefile Capture all messages in a file. 
 call vim -n -c "set nomore verbosefile=%testmsgoutForSet%" %vimArguments% -S "%testfile%"
 
+set /A thisTests=0
+set /A thisRun=0
 set /A thisOk=0
-set /A thisError=0
 set /A thisFail=0
+set /A thisError=0
+
+:methodOutput
 if exist "%testok%" (
+    set /A thisTests+=1
     if exist "%testout%" (
+	set /A thisRun+=1
 	call :compareOutput "%testok%" "%testout%" "%testname%"
     ) else (
 	set /A thisError+=1
@@ -288,8 +316,11 @@ if exist "%testok%" (
     )
 )
 
+:methodMessageOutput
 if exist "%testmsgok%" (
+    set /A thisTests+=1
     if exist "%testmsgout%" (
+	set /A thisRun+=1
 	call :compareMessages "%testmsgok%" "%testmsgout%" "%testname%"
     ) else (
 	set /A thisError+=1
@@ -297,30 +328,33 @@ if exist "%testmsgok%" (
     )
 )
 
+:methodTap
 set /A tapTestCnt=0
 if exist "%testtap%" (
     call :parseTapOutput "%testtap%" "%testname%"
 )
 
-set /A thisAll=%thisOk% + %thisError% + %thisFail% + %tapTestCnt%
-if %thisAll% EQU 0 (
+:resultsEvaluation
+if %thisTests% EQU 0 (
     set /A thisError+=1
     %EXECUTIONOUTPUT% echo.ERROR: No test results at all. 
+) else (
+    set /A cntTests+=%thisTests%
 )
-if %thisError% GEQ 1 (
-    set /A cntError+=%thisError%
-    call :addToListError "%testname%"
+if %thisRun% GEQ 1 (
+    set /A cntRun+=%thisRun%
+)
+if %thisOk% GEQ 1 (
+    set /A cntOk+=%thisOk%
 )
 if %thisFail% GEQ 1 (
     set /A cntFail+=%thisFail%
     call :addToListFailed "%testname%"
 )
-if %thisOk% GEQ 1 (
-    set /A cntOk+=%thisOk%
+if %thisError% GEQ 1 (
+    set /A cntError+=%thisError%
+    call :addToListError "%testname%"
 )
-:: The TAP unit tests increase the test count themselves. 
-set /A thisNonTap=%thisOk% + %thisError% + %thisFail%
-if %thisNonTap% GTR 0 (set /A cntRun+=%thisNonTap%)
 popd
 (goto:EOF)
 
@@ -364,16 +398,15 @@ if "%result%" == "OK" (
 
 :parseTapLine
 if "%~1" == "ok" (
-    set /A cntOk+=1
-    set /A cntRun+=1
+    set /A thisOk+=1
+    set /A thisRun+=1
     set /A tapTestCnt+=1
     (goto:EOF)
 )
 if "%~1 %~2" == "not ok" (
-    set /A cntFail+=1
-    set /A cntRun+=1
+    set /A thisFail+=1
+    set /A thisRun+=1
     set /A tapTestCnt+=1
-    call :addToListFailed %4
     (goto:EOF)
 )
 echo.%~1|grep -q -e "^[0-9][0-9]*\.\.[0-9][0-9]*$" || (goto:EOF)
@@ -386,15 +419,24 @@ set /A tapTestCnt=0
 for /F "eol=# tokens=1-3 delims= " %%i in (%~1) do call :parseTapLine "%%i" "%%j" "%%k" %2
 %EXECUTIONOUTPUT% type "%~1"
 
-if not defined tapTestNum (goto:EOF)
+if not defined tapTestNum (
+    set /A thisTests+=%tapTestCnt%
+    (goto:EOF)
+)
+set /A tapTestDifference=%tapTestNum%-%tapTestCnt%
+if %tapTestDifference% LSS 0 set /A tapTestDifference*=-1
+if %tapTestDifference% NEQ 1 (set tapTestDifferencePlural=s) else (set tapTestDifferencePlural=)
+
 if %tapTestCnt% LSS %tapTestNum% (
-    %EXECUTIONOUTPUT% echo.ERROR ^(tap^): Not all planned tests have been executed. 
-    set /A cntError+=1
-    call :addToListError %2
+    set /A thisTests+=%tapTestNum%
+    %EXECUTIONOUTPUT% echo.ERROR ^(tap^): Not all %tapTestNum% planned tests have been executed, %tapTestDifference% test%tapTestDifferencePlural% missed. 
+    set /A thisError+=1
 ) else if %tapTestCnt% GTR %tapTestNum% (
-    %EXECUTIONOUTPUT% echo.ERROR ^(tap^): More test executions than planned. 
-    set /A cntError+=1
-    call :addToListError %2
+    set /A thisTests+=%tapTestCnt%
+    %EXECUTIONOUTPUT% echo.ERROR ^(tap^): %tapTestDifference% more test executions than planned. 
+    set /A thisError+=1
+) else (
+    set /A thisTests+=%tapTestNum%
 )
 (goto:EOF)
 
