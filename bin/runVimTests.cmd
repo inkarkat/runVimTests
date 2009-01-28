@@ -115,6 +115,8 @@
 ::  - runVimMsgFilter.vim, located in this script's directory. 
 ::
 ::* REVISION	DATE		REMARKS 
+::	008	29-Jan-2009	Added --runtime argument to simplify sourcing of
+::				scripts below the user's ~/.vim directory. 
 ::	007	28-Jan-2009	Changed counting of tests and algorithm to
 ::				determine whether any test results have been
 ::				supplied: Added counter for tests (vs. tests
@@ -158,12 +160,8 @@ setlocal enableextensions
 
 call unix --quiet || goto:prerequisiteError
 
-set essentialVimScripts=
-for %%s in (
-autoload\vimtap.vim
-autoload\vimtest.vim
-plugin\SidTools.vim
-) do call :addEssentialVimScripts "%HOME%\.vim\%%s"
+call :determineUserVimFilesDirspec
+call :determineEssentialVimScripts
 
 set vimArguments=
 set isExecutionOutput=1
@@ -182,6 +180,10 @@ if not "%arg%" == "" (
 	shift /1
     ) else if /I "%arg%" == "--reallypure" (
 	set vimArguments=%vimArguments% -N -u NONE
+	shift /1
+    ) else if /I "%arg%" == "--runtime" (
+	set vimArguments=%vimArguments% -S %userVimFilesDirspec%%2
+	shift /1
 	shift /1
     ) else if /I "%arg%" == "--source" (
 	set vimArguments=%vimArguments% -S %2
@@ -258,21 +260,41 @@ exit /B 1
 (goto:EOF)
 
 :printUsage
-(echo."%~nx0" [--pure^|--reallypure] [--source filespec [--source filespec [...]]] [--summaryonly] [--help] test001.vim^|testsuite.txt^|path\to\testdir\ [...])
+(echo."%~nx0" [--pure^|--reallypure] [--source filespec [--source filespec [...]]] [--runtime plugin/file.vim [--runtime autoload/file.vim [...]]] [--summaryonly] [--help] test001.vim^|testsuite.txt^|path\to\testdir\ [...])
 (echo.    --pure		Start VIM without loading .vimrc and plugins,)
 (echo.    			but in nocompatible mode and with some essential)
 (echo.    			test support scripts sourced. )
 (echo.    --reallypure	Start VIM without loading .vimrc and plugins,)
 (echo.    			but in nocompatible mode. Some essential scripts may)
 (echo.    			be missing and must be sourced manually.)
-(echo.    --source filespec	Source filespec before test execution. Important to)
+(echo.    --source filespec	Source filespec before test execution.)
+(echo.    --runtime filespec	Source filespec relative to ~/.vim. Important to)
 (echo.    			load the script-under-test when using --pure.)
 (echo.    --summaryonly	Do not show detailed transcript and differences,)
 (echo.    			during test run, only summary. )
 (goto:EOF)
 
+:determineUserVimFilesDirspec
+:: Determine dirspec of user vimfiles for --runtime argument. 
+set userVimFilesDirspec=%HOME%\vimfiles\
+if not exist "%userVimFilesDirspec%" set userVimFilesDirspec=%HOME%\.vim\
+if not exist "%userVimFilesDirspec%" set userVimFilesDirspec=%HOMEDRIVE%%HOMEPATH%\vimfiles\
+if not exist "%userVimFilesDirspec%" set userVimFilesDirspec=%HOMEDRIVE%%HOMEPATH%\.vim\
+if not exist "%userVimFilesDirspec%" set userVimFilesDirspec=$VIMRUNTIME/
+(goto:EOF)
+
 :addEssentialVimScripts
 if exist %1 (set essentialVimScripts=%essentialVimScripts% -S %1)
+(goto:EOF)
+:determineEssentialVimScripts
+:: Read configured vimscripts that are essential for test implementations and
+:: must be sourced explicitly when argument --pure is given. 
+set essentialVimScripts=
+for %%s in (
+autoload\vimtap.vim
+autoload\vimtest.vim
+plugin\SidTools.vim
+) do call :addEssentialVimScripts "%userVimFilesDirspec%%%s"
 (goto:EOF)
 
 :printTestHeader
