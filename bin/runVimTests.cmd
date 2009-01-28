@@ -136,6 +136,8 @@
 ::				Essential vimscripts are now read from separate
 ::				runVimTests.cfg config file to remove hardcoding
 ::				inside this script. 
+::				BF: Forgot -N -u NONE when invoking VIM for
+::				runVimMsgFilter. 
 ::	007	28-Jan-2009	Changed counting of tests and algorithm to
 ::				determine whether any test results have been
 ::				supplied: Added counter for tests (vs. tests
@@ -195,10 +197,10 @@ if not "%arg%" == "" (
     ) else if /I "%arg%" == "--?" (
 	(goto:printUsage)
     ) else if /I "%arg%" == "--pure" (
-	set vimArguments=%vimArguments% -N -u NONE %essentialVimScripts%
+	set vimArguments=-N -u NONE %essentialVimScripts% %vimArguments%
 	shift /1
     ) else if /I "%arg%" == "--reallypure" (
-	set vimArguments=%vimArguments% -N -u NONE
+	set vimArguments=-N -u NONE %vimArguments%
 	shift /1
     ) else if /I "%arg%" == "--runtime" (
 	set vimArguments=%vimArguments% -S %userVimFilesDirspec%%2
@@ -460,7 +462,7 @@ if %ERRORLEVEL% EQU 0 (
 :compareMessages
 set testmsgresult=%~3.msgresult
 if exist "%testmsgresult%" del "%testmsgresult%"
-call vim -n -c "set nomore" -S "%~dp0runVimMsgFilter.vim" -c "RunVimMsgFilter" -c "quitall!" "%testmsgok%"
+call vim -N -u NONE -n -c "set nomore" -S "%~dp0runVimMsgFilter.vim" -c "RunVimMsgFilter" -c "quitall!" "%testmsgok%"
 if not exist "%testmsgresult%" (
     set /A thisError+=1
     %EXECUTIONOUTPUT% echo.ERROR ^(msgout^): Evaluation of test messages failed. 
