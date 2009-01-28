@@ -83,6 +83,31 @@
 ::	result evaluation had a problem. The result of a correct test evaluation
 ::	is either OK or FAIL. 
 ::
+::* TEST SCRIPTS:
+::	Each test is implemented in a testXXX.vim file. Depending on which
+::	method(s) shall be used for verification, the tests needs to do:
+::
+::	Saved buffer output)
+::	Load a predefined test input (e.g. testXXX.in), or start from scratch in
+::	the empty buffer, and make modifications to it. Finally, save the result
+::	in testXXX.out. 
+::
+::	Captured messages)
+::	Issue :echo or :echomsg, or execute commands that will cause messages.
+::	The messages are automatically captured in testXXX.msgout. 
+::
+::	TAP unit tests)
+::	Initialize the TAP testing framework with the output file name
+::	testXXX.tap, submit a plan (i.e. how many tests you intend to run; this
+::	is optional, but highly recommended), execute the test and verify the
+::	outcomes with the TAP-provided functions. The TAP framework will
+::	automatically save the TAP output. 
+::
+::	If the first line of the test contains a comment starting with:
+::	'" Test', this is taken as the test synopsis and included in the test
+::	header that is printed before each test is executed. Example: 
+::	" Test mutation that adds lines after the current line. 
+::
 ::* REMARKS: 
 ::       	
 ::* DEPENDENCIES:
@@ -99,6 +124,8 @@
 ::				difference is included in the error message. 
 ::				ENH: All method-specific messages include the
 ::				method (out, msgout, tap) now. 
+::				ENH: Use first comment line from test script as
+::				test synopsis and include in test header. 
 ::	006	27-Jan-2009	ENH: Now supporting enhanced matching of
 ::				captured messages by filtering through custom
 ::				'runVimMsgFilter.vim' functionality instead of a
@@ -139,6 +166,7 @@ plugin\SidTools.vim
 ) do call :addEssentialVimScripts "%HOME%\.vim\%%s"
 
 set vimArguments=
+set isExecutionOutput=1
 set EXECUTIONOUTPUT=
 :commandLineOptions
 set arg=%~1
@@ -160,6 +188,7 @@ if not "%arg%" == "" (
 	shift /1
 	shift /1
     ) else if /I "%arg%" == "--summaryonly" (
+	set isExecutionOutput=
 	set EXECUTIONOUTPUT=rem
 	shift /1
     ) else if /I "%~1" == "--" (
@@ -246,6 +275,15 @@ exit /B 1
 if exist %1 (set essentialVimScripts=%essentialVimScripts% -S %1)
 (goto:EOF)
 
+:printTestHeader
+if not defined isExecutionOutput (goto:EOF)
+:: If the first line of the test script starts with '" Test', include this as
+:: the test's synopsis in the test header. Otherwise, just print the test name. 
+:: Limit the test header to one unwrapped output line, i.e. truncate to 80
+:: characters. 
+sed -n -e "1s/^\d034 \(Test.*\)$/Running %~2: \1/p" -e "tx" -e "1cRunning %~2:" -e ":x" %1 | sed "/^.\{80,\}/s/\(^.\{,76\}\).*$/\1.../"
+(goto:EOF)
+
 :addToListError
 echo.%listError% | findstr /C:%1 >NUL || set listError=%listError%%~1, 
 (goto:EOF)
@@ -289,7 +327,7 @@ if exist "%testout%" del "%testout%"
 if exist "%testmsgout%" del "%testmsgout%"
 if exist "%testtap%" del "%testtap%"
 
-%EXECUTIONOUTPUT% echo.Running %testname%:
+call :printTestHeader "%testfile%" "%testname%"
 
 :: Default VIM arguments and options:
 :: -n		No swapfile. 
