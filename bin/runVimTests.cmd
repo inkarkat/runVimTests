@@ -83,6 +83,22 @@
 ::	result evaluation had a problem. The result of a correct test evaluation
 ::	is either OK or FAIL. 
 ::
+::* CONFIGURATION:
+::	System-specific, global unit test configuration is stored in
+::	'runVimTests.cfg', residing in the same directory as this script. The
+::	following items can be configured:
+::
+::	- essential vimscripts
+::	  If you specify the --pure argument, no default plugins are sourced,
+::	  and the :runtime command has no effect inside VIM. If you have some
+::	  general helper scripts that (almost) all tests require (e.g. the
+::	  vimtap utility functions for TAP testing), configure these scripts as
+::	  essential, so that they'll be automatically included:
+::	    essential = autoload/vimtap.vim
+::	  Multiple essential scripts can be configured. The path is taked
+::	  relative to the user's ~/.vim directory, as with the --runtime
+::	  argument. 
+::
 ::* TEST SCRIPTS:
 ::	Each test is implemented in a testXXX.vim file. Depending on which
 ::	method(s) shall be used for verification, the tests needs to do:
@@ -117,6 +133,9 @@
 ::* REVISION	DATE		REMARKS 
 ::	008	29-Jan-2009	Added --runtime argument to simplify sourcing of
 ::				scripts below the user's ~/.vim directory. 
+::				Essential vimscripts are now read from separate
+::				runVimTests.cfg config file to remove hardcoding
+::				inside this script. 
 ::	007	28-Jan-2009	Changed counting of tests and algorithm to
 ::				determine whether any test results have been
 ::				supplied: Added counter for tests (vs. tests
@@ -284,17 +303,22 @@ if not exist "%userVimFilesDirspec%" set userVimFilesDirspec=$VIMRUNTIME/
 (goto:EOF)
 
 :addEssentialVimScripts
-if exist %1 (set essentialVimScripts=%essentialVimScripts% -S %1)
+if not "%~1" == "essential" (goto:EOF)
+if exist %2 (
+    set essentialVimScripts=%essentialVimScripts% -S %2
+) else (
+    echo.Warning: Configured essential vimscript "%~2" does not exist.
+)
 (goto:EOF)
 :determineEssentialVimScripts
 :: Read configured vimscripts that are essential for test implementations and
 :: must be sourced explicitly when argument --pure is given. 
 set essentialVimScripts=
-for %%s in (
-autoload\vimtap.vim
-autoload\vimtest.vim
-plugin\SidTools.vim
-) do call :addEssentialVimScripts "%userVimFilesDirspec%%%s"
+
+set configFilespec=%~dpn0.cfg
+if not exist "%configFilespec%" (goto:EOF)
+
+for /F "usebackq eol=# tokens=1,* delims== " %%a in ("%configFilespec%") do call :addEssentialVimScripts "%%~a" "%userVimFilesDirspec%%%~b"
 (goto:EOF)
 
 :printTestHeader
