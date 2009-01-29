@@ -462,6 +462,8 @@ if %ERRORLEVEL% EQU 0 (
 :compareMessages
 set testmsgresult=%~3.msgresult
 if exist "%testmsgresult%" del "%testmsgresult%"
+:: Note: Cannot use silent-batch mode (-s -e) here, because that one messes up
+:: the console. 
 call vim -N -u NONE -n -c "set nomore" -S "%~dp0runVimMsgFilter.vim" -c "RunVimMsgFilter" -c "quitall!" "%testmsgok%"
 if not exist "%testmsgresult%" (
     set /A thisError+=1
