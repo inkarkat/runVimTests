@@ -131,6 +131,8 @@
 ::  - runVimMsgFilter.vim, located in this script's directory. 
 ::
 ::* REVISION	DATE		REMARKS 
+::	009	02-Feb-2009	Added --debug argument to :let g:debug = 1
+::				inside VIM. 
 ::	008	29-Jan-2009	Added --runtime argument to simplify sourcing of
 ::				scripts below the user's ~/.vim directory. 
 ::				Essential vimscripts are now read from separate
@@ -214,6 +216,9 @@ if not "%arg%" == "" (
 	set isExecutionOutput=
 	set EXECUTIONOUTPUT=rem
 	shift /1
+    ) else if /I "%arg%" == "--debug" (
+	set vimArguments=%vimArguments% --cmd "let g:debug=1"
+	shift /1
     ) else if /I "%~1" == "--" (
 	shift /1
 	(goto:commandLineArguments)
@@ -281,7 +286,7 @@ exit /B 1
 (goto:EOF)
 
 :printUsage
-(echo."%~nx0" [--pure^|--reallypure] [--source filespec [--source filespec [...]]] [--runtime plugin/file.vim [--runtime autoload/file.vim [...]]] [--summaryonly] [--help] test001.vim^|testsuite.txt^|path\to\testdir\ [...])
+(echo."%~nx0" [--pure^|--reallypure] [--source filespec [--source filespec [...]]] [--runtime plugin/file.vim [--runtime autoload/file.vim [...]]] [--summaryonly] [--debug] [--help] test001.vim^|testsuite.txt^|path\to\testdir\ [...])
 (echo.    --pure		Start VIM without loading .vimrc and plugins,)
 (echo.    			but in nocompatible mode and with some essential)
 (echo.    			test support scripts sourced. )
@@ -293,6 +298,8 @@ exit /B 1
 (echo.    			load the script-under-test when using --pure.)
 (echo.    --summaryonly	Do not show detailed transcript and differences,)
 (echo.    			during test run, only summary. )
+(echo.    --debug		Test debugging mode: Sets g:debug = 1 inside VIM)
+(echo.    			^(so that tests do not exit or print debug info^). )
 (goto:EOF)
 
 :determineUserVimFilesDirspec
