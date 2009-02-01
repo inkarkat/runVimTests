@@ -58,6 +58,11 @@
 " Maintainer:	Ingo Karkat <ingo@karkat.de>
 "
 " REVISION	DATE		REMARKS 
+"	002	28-Jan-2009	Now removing trailing empty line in result
+"				buffer, so that the test results dump to stdout
+"				isn't torn apart by an empty line. 
+"				Shortened OK result summary to have less visual
+"				clutter on the expected execution path. 
 "	001	26-Jan-2009	file creation
 
 " Avoid installing twice or when in unsupported VIM version. 
@@ -184,7 +189,8 @@ function! s:ReportResults( failures, successes )
     normal! ggdG
     if len(a:failures) == 0
 	if len(a:successes) > 0
-	    call s:Print('OK (msgout): ' . len(a:successes) . ' message assertion' . (len(a:successes) > 1 ? 's' : '') )
+	    call s:Print('OK (msgout)')
+	    "call s:Print('OK (msgout): ' . len(a:successes) . ' message assertion' . (len(a:successes) > 1 ? 's' : '') )
 	else
 	    call s:Print('ERROR (msgout): No message assertions were found. ' )
 	endif
