@@ -521,7 +521,7 @@ if %tapTestCnt% LSS %tapTestNum% (
     set /A thisError+=1
 ) else if %tapTestCnt% GTR %tapTestNum% (
     set /A thisTests+=%tapTestCnt%
-    %EXECUTIONOUTPUT% echo.ERROR ^(tap^): %tapTestDifference% more test executions than planned. 
+    %EXECUTIONOUTPUT% echo.ERROR ^(tap^): %tapTestDifference% more test execution%tapTestDifferencePlural% than planned. 
     set /A thisError+=1
 ) else (
     set /A thisTests+=%tapTestNum%
