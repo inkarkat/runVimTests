@@ -205,7 +205,7 @@ if not "%arg%" == "" (
 	set vimArguments=-N -u NONE %vimArguments%
 	shift /1
     ) else if /I "%arg%" == "--runtime" (
-	set vimArguments=%vimArguments% -S %userVimFilesDirspec%%2
+	set vimArguments=%vimArguments% -S "%userVimFilesDirspec%%~2"
 	shift /1
 	shift /1
     ) else if /I "%arg%" == "--source" (
