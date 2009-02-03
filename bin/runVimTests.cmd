@@ -131,6 +131,10 @@
 ::  - runVimMsgFilter.vim, located in this script's directory. 
 ::
 ::* REVISION	DATE		REMARKS 
+::	010	04-Feb-2009	Now sourcing all essential and --source'd /
+::				--runtime'd VIM scripts via a separate script,
+::				to avoid the limitation of 10 -S
+::				<scriptfilespec> arguments. 
 ::	009	02-Feb-2009	Added --debug argument to :let g:debug = 1
 ::				inside VIM. 
 ::	008	29-Jan-2009	Added --runtime argument to simplify sourcing of
@@ -184,7 +188,10 @@ setlocal enableextensions
 call unix --quiet || goto:prerequisiteError
 
 call :determineUserVimFilesDirspec
-call :determineEssentialVimScripts
+
+set vimScriptsSourceScript=%TEMP%\%~n0.vim
+if exist "%vimScriptsSourceScript%" del "%vimScriptsSourceScript%"
+if exist "%vimScriptsSourceScript%" (goto:prerequisiteError)
 
 set vimArguments=
 set isExecutionOutput=1
@@ -199,17 +206,18 @@ if not "%arg%" == "" (
     ) else if /I "%arg%" == "--?" (
 	(goto:printUsage)
     ) else if /I "%arg%" == "--pure" (
-	set vimArguments=-N -u NONE %essentialVimScripts% %vimArguments%
+	call :addEssentialVimScripts
+	set vimArguments=-N -u NONE %vimArguments%
 	shift /1
     ) else if /I "%arg%" == "--reallypure" (
 	set vimArguments=-N -u NONE %vimArguments%
 	shift /1
     ) else if /I "%arg%" == "--runtime" (
-	set vimArguments=%vimArguments% -S "%userVimFilesDirspec%%~2"
+	call :addVimScript "%userVimFilesDirspec%%~2"
 	shift /1
 	shift /1
     ) else if /I "%arg%" == "--source" (
-	set vimArguments=%vimArguments% -S %2
+	call :addVimScript %2
 	shift /1
 	shift /1
     ) else if /I "%arg%" == "--summaryonly" (
@@ -239,12 +247,18 @@ set /A cntError=0
 set listFailed=
 set listError=
 
+if exist "%vimScriptsSourceScript%" set vimArguments=%vimArguments% -S "%vimScriptsSourceScript%"
+
 %EXECUTIONOUTPUT% echo.
 if defined vimArguments (
     %EXECUTIONOUTPUT% echo.Starting test run with these VIM options: 
     %EXECUTIONOUTPUT% echo.%vimArguments%
 ) else (
     %EXECUTIONOUTPUT% echo.Starting test run. 
+)
+if exist "%vimScriptsSourceScript%" (
+    %EXECUTIONOUTPUT% echo.And sourcing these scripts:
+    %EXECUTIONOUTPUT% type "%vimScriptsSourceScript%"
 )
 %EXECUTIONOUTPUT% echo.
 
@@ -311,23 +325,30 @@ if not exist "%userVimFilesDirspec%" set userVimFilesDirspec=%HOMEDRIVE%%HOMEPAT
 if not exist "%userVimFilesDirspec%" set userVimFilesDirspec=$VIMRUNTIME/
 (goto:EOF)
 
-:addEssentialVimScripts
+:addVimScript
+set vimScriptFilespec=%~1
+:: Do not check for file existence here, it might be specified in VIM syntax! 
+:: Escape for VIM :source command. 
+set vimScriptFilespec=%vimScriptFilespec:\=/%
+set vimScriptFilespec=%vimScriptFilespec: =\ %
+echo.source %vimScriptFilespec% >> "%vimScriptsSourceScript%"
+(goto:EOF)
+
+:addEssentialVimScript
 if not "%~1" == "essential" (goto:EOF)
 if exist %2 (
-    set essentialVimScripts=%essentialVimScripts% -S %2
+    call :addVimScript %2
 ) else (
     echo.Warning: Configured essential vimscript "%~2" does not exist.
 )
 (goto:EOF)
-:determineEssentialVimScripts
+:addEssentialVimScripts
 :: Read configured vimscripts that are essential for test implementations and
 :: must be sourced explicitly when argument --pure is given. 
-set essentialVimScripts=
-
 set configFilespec=%~dpn0.cfg
 if not exist "%configFilespec%" (goto:EOF)
 
-for /F "usebackq eol=# tokens=1,* delims== " %%a in ("%configFilespec%") do call :addEssentialVimScripts "%%~a" "%userVimFilesDirspec%%%~b"
+for /F "usebackq eol=# tokens=1,* delims== " %%a in ("%configFilespec%") do call :addEssentialVimScript "%%~a" "%userVimFilesDirspec%%%~b"
 (goto:EOF)
 
 :printTestHeader
