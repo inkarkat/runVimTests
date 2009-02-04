@@ -66,8 +66,8 @@
 ::	- Specify a directory; all *.vim files inside this directory will be
 ::	  used as test scripts. 
 ::	- A test suite is a text file containing (relative or absolute)
-::	  filespecs to test scripts, one filespec per line. (Commented lines
-::	  start with #.) 
+::	  filespecs to test scripts, directories or other test suites, one
+::	  filespec per line. (Commented lines start with #.) 
 ::
 ::	The script returns 0 if all tests were successful, 1 if any errors or
 ::	failures occurred. 
@@ -95,7 +95,7 @@
 ::	  vimtap utility functions for TAP testing), configure these scripts as
 ::	  essential, so that they'll be automatically included:
 ::	    essential = autoload/vimtap.vim
-::	  Multiple essential scripts can be configured. The path is taked
+::	  Multiple essential scripts can be configured. The path is taken
 ::	  relative to the user's ~/.vim directory, as with the --runtime
 ::	  argument. 
 ::
@@ -135,6 +135,8 @@
 ::				--runtime'd VIM scripts via a separate script,
 ::				to avoid the limitation of 10 -S
 ::				<scriptfilespec> arguments. 
+::				Suites can now also contain directories and
+::				other suite files, not just tests. 
 ::	009	02-Feb-2009	Added --debug argument to :let g:debug = 1
 ::				inside VIM. 
 ::	008	29-Jan-2009	Added --runtime argument to simplify sourcing of
@@ -372,11 +374,27 @@ echo.%listFailed% | findstr /C:%1 >NUL || set listFailed=%listFailed%%~1,
 for %%f in (%~1*.vim) do call :runTest "%%f"
 (goto:EOF)
 
+:processSuiteEntry
+set arg=%~1
+set argExt=%~x1
+set argAsDirspec=%~1
+if not "%argAsDirspec:~-1%" == "\" set argAsDirspec=%argAsDirspec%\
+if exist "%argAsDirspec%" (
+    call :runDir "%argAsDirspec%"
+) else if "%argext%" == ".vim" (
+    call :runTest "%arg%"
+) else if exist "%arg%" (
+    call :runSuite "%arg%"
+) else (
+    set /A cntError+=1
+    (echo.ERROR: Suite file "%arg%" doesn't exist. )
+)
+(goto:EOF)
 :runSuite
 :: Change to suite directory so that relative paths and filenames are resolved
 :: correctly. 
 pushd "%~dp1"
-for /F "eol=# delims=" %%f in (%~nx1) do call :runTest "%%f"
+for /F "eol=# delims=" %%f in (%~nx1) do call :processSuiteEntry "%%f"
 popd
 (goto:EOF)
 
