@@ -22,6 +22,8 @@
 ::				variable. This allows for greater flexibility
 ::				inside VIM and avoids that overly general
 ::				variable name. 
+::				Added command-line options --vimexecutable,
+::				--vimversion and --graphical. 
 ::	011	05-Feb-2009	Replaced runVimTests.cfg with
 ::				runVimTestsSetup.vim, which is sourced on every
 ::				test run if it exists. I was mistaken in that
@@ -123,6 +125,24 @@ if not "%arg%" == "" (
 	set vimExecutable=%2
 	shift /1
 	shift /1
+    ) else if /I "%arg%" == "--vimversion" (
+	set vimExecutable="%ProgramFiles%\vim\vim%~2\vim.exe"
+	shift /1
+	shift /1
+    ) else if /I "%arg%" == "--graphical" (
+	if %vimExecutable% == vim (
+	    set vimExecutable=gvim
+	) else (
+	    set vimExecutable=%vimExecutable:vim.exe=gvim.exe%
+	)
+	shift /1
+    ) else if /I "%arg%" == "-g" (
+	if %vimExecutable% == vim (
+	    set vimExecutable=gvim
+	) else (
+	    set vimExecutable=%vimExecutable:vim.exe=gvim.exe%
+	)
+	shift /1
     ) else if /I "%arg%" == "--summaryonly" (
 	set isExecutionOutput=
 	set EXECUTIONOUTPUT=rem
@@ -200,7 +220,7 @@ exit /B 1
 (goto:EOF)
 
 :printUsage
-(echo."%~nx0" [--pure] [--source filespec [--source filespec [...]]] [--runtime plugin/file.vim [--runtime autoload/file.vim [...]]] [--summaryonly] [--debug] [--help] test001.vim^|testsuite.txt^|path\to\testdir\ [...])
+(echo."%~nx0" [--pure] [--source filespec [--source filespec [...]]] [--runtime plugin/file.vim [--runtime autoload/file.vim [...]]] [--vimexecutable path\to\vim.exe^|--vimversion NN] [-g^|--graphical] [--summaryonly] [--debug] [--help] test001.vim^|testsuite.txt^|path\to\testdir\ [...])
 (echo.    --pure		Start VIM without loading .vimrc and plugins,)
 (echo.    			but in nocompatible mode. Adds 'pure' to %vimVariableOptionsName%.)
 (echo.    --source filespec	Source filespec before test execution.)
@@ -208,6 +228,9 @@ exit /B 1
 (echo.    			load the script-under-test when using --pure.)
 (echo.    --vimexecutable path\to\vim.exe   Use passed VIM executable instead)
 (echo.    			of the one found in %%PATH%%.)
+(echo.    --vimversion NN	Use VIM version N.N. ^(Must be in standard installation)
+(echo.    			directory %ProgramFiles%\vim\vimNN\.^))
+(echo.    -g^|--graphical	Use GVIM.)
 (echo.    --summaryonly	Do not show detailed transcript and differences,)
 (echo.    			during test run, only summary. )
 (echo.    --debug		Test debugging mode: Adds 'debug' to %vimVariableOptionsName%)
