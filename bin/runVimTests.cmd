@@ -10,120 +10,6 @@
 ::* DESCRIPTION: 
 ::	This script implements a small unit testing framework for VIM. 
 ::
-::	Similar to the tests that are part of VIM's source distribution, each
-::	test consists of a testXXX.vim file which is executed in a a separate
-::	VIM instance. The outcome of a test can be determined by a combination
-::	of the following methods:
-::
-::	Saved buffer output)
-::	If a testXXX.ok file is provided, the testXXX.vim should save a
-::	testXXX.out file at the end of its execution via: 
-::	    execute 'saveas! ' . expand('<sfile>:p:r') . '.out'
-::	The contents of the testXXX.out test file must be identical to the
-::	provided testXXX.ok file for the test to succeed. 
-::	The test can either generate the test output itself, or start by editing
-::	a testXXX.in (or similar) file and doing modifications to it. 
-::
-::	Captured messages)
-::	If a testXXX.msgok file is provided, the testXXX.vim file should
-::	generate VIM messages (from built-in VIM commands, or via :echomsg),
-::	which are captured during test execution in a testXXX.msgout file. 
-::	The testXXX.msgok file contains multiple message assertions (separated
-::	by empty lines), each of which is compiled into a VIM regexp and then
-::	matched against the captured messages. Each assertion can match exactly
-::	once, and all assertions must match in the same order in the captured
-::	VIM messages. (But there can be additional VIM messages before, after
-::	and in between matches, so that you can omit irrelevant or
-::	platform-specific messages from the testXXX.msgok file.)
-::	For details, cp. runVimMsgFilter.vim. 
-::
-::	TAP unit tests)
-::	If a testXXX.tap file exists at the end of a test execution, it is
-::	assumed to represent unit test output in the Test Anything Protocol [1],
-::	which is then parsed and incorporated into the test run. This method
-::	allows detailed verification also of internal functions; the entire
-::	determination of the test result is done in VIM script. 
-::	Each TAP unit test counts as one test, even though all those test
-::	results are produced by a single testXXX.vim file. If a plan announced
-::	more tests than what was found in the test output, the test is assumed
-::	to be erroneous. 
-::
-::	[1]
-::	web site: http://testanything.org,
-::	original implementation: http://search.cpan.org/~petdance/TAP-1.00/TAP.pm,
-::	TAP protocol for VIM: http://www.vim.org/scripts/script.php?script_id=2213
-::
-::
-::	A test causes an error if none of these ok-files exist for a test, and
-::	no testXXX.tap file was generated (so actually no verification is
-::	possible), or if the test execution does not produce the corresponding
-::	output files. 
-::
-::* USAGE: 
-::	The tests are specified through these three methods, which can be
-::	combined: 
-::	- Directly specify the filespec of testXXX.vim test script file(s). 
-::	- Specify a directory; all *.vim files inside this directory will be
-::	  used as test scripts. 
-::	- A test suite is a text file containing (relative or absolute)
-::	  filespecs to test scripts, directories or other test suites, one
-::	  filespec per line. (Commented lines start with #.) 
-::
-::	The script returns 0 if all tests were successful, 1 if any errors or
-::	failures occurred. 
-::
-::	After test execution, a summary is printed like this:
-::	    33 tests, 27 run: 16 OK, 11 failures, 6 errors.
-::	    Failed tests: test002, test012, test014, test022, test032, test033
-::	    Tests with errors: test003, test013, test023, test033
-::	A test is counted as each existing *.[msg]ok file, or by an announcement
-::	of the planned tests by a TAP test. Tests have "run" when corresponding
-::	output has been produced. If it hasn't, that's an error, as well as when
-::	there were neither *.[msg]ok files nor any TAP output, or if the test
-::	result evaluation had a problem. The result of a correct test evaluation
-::	is either OK or FAIL. 
-::
-::* CONFIGURATION:
-::	System-specific, global unit test configuration is stored in
-::	'runVimTests.cfg', residing in the same directory as this script. The
-::	following items can be configured:
-::
-::	- essential vimscripts
-::	  If you specify the --pure argument, no default plugins are sourced,
-::	  and the :runtime command has no effect inside VIM. If you have some
-::	  general helper scripts that (almost) all tests require (e.g. the
-::	  vimtap utility functions for TAP testing), configure these scripts as
-::	  essential, so that they'll be automatically included:
-::	    essential = autoload/vimtap.vim
-::	  Multiple essential scripts can be configured. The path is taken
-::	  relative to the user's ~/.vim directory, as with the --runtime
-::	  argument. 
-::
-::* TEST SCRIPTS:
-::	Each test is implemented in a testXXX.vim file. Depending on which
-::	method(s) shall be used for verification, the tests needs to do:
-::
-::	Saved buffer output)
-::	Load a predefined test input (e.g. testXXX.in), or start from scratch in
-::	the empty buffer, and make modifications to it. Finally, save the result
-::	in testXXX.out. 
-::
-::	Captured messages)
-::	Issue :echo or :echomsg, or execute commands that will cause messages.
-::	The messages are automatically captured in testXXX.msgout. 
-::
-::	TAP unit tests)
-::	Initialize the TAP testing framework with the output file name
-::	testXXX.tap, submit a plan (i.e. how many tests you intend to run; this
-::	is optional, but highly recommended), execute the test and verify the
-::	outcomes with the TAP-provided functions. The TAP framework will
-::	automatically save the TAP output. 
-::
-::	If the first line of the test contains a comment starting with:
-::	'" Test', this is taken as the test synopsis and included in the test
-::	header that is printed before each test is executed. Example: 
-::	" Test mutation that adds lines after the current line. 
-::
 ::* REMARKS: 
 ::       	
 ::* DEPENDENCIES:
@@ -131,11 +17,15 @@
 ::  - runVimMsgFilter.vim, located in this script's directory. 
 ::
 ::* REVISION	DATE		REMARKS 
-::	010	04-Feb-2009	Now sourcing all essential and --source'd /
-::				--runtime'd VIM scripts via a separate script,
-::				to avoid the limitation of 10 -S
-::				<scriptfilespec> arguments. 
-::				Suites can now also contain directories and
+::	011	05-Feb-2009	Replaced runVimTests.cfg with runVimTests.vim,
+::				which is sourced on every test run if it exists. 
+::				I was mistaken in that :runtime commands don't
+::				work in pure mode; that was caused by my .vimrc
+::				not setting 'runtimepath' to ~/.vim! Thus,
+::				there's no need for the "essential VIM scripts"
+::				and the --reallypure option. 
+::				Split off documentation into separate help file. 
+::	010	04-Feb-2009	Suites can now also contain directories and
 ::				other suite files, not just tests. 
 ::	009	02-Feb-2009	Added --debug argument to :let g:debug = 1
 ::				inside VIM. 
@@ -191,11 +81,10 @@ call unix --quiet || goto:prerequisiteError
 
 call :determineUserVimFilesDirspec
 
-set vimScriptsSourceScript=%TEMP%\%~n0.vim
-if exist "%vimScriptsSourceScript%" del "%vimScriptsSourceScript%"
-if exist "%vimScriptsSourceScript%" (goto:prerequisiteError)
-
 set vimArguments=
+set vimGlobalSetupScript=%~dpn0.vim
+if exist "%vimGlobalSetupScript%" set vimArguments=%vimArguments% -S "%vimGlobalSetupScript%"
+
 set isExecutionOutput=1
 set EXECUTIONOUTPUT=
 :commandLineOptions
@@ -208,18 +97,14 @@ if not "%arg%" == "" (
     ) else if /I "%arg%" == "--?" (
 	(goto:printUsage)
     ) else if /I "%arg%" == "--pure" (
-	call :addEssentialVimScripts
-	set vimArguments=-N -u NONE %vimArguments%
-	shift /1
-    ) else if /I "%arg%" == "--reallypure" (
 	set vimArguments=-N -u NONE %vimArguments%
 	shift /1
     ) else if /I "%arg%" == "--runtime" (
-	call :addVimScript "%userVimFilesDirspec%%~2"
+	set vimArguments=%vimArguments% -S "%userVimFilesDirspec%%~2"
 	shift /1
 	shift /1
     ) else if /I "%arg%" == "--source" (
-	call :addVimScript %2
+	set vimArguments=%vimArguments% -S %2
 	shift /1
 	shift /1
     ) else if /I "%arg%" == "--summaryonly" (
@@ -249,18 +134,12 @@ set /A cntError=0
 set listFailed=
 set listError=
 
-if exist "%vimScriptsSourceScript%" set vimArguments=%vimArguments% -S "%vimScriptsSourceScript%"
-
 %EXECUTIONOUTPUT% echo.
 if defined vimArguments (
     %EXECUTIONOUTPUT% echo.Starting test run with these VIM options: 
     %EXECUTIONOUTPUT% echo.%vimArguments%
 ) else (
     %EXECUTIONOUTPUT% echo.Starting test run. 
-)
-if exist "%vimScriptsSourceScript%" (
-    %EXECUTIONOUTPUT% echo.And sourcing these scripts:
-    %EXECUTIONOUTPUT% type "%vimScriptsSourceScript%"
 )
 %EXECUTIONOUTPUT% echo.
 
@@ -302,15 +181,11 @@ exit /B 1
 (goto:EOF)
 
 :printUsage
-(echo."%~nx0" [--pure^|--reallypure] [--source filespec [--source filespec [...]]] [--runtime plugin/file.vim [--runtime autoload/file.vim [...]]] [--summaryonly] [--debug] [--help] test001.vim^|testsuite.txt^|path\to\testdir\ [...])
+(echo."%~nx0" [--pure] [--source filespec [--source filespec [...]]] [--runtime plugin/file.vim [--runtime autoload/file.vim [...]]] [--summaryonly] [--debug] [--help] test001.vim^|testsuite.txt^|path\to\testdir\ [...])
 (echo.    --pure		Start VIM without loading .vimrc and plugins,)
-(echo.    			but in nocompatible mode and with some essential)
-(echo.    			test support scripts sourced. )
-(echo.    --reallypure	Start VIM without loading .vimrc and plugins,)
-(echo.    			but in nocompatible mode. Some essential scripts may)
-(echo.    			be missing and must be sourced manually.)
+(echo.    			but in nocompatible mode.)
 (echo.    --source filespec	Source filespec before test execution.)
-(echo.    --runtime filespec	Source filespec relative to ~/.vim. Important to)
+(echo.    --runtime filespec	Source filespec relative to ~/.vim. Can be used to)
 (echo.    			load the script-under-test when using --pure.)
 (echo.    --summaryonly	Do not show detailed transcript and differences,)
 (echo.    			during test run, only summary. )
@@ -325,32 +200,6 @@ if not exist "%userVimFilesDirspec%" set userVimFilesDirspec=%HOME%\.vim\
 if not exist "%userVimFilesDirspec%" set userVimFilesDirspec=%HOMEDRIVE%%HOMEPATH%\vimfiles\
 if not exist "%userVimFilesDirspec%" set userVimFilesDirspec=%HOMEDRIVE%%HOMEPATH%\.vim\
 if not exist "%userVimFilesDirspec%" set userVimFilesDirspec=$VIMRUNTIME/
-(goto:EOF)
-
-:addVimScript
-set vimScriptFilespec=%~1
-:: Do not check for file existence here, it might be specified in VIM syntax! 
-:: Escape for VIM :source command. 
-set vimScriptFilespec=%vimScriptFilespec:\=/%
-set vimScriptFilespec=%vimScriptFilespec: =\ %
-echo.source %vimScriptFilespec% >> "%vimScriptsSourceScript%"
-(goto:EOF)
-
-:addEssentialVimScript
-if not "%~1" == "essential" (goto:EOF)
-if exist %2 (
-    call :addVimScript %2
-) else (
-    echo.Warning: Configured essential vimscript "%~2" does not exist.
-)
-(goto:EOF)
-:addEssentialVimScripts
-:: Read configured vimscripts that are essential for test implementations and
-:: must be sourced explicitly when argument --pure is given. 
-set configFilespec=%~dpn0.cfg
-if not exist "%configFilespec%" (goto:EOF)
-
-for /F "usebackq eol=# tokens=1,* delims== " %%a in ("%configFilespec%") do call :addEssentialVimScript "%%~a" "%userVimFilesDirspec%%%~b"
 (goto:EOF)
 
 :printTestHeader
