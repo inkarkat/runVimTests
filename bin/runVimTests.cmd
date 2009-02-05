@@ -87,6 +87,7 @@ call unix --quiet || goto:prerequisiteError
 
 call :determineUserVimFilesDirspec
 
+set vimExecutable=vim
 set vimArguments=
 set vimLocalSetupScript=_setup.vim
 set vimGlobalSetupScript=%~dpn0Setup.vim
@@ -116,6 +117,10 @@ if not "%arg%" == "" (
 	shift /1
     ) else if /I "%arg%" == "--source" (
 	set vimArguments=%vimArguments% -S %2
+	shift /1
+	shift /1
+    ) else if /I "%arg%" == "--vimexecutable" (
+	set vimExecutable=%2
 	shift /1
 	shift /1
     ) else if /I "%arg%" == "--summaryonly" (
@@ -151,7 +156,7 @@ set listError=
 %EXECUTIONOUTPUT% echo.
 if defined vimArguments (
     %EXECUTIONOUTPUT% echo.Starting test run with these VIM options: 
-    %EXECUTIONOUTPUT% echo.%vimArguments%
+    %EXECUTIONOUTPUT% echo.%vimExecutable% %vimArguments%
 ) else (
     %EXECUTIONOUTPUT% echo.Starting test run. 
 )
@@ -201,6 +206,8 @@ exit /B 1
 (echo.    --source filespec	Source filespec before test execution.)
 (echo.    --runtime filespec	Source filespec relative to ~/.vim. Can be used to)
 (echo.    			load the script-under-test when using --pure.)
+(echo.    --vimexecutable path\to\vim.exe   Use passed VIM executable instead)
+(echo.    			of the one found in %%PATH%%.)
 (echo.    --summaryonly	Do not show detailed transcript and differences,)
 (echo.    			during test run, only summary. )
 (echo.    --debug		Test debugging mode: Adds 'debug' to %vimVariableOptionsName%)
@@ -305,7 +312,7 @@ call :printTestHeader "%testfile%" "%testname%"
 :: :set verbosefile Capture all messages in a file. 
 :: :let %vimVariableTestName% = Absolute test filespec. 
 :: :let %vimVariableOptionsName% = Options for this test run, concatenated with ','. 
-call vim -n -c "let %vimVariableTestName%='%testfilespec:'=''%'|set nomore verbosefile=%testmsgoutForSet%" %vimArguments%%vimLocalSetup% -S "%testfile%"
+call %vimExecutable% -n -c "let %vimVariableTestName%='%testfilespec:'=''%'|set nomore verbosefile=%testmsgoutForSet%" %vimArguments%%vimLocalSetup% -S "%testfile%"
 
 set /A thisTests=0
 set /A thisRun=0
