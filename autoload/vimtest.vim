@@ -20,16 +20,15 @@
 " Maintainer:	Ingo Karkat <ingo@karkat.de>
 "
 " REVISION	DATE		REMARKS 
+"	002	06-Feb-2009	Renamed g:debug to g:runVimTests. 
+"				Removed check for processed msgout output, this
+"				is now done as a separate process with
+"				'runVimMsgFilter.vim'. 
+"				Now escaping saved *.out filespec. 
 "	001	25-Jan-2009	file creation
 
 function! vimtest#Quit()
-    " If the message output has been processed, make sure that the modified
-    " output is saved. 
-    if expand('%') =~# '\.msgout$'
-	update!
-    endif
-
-    if ! (exists('g:debug') && g:debug)
+    if ! (exists('g:runVimTests') && g:runVimTests =~# '\<debug\>')
 	quitall!
     endif
 endfunction
@@ -38,7 +37,11 @@ function! vimtest#StartTap( sfile )
     call vimtap#Output(fnamemodify(a:sfile, ':p:r') . '.tap') 
 endfunction
 function! vimtest#SaveOut( sfile )
-    execute 'saveas! ' . fnamemodify(a:sfile, ':p:r') . '.out'
+    if v:version >= 702
+	execute 'saveas! ' . fnameescape(fnamemodify(a:sfile, ':p:r') . '.out')
+    else
+	execute 'saveas! ' . escapings#fnameescape(fnamemodify(a:sfile, ':p:r') . '.out')
+    endif
 endfunction
 
 " vim: set sts=4 sw=4 noexpandtab ff=unix fdm=syntax :
