@@ -17,6 +17,11 @@
 ::  - runVimMsgFilter.vim, located in this script's directory. 
 ::
 ::* REVISION	DATE		REMARKS 
+::	012	06-Feb-2009	Renamed g:debug to g:runVimTests; now, script
+::				options 'debug' and 'pure' are appended to this
+::				variable. This allows for greater flexibility
+::				inside VIM and avoids that overly general
+::				variable name. 
 ::	011	05-Feb-2009	Replaced runVimTests.cfg with runVimTests.vim,
 ::				which is sourced on every test run if it exists. 
 ::				I was mistaken in that :runtime commands don't
@@ -84,6 +89,8 @@ call :determineUserVimFilesDirspec
 set vimArguments=
 set vimGlobalSetupScript=%~dpn0.vim
 if exist "%vimGlobalSetupScript%" set vimArguments=%vimArguments% -S "%vimGlobalSetupScript%"
+set vimVariableName=g:runVimTests
+set vimVariableValue=
 
 set isExecutionOutput=1
 set EXECUTIONOUTPUT=
@@ -98,6 +105,7 @@ if not "%arg%" == "" (
 	(goto:printUsage)
     ) else if /I "%arg%" == "--pure" (
 	set vimArguments=-N -u NONE %vimArguments%
+	set vimVariableValue=%vimVariableValue%pure,
 	shift /1
     ) else if /I "%arg%" == "--runtime" (
 	set vimArguments=%vimArguments% -S "%userVimFilesDirspec%%~2"
@@ -112,7 +120,7 @@ if not "%arg%" == "" (
 	set EXECUTIONOUTPUT=rem
 	shift /1
     ) else if /I "%arg%" == "--debug" (
-	set vimArguments=%vimArguments% --cmd "let g:debug=1"
+	set vimVariableValue=%vimVariableValue%debug,
 	shift /1
     ) else if /I "%~1" == "--" (
 	shift /1
@@ -125,6 +133,9 @@ if not "%arg%" == "" (
 
 :commandLineArguments
 if "%~1" == "" (goto:printUsage)
+
+if defined vimVariableValue (set vimVariableValue=%vimVariableValue:~0,-1%)
+set vimArguments=%vimArguments% --cmd "let g:runVimTests='%vimVariableValue%'"
 
 set /A cntTests=0
 set /A cntRun=0
@@ -183,14 +194,15 @@ exit /B 1
 :printUsage
 (echo."%~nx0" [--pure] [--source filespec [--source filespec [...]]] [--runtime plugin/file.vim [--runtime autoload/file.vim [...]]] [--summaryonly] [--debug] [--help] test001.vim^|testsuite.txt^|path\to\testdir\ [...])
 (echo.    --pure		Start VIM without loading .vimrc and plugins,)
-(echo.    			but in nocompatible mode.)
+(echo.    			but in nocompatible mode. Adds 'pure' to %vimVariableName%.)
 (echo.    --source filespec	Source filespec before test execution.)
 (echo.    --runtime filespec	Source filespec relative to ~/.vim. Can be used to)
 (echo.    			load the script-under-test when using --pure.)
 (echo.    --summaryonly	Do not show detailed transcript and differences,)
 (echo.    			during test run, only summary. )
-(echo.    --debug		Test debugging mode: Sets g:debug = 1 inside VIM)
-(echo.    			^(so that tests do not exit or print debug info^). )
+(echo.    --debug		Test debugging mode: Adds 'debug' to %vimVariableName%)
+(echo.    			variable inside VIM ^(so that tests do not exit or can)
+(echo.    			produce additional debug info^). )
 (goto:EOF)
 
 :determineUserVimFilesDirspec
