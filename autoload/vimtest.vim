@@ -34,13 +34,11 @@ function! vimtest#Quit()
     endif
 endfunction
 
+function! vimtest#StartTap( sfile )
+    call vimtap#Output(fnamemodify(a:sfile, ':p:r') . '.tap') 
+endfunction
 function! vimtest#SaveOut( sfile )
     execute 'saveas! ' . fnamemodify(a:sfile, ':p:r') . '.out'
-endfunction
-
-function! vimtest#ProcessMsgout( sfile )
-    set verbosefile=
-    execute 'split ' . fnamemodify(a:sfile, ':p:r') . '.msgout'
 endfunction
 
 " vim: set sts=4 sw=4 noexpandtab ff=unix fdm=syntax :
