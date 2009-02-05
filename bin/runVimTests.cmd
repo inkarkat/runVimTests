@@ -22,13 +22,14 @@
 ::				variable. This allows for greater flexibility
 ::				inside VIM and avoids that overly general
 ::				variable name. 
-::	011	05-Feb-2009	Replaced runVimTests.cfg with runVimTests.vim,
-::				which is sourced on every test run if it exists. 
-::				I was mistaken in that :runtime commands don't
-::				work in pure mode; that was caused by my .vimrc
-::				not setting 'runtimepath' to ~/.vim! Thus,
-::				there's no need for the "essential VIM scripts"
-::				and the --reallypure option. 
+::	011	05-Feb-2009	Replaced runVimTests.cfg with
+::				runVimTestsSetup.vim, which is sourced on every
+::				test run if it exists. I was mistaken in that
+::				:runtime commands don't work in pure mode; that
+::				was caused by my .vimrc not setting
+::				'runtimepath' to ~/.vim! Thus, there's no need
+::				for the "essential VIM scripts" and the
+::				--reallypure option. 
 ::				Split off documentation into separate help file. 
 ::	010	04-Feb-2009	Suites can now also contain directories and
 ::				other suite files, not just tests. 
@@ -87,10 +88,12 @@ call unix --quiet || goto:prerequisiteError
 call :determineUserVimFilesDirspec
 
 set vimArguments=
-set vimGlobalSetupScript=%~dpn0.vim
+set vimLocalSetupScript=_setup.vim
+set vimGlobalSetupScript=%~dpn0Setup.vim
 if exist "%vimGlobalSetupScript%" set vimArguments=%vimArguments% -S "%vimGlobalSetupScript%"
-set vimVariableName=g:runVimTests
-set vimVariableValue=
+set vimVariableOptionsName=g:runVimTests
+set vimVariableOptionsValue=
+set vimVariableTestName=g:runVimTest
 
 set isExecutionOutput=1
 set EXECUTIONOUTPUT=
@@ -105,7 +108,7 @@ if not "%arg%" == "" (
 	(goto:printUsage)
     ) else if /I "%arg%" == "--pure" (
 	set vimArguments=-N -u NONE %vimArguments%
-	set vimVariableValue=%vimVariableValue%pure,
+	set vimVariableOptionsValue=%vimVariableOptionsValue%pure,
 	shift /1
     ) else if /I "%arg%" == "--runtime" (
 	set vimArguments=%vimArguments% -S "%userVimFilesDirspec%%~2"
@@ -120,7 +123,7 @@ if not "%arg%" == "" (
 	set EXECUTIONOUTPUT=rem
 	shift /1
     ) else if /I "%arg%" == "--debug" (
-	set vimVariableValue=%vimVariableValue%debug,
+	set vimVariableOptionsValue=%vimVariableOptionsValue%debug,
 	shift /1
     ) else if /I "%~1" == "--" (
 	shift /1
@@ -134,8 +137,8 @@ if not "%arg%" == "" (
 :commandLineArguments
 if "%~1" == "" (goto:printUsage)
 
-if defined vimVariableValue (set vimVariableValue=%vimVariableValue:~0,-1%)
-set vimArguments=%vimArguments% --cmd "let g:runVimTests='%vimVariableValue%'"
+if defined vimVariableOptionsValue (set vimVariableOptionsValue=%vimVariableOptionsValue:~0,-1%)
+set vimArguments=%vimArguments% --cmd "let g:runVimTests='%vimVariableOptionsValue%'"
 
 set /A cntTests=0
 set /A cntRun=0
@@ -194,13 +197,13 @@ exit /B 1
 :printUsage
 (echo."%~nx0" [--pure] [--source filespec [--source filespec [...]]] [--runtime plugin/file.vim [--runtime autoload/file.vim [...]]] [--summaryonly] [--debug] [--help] test001.vim^|testsuite.txt^|path\to\testdir\ [...])
 (echo.    --pure		Start VIM without loading .vimrc and plugins,)
-(echo.    			but in nocompatible mode. Adds 'pure' to %vimVariableName%.)
+(echo.    			but in nocompatible mode. Adds 'pure' to %vimVariableOptionsName%.)
 (echo.    --source filespec	Source filespec before test execution.)
 (echo.    --runtime filespec	Source filespec relative to ~/.vim. Can be used to)
 (echo.    			load the script-under-test when using --pure.)
 (echo.    --summaryonly	Do not show detailed transcript and differences,)
 (echo.    			during test run, only summary. )
-(echo.    --debug		Test debugging mode: Adds 'debug' to %vimVariableName%)
+(echo.    --debug		Test debugging mode: Adds 'debug' to %vimVariableOptionsName%)
 (echo.    			variable inside VIM ^(so that tests do not exit or can)
 (echo.    			produce additional debug info^). )
 (goto:EOF)
@@ -265,9 +268,14 @@ if not exist "%~1" (
     (echo.ERROR: Test file "%~1" doesn't exist. )
     (goto:EOF)
 )
+set testfilespec=%~f1
 set testdirspec=%~dp1
 set testfile=%~nx1
 set testname=%~n1
+
+:: The setup script is not a test, silently skip it. 
+if "%testfile%" == "%vimLocalSetupScript%" (goto:EOF)
+
 set testok=%testname%.ok
 set testout=%testname%.out
 set testmsgok=%testname%.msgok
@@ -282,6 +290,12 @@ if exist "%testout%" del "%testout%"
 if exist "%testmsgout%" del "%testmsgout%"
 if exist "%testtap%" del "%testtap%"
 
+:: Source local setup script before the testfile. 
+set vimLocalSetup=
+if exist "%vimLocalSetupScript%" (
+    set vimLocalSetup= -S "%vimLocalSetupScript%"
+)
+
 call :printTestHeader "%testfile%" "%testname%"
 
 :: Default VIM arguments and options:
@@ -289,7 +303,9 @@ call :printTestHeader "%testfile%" "%testname%"
 :: :set nomore	Suppress the more-prompt when the screen is filled with messages
 ::		or output to avoid blocking. 
 :: :set verbosefile Capture all messages in a file. 
-call vim -n -c "set nomore verbosefile=%testmsgoutForSet%" %vimArguments% -S "%testfile%"
+:: :let %vimVariableTestName% = Absolute test filespec. 
+:: :let %vimVariableOptionsName% = Options for this test run, concatenated with ','. 
+call vim -n -c "let %vimVariableTestName%='%testfilespec:'=''%'|set nomore verbosefile=%testmsgoutForSet%" %vimArguments%%vimLocalSetup% -S "%testfile%"
 
 set /A thisTests=0
 set /A thisRun=0
