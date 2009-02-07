@@ -24,6 +24,8 @@
 ::				variable name. 
 ::				Added command-line options --vimexecutable,
 ::				--vimversion and --graphical. 
+::				Added command-line option --default to launch
+::				VIM without any user settings. 
 ::	011	05-Feb-2009	Replaced runVimTests.cfg with
 ::				runVimTestsSetup.vim, which is sourced on every
 ::				test run if it exists. I was mistaken in that
@@ -112,6 +114,10 @@ if not "%arg%" == "" (
     ) else if /I "%arg%" == "--pure" (
 	set vimArguments=-N -u NONE %vimArguments%
 	set vimVariableOptionsValue=%vimVariableOptionsValue%pure,
+	shift /1
+    ) else if /I "%arg%" == "--default" (
+	set vimArguments=--cmd "set rtp=$VIM/vimfiles,$VIMRUNTIME,$VIM/vimfiles/after" -N -u NORC -c "set rtp&" %vimArguments%
+	set vimVariableOptionsValue=%vimVariableOptionsValue%default,
 	shift /1
     ) else if /I "%arg%" == "--runtime" (
 	set vimArguments=%vimArguments% -S "%userVimFilesDirspec%%~2"
@@ -220,9 +226,12 @@ exit /B 1
 (goto:EOF)
 
 :printUsage
-(echo."%~nx0" [--pure] [--source filespec [--source filespec [...]]] [--runtime plugin/file.vim [--runtime autoload/file.vim [...]]] [--vimexecutable path\to\vim.exe^|--vimversion NN] [-g^|--graphical] [--summaryonly] [--debug] [--help] test001.vim^|testsuite.txt^|path\to\testdir\ [...])
-(echo.    --pure		Start VIM without loading .vimrc and plugins,)
+(echo."%~nx0" [--pure^|--default] [--source filespec [--source filespec [...]]] [--runtime plugin/file.vim [--runtime autoload/file.vim [...]]] [--vimexecutable path\to\vim.exe^|--vimversion NN] [-g^|--graphical] [--summaryonly] [--debug] [--help] test001.vim^|testsuite.txt^|path\to\testdir\ [...])
+(echo.    --pure		Start VIM without loading any .vimrc and plugins,)
 (echo.    			but in nocompatible mode. Adds 'pure' to %vimVariableOptionsName%.)
+(echo.    --default		Start VIM only with default settings and plugins,)
+(echo.    			without loading user .vimrc and plugins.)
+(echo.    			Adds 'default' to %vimVariableOptionsName%.)
 (echo.    --source filespec	Source filespec before test execution.)
 (echo.    --runtime filespec	Source filespec relative to ~/.vim. Can be used to)
 (echo.    			load the script-under-test when using --pure.)
