@@ -1,0 +1,5 @@
+FAIL (msgout): 2 of 5 message assertions were not satisfied by the output: 
+ --> Message assertion 1 from line 1 did not match in output lines 1-14
+     "this dir\\some file.txt" $
+ --> Message assertion 3 from line 6 did not match in output lines 17-18
+     "E:[\\/]temp[\\/]WriteBackupTest[\\/]another dir[\\/]next file" \n
