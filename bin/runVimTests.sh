@@ -324,13 +324,14 @@ runTest()
     popd >/dev/null
 }
 
+#- initialization -------------------------------------------------------------
 readonly scriptDir=$(readonly scriptFile="$(type -P -- "$0")" && dirname -- "$scriptFile" || exit 1)
 [ -d "$scriptDir" ] || { echo >&2 "ERROR: cannot determine script directory!"; exit 1; } 
 
 # Prerequisite VIM script to match the message assumptions against the actual
 # message output. 
 readonly runVimMsgFilterScript=${scriptDir}/runVimMsgFilter.vim
-if [ ! -r "$runVimMsgFilterScript" ];then
+if [ ! -r "$runVimMsgFilterScript" ]; then
     echo >&2 "ERROR: Script prerequisite \"${runVimMsgFilterScript}\" does not exist!"
     exit 1
 fi
@@ -357,6 +358,7 @@ readonly vimGlobalSetupScript=${scriptDir}/$(basename -- "$0")Setup.vim
 
 isExecutionOutput='true'
 
+#- command-line argument parsing ----------------------------------------------
 if [ $# -eq 0 ]; then
     printUsage "$0"
     exit 1
@@ -401,6 +403,7 @@ done
 vimVariableOptionsValue=${vimVariableOptionsValue%,}
 vimArguments="$vimArguments --cmd \"let ${vimVariableOptionsName}='${vimVariableOptionsValue}'\""
 
+#- test execution -------------------------------------------------------------
 cntTests=0
 cntRun=0
 cntOk=0
@@ -423,6 +426,7 @@ do
     processTestEntry "$arg"
 done
 
+#- reporting of results -------------------------------------------------------
 echo
 echo "$cntTests $(makePlural $cntTests 'test'), $cntRun run: $cntOk OK, $cntFail $(makePlural $cntFail 'failure'), $cntError $(makePlural $cntError 'error')."
 [ "$listFailed" ] && echo "Failed tests: ${listFailed%, }"
