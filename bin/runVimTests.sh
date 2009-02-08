@@ -189,8 +189,9 @@ runTest()
     # :set verbosefile	Capture all messages in a file. 
     # :let $vimVariableTestName = Absolute test filespec. 
     # :let $vimVariableOptionsName = Options for this test run, concatenated with ','. 
-    $vimExecutable -n -c "let ${vimVariableTestName}='${testFilespec//'/''}'|set nomore verbosefile=${testMsgout// /\\ }" ${vimArguments}${vimLocalSetup} -S "${testFile}"
+    eval "$vimExecutable -n -c \"let ${vimVariableTestName}='${testFilespec//\'/\'\'}'|set nomore verbosefile=${testMsgout// /\\ }\" ${vimArguments}${vimLocalSetup} -S \"${testFile}\""
     # "}'"
+set +x
 
     let thisTests=0
     let thisRun=0
@@ -256,7 +257,7 @@ runTest()
 readonly scriptDir=$(readonly scriptFile="$(type -P -- "$0")" && dirname -- "$scriptFile" || exit 1)
 [ -d "$scriptDir" ] || { echo >&2 "ERROR: cannot determine script directory!"; exit 1; } 
 
-vimExecutable=''
+vimExecutable='vim'
 vimArguments=''
 vimLocalSetupScript=_setup.vim
 vimGlobalSetupScript=${scriptDir}/$(basename "$0")Setup.vim
@@ -294,7 +295,7 @@ do
     esac
 done
 [ $# -eq 0 ] && { printLongUsage "$0"; exit 1; }
-vimVariableOptionsValue=${vimVariableOptionsName%,}
+vimVariableOptionsValue=${vimVariableOptionsValue%,}
 vimArguments="$vimArguments --cmd \"let ${vimVariableOptionsName}='${vimVariableOptionsValue}'\""
 
 let cntTests=0
@@ -309,7 +310,7 @@ executionOutput
 if [ "$vimArguments" ]; then
     executionOutput "Starting test run with these VIM options:"
     executionOutput "$vimExecutable $vimArguments"
-elif
+else
     executionOutput "Starting test run."
 fi
 executionOutput
