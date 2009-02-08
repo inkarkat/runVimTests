@@ -13,7 +13,7 @@
 ::* REMARKS: 
 ::       	
 ::* DEPENDENCIES:
-::  - GNU grep, sed, diff, wc tools available through 'unix.cmd' script. 
+::  - GNU grep, sed, diff available through 'unix.cmd' script. 
 ::  - runVimMsgFilter.vim, located in this script's directory. 
 ::
 ::* REVISION	DATE		REMARKS 
@@ -169,7 +169,7 @@ if not "%arg%" == "" (
 if "%~1" == "" (goto:printUsage)
 
 if defined vimVariableOptionsValue (set vimVariableOptionsValue=%vimVariableOptionsValue:~0,-1%)
-set vimArguments=%vimArguments% --cmd "let g:runVimTests='%vimVariableOptionsValue%'"
+set vimArguments=%vimArguments% --cmd "let %vimVariableOptionsName%='%vimVariableOptionsValue%'"
 
 set /A cntTests=0
 set /A cntRun=0
@@ -181,10 +181,10 @@ set listError=
 
 %EXECUTIONOUTPUT% echo.
 if defined vimArguments (
-    %EXECUTIONOUTPUT% echo.Starting test run with these VIM options: 
+    %EXECUTIONOUTPUT% echo.Starting test run with these VIM options:
     %EXECUTIONOUTPUT% echo.%vimExecutable% %vimArguments%
 ) else (
-    %EXECUTIONOUTPUT% echo.Starting test run. 
+    %EXECUTIONOUTPUT% echo.Starting test run.
 )
 %EXECUTIONOUTPUT% echo.
 
@@ -203,7 +203,7 @@ if exist "%argAsDirspec%" (
     call :runSuite "%arg%"
 ) else (
     set /A cntError+=1
-    (echo.ERROR: Suite file "%arg%" doesn't exist. )
+    (echo.ERROR: Suite file "%arg%" doesn't exist.)
 )
 if not "%~1" == "" (goto:commandLineLoop)
 
@@ -211,7 +211,7 @@ if %cntTests% NEQ 1 set pluralTests=s
 if %cntFail% NEQ 1 set pluralFail=s
 if %cntError% NEQ 1 set pluralError=s
 echo.
-echo.%cntTests% test%pluralTests%, %cntRun% run: %cntOk% OK, %cntFail% failure%pluralFail%, %cntError% error%pluralError%. 
+echo.%cntTests% test%pluralTests%, %cntRun% run: %cntOk% OK, %cntFail% failure%pluralFail%, %cntError% error%pluralError%.
 if defined listFailed (echo.Failed tests: %listFailed:~0,-2%)
 if defined listError (echo.Tests with errors: %listError:~0,-2%)
 
@@ -241,10 +241,10 @@ exit /B 1
 (echo.    			directory %ProgramFiles%\vim\vimNN\.^))
 (echo.    -g^|--graphical	Use GVIM.)
 (echo.    --summaryonly	Do not show detailed transcript and differences,)
-(echo.    			during test run, only summary. )
+(echo.    			during test run, only summary.)
 (echo.    --debug		Test debugging mode: Adds 'debug' to %vimVariableOptionsName%)
 (echo.    			variable inside VIM ^(so that tests do not exit or can)
-(echo.    			produce additional debug info^). )
+(echo.    			produce additional debug info^).)
 (goto:EOF)
 
 :determineUserVimFilesDirspec
@@ -262,14 +262,14 @@ if not defined isExecutionOutput (goto:EOF)
 :: the test's synopsis in the test header. Otherwise, just print the test name. 
 :: Limit the test header to one unwrapped output line, i.e. truncate to 80
 :: characters. 
-sed -n -e "1s/^\d034 \(Test.*\)$/Running %~2: \1/p" -e "tx" -e "1cRunning %~2:" -e ":x" %1 | sed "/^.\{80,\}/s/\(^.\{,76\}\).*$/\1.../"
+sed -n -e "1s/^\d034 \(Test.*\)$/Running %~2: \1/p" -e "tx" -e "1cRunning %~2:" -e ":x" -- %1 | sed "/^.\{80,\}/s/\(^.\{,76\}\).*$/\1.../"
 (goto:EOF)
 
-:addToListError
-echo.%listError% | findstr /C:%1 >NUL || set listError=%listError%%~1, 
-(goto:EOF)
 :addToListFailed
 echo.%listFailed% | findstr /C:%1 >NUL || set listFailed=%listFailed%%~1, 
+(goto:EOF)
+:addToListError
+echo.%listError% | findstr /C:%1 >NUL || set listError=%listError%%~1, 
 (goto:EOF)
 
 ::------------------------------------------------------------------------------
@@ -290,7 +290,7 @@ if exist "%argAsDirspec%" (
     call :runSuite "%arg%"
 ) else (
     set /A cntError+=1
-    (echo.ERROR: Suite file "%arg%" doesn't exist. )
+    (echo.ERROR: Suite file "%arg%" doesn't exist.)
 )
 (goto:EOF)
 :runSuite
@@ -304,30 +304,32 @@ popd
 :runTest
 if not exist "%~1" (
     set /A cntError+=1
-    (echo.ERROR: Test file "%~1" doesn't exist. )
+    (echo.ERROR: Test file "%~1" doesn't exist.)
     (goto:EOF)
 )
-set testfilespec=%~f1
-set testdirspec=%~dp1
-set testfile=%~nx1
-set testname=%~n1
+set testFilespec=%~f1
+set testDirspec=%~dp1
+set testFile=%~nx1
+set testName=%~n1
 
 :: The setup script is not a test, silently skip it. 
-if "%testfile%" == "%vimLocalSetupScript%" (goto:EOF)
+if "%testFile%" == "%vimLocalSetupScript%" (goto:EOF)
 
-set testok=%testname%.ok
-set testout=%testname%.out
-set testmsgok=%testname%.msgok
-set testmsgout=%testname%.msgout
-set testtap=%testname%.tap
+set testOk=%testName%.ok
+set testOut=%testName%.out
+set testMsgok=%testName%.msgok
+set testMsgout=%testName%.msgout
+set testTap=%testName%.tap
 :: Escape for VIM :set command. 
-set testmsgoutForSet=%testmsgout:\=/%
-set testmsgoutForSet=%testmsgout: =\ %
+set testMsgoutForSet=%testMsgout:\=/%
+set testMsgoutForSet=%testMsgout: =\ %
 
-pushd "%testdirspec%"
-if exist "%testout%" del "%testout%"
-if exist "%testmsgout%" del "%testmsgout%"
-if exist "%testtap%" del "%testtap%"
+pushd "%testDirspec%"
+
+:: Remove old output files from the previous testrun. 
+if exist "%testOut%" del "%testOut%"
+if exist "%testMsgout%" del "%testMsgout%"
+if exist "%testTap%" del "%testTap%"
 
 :: Source local setup script before the testfile. 
 set vimLocalSetup=
@@ -335,7 +337,7 @@ if exist "%vimLocalSetupScript%" (
     set vimLocalSetup= -S "%vimLocalSetupScript%"
 )
 
-call :printTestHeader "%testfile%" "%testname%"
+call :printTestHeader "%testFile%" "%testName%"
 
 :: Default VIM arguments and options:
 :: -n		No swapfile. 
@@ -344,7 +346,7 @@ call :printTestHeader "%testfile%" "%testname%"
 :: :set verbosefile Capture all messages in a file. 
 :: :let %vimVariableTestName% = Absolute test filespec. 
 :: :let %vimVariableOptionsName% = Options for this test run, concatenated with ','. 
-call %vimExecutable% -n -c "let %vimVariableTestName%='%testfilespec:'=''%'|set nomore verbosefile=%testmsgoutForSet%" %vimArguments%%vimLocalSetup% -S "%testfile%"
+call %vimExecutable% -n -c "let %vimVariableTestName%='%testFilespec:'=''%'|set nomore verbosefile=%testMsgoutForSet%" %vimArguments%%vimLocalSetup% -S "%testFile%"
 
 set /A thisTests=0
 set /A thisRun=0
@@ -353,39 +355,38 @@ set /A thisFail=0
 set /A thisError=0
 
 :methodOutput
-if exist "%testok%" (
+if exist "%testOk%" (
     set /A thisTests+=1
-    if exist "%testout%" (
+    if exist "%testOut%" (
 	set /A thisRun+=1
-	call :compareOutput "%testok%" "%testout%" "%testname%"
+	call :compareOutput "%testOk%" "%testOut%" "%testName%"
     ) else (
 	set /A thisError+=1
-	%EXECUTIONOUTPUT% echo.ERROR ^(out^): No test output. 
+	%EXECUTIONOUTPUT% echo.ERROR ^(out^): No test output.
     )
 )
 
 :methodMessageOutput
-if exist "%testmsgok%" (
+if exist "%testMsgok%" (
     set /A thisTests+=1
-    if exist "%testmsgout%" (
+    if exist "%testMsgout%" (
 	set /A thisRun+=1
-	call :compareMessages "%testmsgok%" "%testmsgout%" "%testname%"
+	call :compareMessages "%testMsgok%" "%testMsgout%" "%testName%"
     ) else (
 	set /A thisError+=1
-	%EXECUTIONOUTPUT% echo.ERROR ^(msgout^): No test messages. 
+	%EXECUTIONOUTPUT% echo.ERROR ^(msgout^): No test messages.
     )
 )
 
 :methodTap
-set /A tapTestCnt=0
-if exist "%testtap%" (
-    call :parseTapOutput "%testtap%" "%testname%"
+if exist "%testTap%" (
+    call :parseTapOutput "%testTap%" "%testName%"
 )
 
 :resultsEvaluation
 if %thisTests% EQU 0 (
     set /A thisError+=1
-    %EXECUTIONOUTPUT% echo.ERROR: No test results at all. 
+    %EXECUTIONOUTPUT% echo.ERROR: No test results at all.
 ) else (
     set /A cntTests+=%thisTests%
 )
@@ -397,42 +398,42 @@ if %thisOk% GEQ 1 (
 )
 if %thisFail% GEQ 1 (
     set /A cntFail+=%thisFail%
-    call :addToListFailed "%testname%"
+    call :addToListFailed "%testName%"
 )
 if %thisError% GEQ 1 (
     set /A cntError+=%thisError%
-    call :addToListError "%testname%"
+    call :addToListError "%testName%"
 )
 popd
 (goto:EOF)
 
 :compareOutput
-diff -q %1 %2 >NUL
+diff -q -- %1 %2 >NUL
 if %ERRORLEVEL% EQU 0 (
     set /A thisOk+=1
     %EXECUTIONOUTPUT% echo.OK ^(out^)
 ) else if %ERRORLEVEL% EQU 1 (
     set /A thisFail+=1
     %EXECUTIONOUTPUT% echo.FAIL ^(out^): expected output           ^|   actual output
-    %EXECUTIONOUTPUT% diff --side-by-side --width 80 %1 %2
+    %EXECUTIONOUTPUT% diff --side-by-side --width 80 -- %1 %2
 ) else (
     set /A thisError+=1
-    %EXECUTIONOUTPUT% echo.ERROR ^(out^): diff operation failed. 
+    %EXECUTIONOUTPUT% echo.ERROR ^(out^): diff operation failed.
 )
 (goto:EOF)
 
 :compareMessages
-set testmsgresult=%~3.msgresult
-if exist "%testmsgresult%" del "%testmsgresult%"
-:: Note: Cannot use silent-batch mode (-s -e) here, because that one messes up
+set testMsgresult=%~3.msgresult
+if exist "%testMsgresult%" del "%testMsgresult%"
+:: Note: Cannot use silent-batch mode (-e -s) here, because that one messes up
 :: the console. 
-call vim -N -u NONE -n -c "set nomore" -S "%~dp0runVimMsgFilter.vim" -c "RunVimMsgFilter" -c "quitall!" "%testmsgok%"
-if not exist "%testmsgresult%" (
+call vim -N -u NONE -n -c "set nomore" -S "%~dp0runVimMsgFilter.vim" -c "RunVimMsgFilter" -c "quitall!" -- "%testMsgok%"
+if not exist "%testMsgresult%" (
     set /A thisError+=1
-    %EXECUTIONOUTPUT% echo.ERROR ^(msgout^): Evaluation of test messages failed. 
+    %EXECUTIONOUTPUT% echo.ERROR ^(msgout^): Evaluation of test messages failed.
     (goto:EOF)
 )
-for /F "delims=" %%r in ('sed -n "1s/^\([A-Z][A-Z]*\).*/\1/p" "%testmsgresult%"') do set result=%%r
+for /F "delims=" %%r in ('sed -n "1s/^\([A-Z][A-Z]*\).*/\1/p" -- "%testMsgresult%"') do set result=%%r
 if "%result%" == "OK" (
     set /A thisOk+=1
 ) else if "%result%" == "FAIL" (
@@ -440,10 +441,10 @@ if "%result%" == "OK" (
 ) else if "%result%" == "ERROR" (
     set /A thisError+=1
 ) else (
-    (echo.Assert: Received unknown result "%result%" from RunVimMsgFilter.)
+    (echo.ASSERT: Received unknown result "%result%" from RunVimMsgFilter.)
     exit 1
 )
-%EXECUTIONOUTPUT% type "%testmsgresult%"
+%EXECUTIONOUTPUT% type "%testMsgresult%"
 (goto:EOF)
 
 :parseTapLine
@@ -479,11 +480,11 @@ if %tapTestDifference% NEQ 1 (set tapTestDifferencePlural=s) else (set tapTestDi
 
 if %tapTestCnt% LSS %tapTestNum% (
     set /A thisTests+=%tapTestNum%
-    %EXECUTIONOUTPUT% echo.ERROR ^(tap^): Not all %tapTestNum% planned tests have been executed, %tapTestDifference% test%tapTestDifferencePlural% missed. 
+    %EXECUTIONOUTPUT% echo.ERROR ^(tap^): Not all %tapTestNum% planned tests have been executed, %tapTestDifference% test%tapTestDifferencePlural% missed.
     set /A thisError+=1
 ) else if %tapTestCnt% GTR %tapTestNum% (
     set /A thisTests+=%tapTestCnt%
-    %EXECUTIONOUTPUT% echo.ERROR ^(tap^): %tapTestDifference% more test execution%tapTestDifferencePlural% than planned. 
+    %EXECUTIONOUTPUT% echo.ERROR ^(tap^): %tapTestDifference% more test execution%tapTestDifferencePlural% than planned.
     set /A thisError+=1
 ) else (
     set /A thisTests+=%tapTestNum%
