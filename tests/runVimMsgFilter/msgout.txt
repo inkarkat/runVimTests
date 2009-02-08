@@ -1,0 +1,53 @@
+
+:! setup
+
+"important.txt" 
+"important.txt" 2L, 30C
+"backup/important.txt.20090126a" 
+"backup/important.txt.20090126a" [New] 2L, 28C written
+Backup directory 'E:\temp\WriteBackupTest\backup\' does not exist!
+"E:/temp/WriteBackupTest/backup/important.txt.20090126b" 
+<iteBackupTest/backup/important.txt.20090126b" [New] 2L, 30C written
+"E:\temp\WriteBackupTest\important.txt" 
+"E:\temp\WriteBackupTest\important.txt" 2L, 30C written
+"another dir\some file.txt" 
+"another dir\some file.txt" 1L, 11C
+Test: Should complain that the relative directory does not exist.
+Backup directory 'E:\temp\WriteBackupTest\another dir\backup\' does not exist!
+"E:\temp/WriteBackupTest/another dir/new file" 
+"E:\temp/WriteBackupTest/another dir/new file" [New] 1L, 11C written
+Test: Should complain that the relative directory does not exist.
+Backup directory 'E:\temp\WriteBackupTest\another dir\backup\' does not exist!
+"backup/new file.20090126a" 
+"backup/new file.20090126a" [New] 1L, 11C written
+"E:/temp/WriteBackupTest/backup/new file.20090126b" 
+<mp/WriteBackupTest/backup/new file.20090126b" [New] 1L, 11C written
+40 more lines
+"~\Unixhome\.vim\test\WriteBackup\test014.out" 
+<Unixhome\.vim\test\WriteBackup\test014.out" [New] 41L, 927C written
+
+E486: Pattern not found: foo
+
+E486: Pattern not found: FOO
+
+VIM - Vi IMproved 7.2 (2008 Aug 9, compiled Aug  9 2008 18:46:22)
+MS-Windows 32-bit GUI version with OLE support
+Compiled by Bram@KIBAALE
+
+
+6 substitutions on 5 lines
+6 substitutions on 5 lines
+
+6 substitutions on 6 lines
+6 substitutions on 6 lines
+
+4 fewer lines
+4 fewer lines
+
+-- VISUAL LINE --
+
+10 lines filtered
+E756: Spell checking is not enabled
+
+Activated spellcheck for language(s): en_us,de_de
+-- THE END --
