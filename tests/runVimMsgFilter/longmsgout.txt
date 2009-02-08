@@ -1,0 +1,58 @@
+
+:! setup
+
+"important.txt" 
+"important.txt" 2L, 30C
+"backup/important.txt.20090126a" 
+"backup/important.txt.20090126a" [New] 2L, 28C written
+Backup directory 'E:\temp\WriteBackupTest\backup\' does not exist!
+"E:/temp/WriteBackupTest/backup/important.txt.20090126b" 
+<iteBackupTest/backup/important.txt.20090126b" [New] 2L, 30C written
+"E:\temp\WriteBackupTest\important.txt" 
+"E:\temp\WriteBackupTest\important.txt" 2L, 30C written
+"another dir\some file.txt" 
+"another dir\some file.txt" 1L, 11C
+Test: Should complain that the relative directory does not exist.
+Backup directory 'E:\temp\WriteBackupTest\another dir\backup\' does not exist!
+"E:\temp/WriteBackupTest/another dir/new file" 
+"E:\temp/WriteBackupTest/another dir/new file" [New] 1L, 11C written
+Test: Should complain that the relative directory does not exist.
+Backup directory 'E:\temp\WriteBackupTest\another dir\backup\' does not exist!
+"backup/new file.20090126a" 
+"backup/new file.20090126a" [New] 1L, 11C written
+"E:/temp/WriteBackupTest/backup/new file.20090126b" 
+<mp/WriteBackupTest/backup/new file.20090126b" [New] 1L, 11C written
+40 more lines
+"~\Unixhome\.vim\test\WriteBackup\test014.out" 
+<Unixhome\.vim\test\WriteBackup\test014.out" [New] 41L, 927C written
+
+E486: Pattern not found: foo
+
+E486: Pattern not found: FOO
+
+VIM - Vi IMproved 7.2 (2008 Aug 9, compiled Aug  9 2008 18:46:22)
+MS-Windows 32-bit GUI version with OLE support
+Compiled by Bram@KIBAALE
+Big version with GUI.  Features included (+) or not (-):
++arabic +autocmd +balloon_eval +browse ++builtin_terms +byte_offset +cindent +clientserver +clipboard +cmdline_compl 
++cmdline_hist +cmdline_info +comments +cryptv +cscope +cursorshape +dialog_con_gui +diff +digraphs -dnd -ebcdic +emacs_tags 
++eval +ex_extra +extra_search +farsi +file_in_path +find_in_path +float +folding -footer +gettext/dyn -hangul_input 
++iconv/dyn +insert_expand +jumplist +keymap +langmap +libcall +linebreak +lispindent +listcmds +localmap +menu +mksession 
++modify_fname +mouse +mouseshape +multi_byte_ime/dyn +multi_lang -mzscheme +netbeans_intg +ole -osfiletype +path_extra 
++perl/dyn -postscript +printer -profile +python/dyn +quickfix +reltime +rightleft +ruby/dyn +scrollbind +signs +smartindent 
+-sniff +statusline -sun_workshop +syntax +tag_binary +tag_old_static -tag_any_white +tcl/dyn -tgetent -termresponse 
++textobjects +title +toolbar +user_commands +vertsplit +virtualedit +visual +visualextra +viminfo +vreplace +wildignore 
++wildmenu +windows +writebackup -xfontset -xim -xterm_save +xpm_w32 
+   system vimrc file: "$VIM\vimrc"
+     user vimrc file: "$HOME\_vimrc"
+ 2nd user vimrc file: "$VIM\_vimrc"
+      user exrc file: "$HOME\_exrc"
+  2nd user exrc file: "$VIM\_exrc"
+  system gvimrc file: "$VIM\gvimrc"
+    user gvimrc file: "$HOME\_gvimrc"
+2nd user gvimrc file: "$VIM\_gvimrc"
+    system menu file: "$VIMRUNTIME\menu.vim"
+Compilation: cl -c /W3 /nologo  -I. -Iproto -DHAVE_PATHDEF -DWIN32   -DFEAT_CSCOPE -DFEAT_NETBEANS_INTG   -DFEAT_XPM_W32   /Wp64 -DWINVER=0x0400 -D_WIN32_WINNT=0x0400  /Fo.\ObjGOLYTR/ /Ox -DNDEBUG  /Zl /MT -DFEAT_OLE -DFEAT_MBYTE_IME -DDYNAMIC_IME -DFEAT_GUI_W32 -DDYNAMIC_ICONV -DDYNAMIC_GETTEXT -DFEAT_TCL -DDYNAMIC_TCL -DDYNAMIC_TCL_DLL=\"tcl83.dll\" -DDYNAMIC_TCL_VER=\"8.3\" -DFEAT_PYTHON -DDYNAMIC_PYTHON -DDYNAMIC_PYTHON_DLL=\"python24.dll\" -DFEAT_PERL -DDYNAMIC_PERL -DDYNAMIC_PERL_DLL=\"perl58.dll\" -DFEAT_RUBY -DDYNAMIC_RUBY -DDYNAMIC_RUBY_VER=18 -DDYNAMIC_RUBY_DLL=\"msvcrt-ruby18.dll\" -DFEAT_BIG /Fd.\ObjGOLYTR/ /Zi
+Linking: link /RELEASE /nologo /subsystem:windows oldnames.lib kernel32.lib advapi32.lib shell32.lib gdi32.lib  comdlg32.lib ole32.lib uuid.lib /machine:i386 /nodefaultlib gdi32.lib version.lib   winspool.lib comctl32.lib advapi32.lib shell32.lib  /machine:i386 /nodefaultlib libcmt.lib oleaut32.lib  user32.lib     /nodefaultlib:python24.lib   e:\tcl\lib\tclstub83.lib WSock32.lib e:\xpm\lib\libXpm.lib /PDB:gvim.pdb -debug
+
+-- THE END --
