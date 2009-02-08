@@ -1,0 +1,7 @@
+"this dir\some file.txt" 
+
+Test: Should not complain!
++Backup directory '.*[/\\]another dir[/\\]backup[/\\]\?' does exist!+
+
+99 less lines
+
