@@ -1,0 +1,10 @@
+FAIL (msgout): 2 of 7 message assertions were not satisfied by the output: 
+ --> Message assertion 2 from lines 4-7 did not match in output lines 6-16
+     "another dir\\some file.txt" $
+     "another dir[/\\]some file.txt" \d\+L, \d\+C\n
+     Test: Should complain that the relative directory does not exist.$
+     Backup directory '.*[/\\]another dir[/\\]backup[/\\]\?' does NOT exist!\n
+ --> Message assertion 7 from line 20 did not match in output lines 31-53
+     \n
+     E486: Pattern not found: ...\n
+     \n
