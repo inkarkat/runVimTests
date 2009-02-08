@@ -1,0 +1,19 @@
+7, 17-21
+hihi
+
+hxhx
+
+hehe
+
+
+/.*fo.*/
+/fo\+/
+/ba[rz]/
+
+counting
+
+ERROR
+
+no more
+
+the end.
