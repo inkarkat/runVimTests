@@ -18,6 +18,10 @@
 #	001	02-Feb-2009	file creation
 ###############################################################################
 
+# Enable extended file pattern matching operators from ksh
+# (?(pattern-list), !(pattern-list), ...) in bash. 
+shopt -qs extglob
+
 printUsage()
 {
     # This is the short help when launched with no or incorrect arguments. 
@@ -83,39 +87,39 @@ processTestEntry()
 
 runSuite()
 {
-    readonly suiteDir=$(dirname -- "$1")
+    typeset -r suiteDir=$(dirname -- "$1")
 
     # Change to suite directory so that relative paths and filenames are
     # resolved correctly. 
-    pushd "$suiteDir"
+    pushd "$suiteDir" >/dev/null
 
     local testEntry
     while read testEntry
     do
 	case "$testEntry" in
-	    \#*|"") continue ;;
+	    \#*|'') continue;;
 	esac
 	processTestEntry "$testEntry"
     done < "$1"
 
-    popd
+    popd >/dev/null
 }
 runDir()
 {
-    local testFile
-    for testFile in *.vim
+    local testFilename
+    for testFilename in *.vim
     do
-	runTest "$testFile"
+	runTest "$testFilename"
     done
 }
 
 addToListFailed()
 {
-    echo "$listFailed" | grep "$1" >/dev/null || listFailed="${listFailed}${1}, "
+    echo "$listFailed" | grep -- "$1" >/dev/null || listFailed="${listFailed}${1}, "
 }
 addToListError()
 {
-    echo "$listError" | grep "$1" >/dev/null || listError="${listError}${1}, "
+    echo "$listError" | grep -- "$1" >/dev/null || listError="${listError}${1}, "
 }
 printTestHeader()
 {
@@ -124,12 +128,12 @@ printTestHeader()
     # the test's synopsis in the test header. Otherwise, just print the test
     # name. Limit the test header to one unwrapped output line, i.e. truncate to
     # 80 characters. 
-    sed -n -e "1s/^\\d034 \\(Test.*\\)$/Running ${2}: \\1/p" -e 'tx' -e "1cRunning ${2}:" -e ':x' "$1" | sed '/^.\{80,\}/s/\(^.\{,76\}\).*$/\1.../'
+    sed -n -e "1s/^\\d034 \\(Test.*\\)$/Running ${2}: \\1/p" -e 'tx' -e "1cRunning ${2}:" -e ':x' -- "$1" | sed '/^.\{80,\}/s/\(^.\{,76\}\).*$/\1.../'
 }
 
 compareOutput()
 {
-    diff -q "$1" "$2" >/dev/null
+    diff -q -- "$1" "$2" >/dev/null
     if [ $? -eq 0 ]; then
 	let thisOk+=1
 	executionOutput "OK (out)"
@@ -137,11 +141,79 @@ compareOutput()
 	let thisFail+=1
 	if [ "$isExecutionOutput" ]; then
 	    echo "FAIL (out): expected output                                                                                 |   actual output" | sed 's/\(^.\{'$((${COLUMNS:-80}/2-2))'\}\) *\(|.*$\)/\1\2/'
-	    diff --side-by-side --width ${COLUMNS:-80} "$1" "$2"
+	    diff --side-by-side --width ${COLUMNS:-80} -- "$1" "$2"
 	fi
     else
 	let thisError+=1
 	executionOutput "ERROR (out): diff operation failed."
+    fi
+}
+compareMessages()
+{
+    typeset -r testMsgresult="${3}.msgresult"
+    [ -f "$testMsgresult" ] && rm "$testMsgresult"
+
+    # Use silent-batch mode (-e -s) to match the message assumptions against the
+    # actual message output. 
+    vim -N -u NONE -e -s -c 'set nomore' -S "$runVimMsgFilterScript" -c 'RunVimMsgFilter' -c 'quitall!' -- "$testMsgok"
+
+    if [ ! -r "$testMsgresult" ]; then
+	let thisError+=1
+	executionOutput "ERROR (msgout): Evaluation of test messages failed."
+	return
+    fi
+    typeset -r evaluationResult=$(sed -n '1s/^\([A-Z][A-Z]*\).*/\1/p' -- "$testMsgresult")
+    case "$evaluationResult" in
+	OK)	let thisOk+=1;;
+	FAIL)	let thisFail+=1;;
+	ERROR)	let thisError+=1;;
+	*)	echo >&2 "ASSERT: Received unknown result \"${evaluationResult}\" from RunVimMsgFilter."; exit 1;;
+    esac
+    if [ "$isExecutionOutput" ]; then
+	cat -- "$testMsgresult"
+    fi
+}
+parseTapOutput()
+{
+    local tapTestNum=
+    local tapTestCnt=0
+
+    local tapLine
+    while read tapLine
+    do
+	case "$tapLine" in
+	    \#*|'')		continue;;
+	    ok*)		let thisOk+=1   thisRun+=1 tapTestCnt+=1;;
+	    not\ ok*)		let thisFail+=1 thisRun+=1 tapTestCnt+=1;;
+	    +([0-9])..+([0-9]))	local startNum=${tapLine%%.*}
+				local endNum=${tapLine##*.}
+				let tapTestNum=endNum-startNum+1
+				;;
+	esac
+    done < "$1"
+
+    if [ "$isExecutionOutput" ]; then
+	cat -- "$1"
+    fi
+
+    if [ ! "$tapTestNum" ]; then
+	let thisTests+=tapTestCnt
+	return
+    fi
+
+    local tapTestDifference
+    let tapTestDifference=tapTestNum-tapTestCnt
+    [ $tapTestDifference -lt 0 ] && let tapTestDifference*=-1
+    if [ $tapTestCnt -lt $tapTestNum ]; then
+	let thisTests+=tapTestNum
+	executionOutput "ERROR (tap): Not all $tapTestNum planned tests have been executed, $tapTestDifference $(makePlural $tapTestDifference 'test') missed."
+	let thisError+=1
+    elif [ $tapTestCnt -gt $tapTestNum ]; then
+	let thisTests+=tapTestCnt
+	executionOutput "ERROR (tap): $tapTestDifference more test $(makePlural $tapTestDifference 'execution') than planned."
+	let thisError+=1
+    else
+	let thisTests+=tapTestNum
     fi
 }
 
@@ -153,21 +225,21 @@ runTest()
 	return
     fi
 
-    readonly testDirspec=$(dirname -- "$1")
-    readonly testFile=$(basename -- "$1")
-    readonly testFilespec=$(cd "$testDirspec" && echo "${PWD}/${testFile}") || { echo >&2 "ERROR: Cannot determine absolute filespec!"; exit 1; }
-    readonly testName=${testFile%.*}
+    typeset -r testDirspec=$(dirname -- "$1")
+    typeset -r testFile=$(basename -- "$1")
+    typeset -r testFilespec=$(cd "$testDirspec" && echo "${PWD}/${testFile}") || { echo >&2 "ERROR: Cannot determine absolute filespec!"; exit 1; }
+    typeset -r testName=${testFile%.*}
 
     # The setup script is not a test, silently skip it. 
     [ "$testFile" == "$vimLocalSetupScript" ] && return
 
-    readonly testOk=${testName}.ok
-    readonly testOut=${testName}.out
-    readonly testMsgok=${testName}.msgok
-    readonly testMsgout=${testName}.msgout
-    readonly testTap=${testName}.tap
+    typeset -r testOk=${testName}.ok
+    typeset -r testOut=${testName}.out
+    typeset -r testMsgok=${testName}.msgok
+    typeset -r testMsgout=${testName}.msgout
+    typeset -r testTap=${testName}.tap
 
-    pushd "$testDirspec"
+    pushd "$testDirspec" >/dev/null
 
     # Remove old output files from the previous test run. 
     local file
@@ -191,13 +263,12 @@ runTest()
     # :let $vimVariableOptionsName = Options for this test run, concatenated with ','. 
     eval "$vimExecutable -n -c \"let ${vimVariableTestName}='${testFilespec//\'/\'\'}'|set nomore verbosefile=${testMsgout// /\\ }\" ${vimArguments}${vimLocalSetup} -S \"${testFile}\""
     # "}'"
-set +x
 
-    let thisTests=0
-    let thisRun=0
-    let thisOk=0
-    let thisFail=0
-    let thisError=0
+    local thisTests=0
+    local thisRun=0
+    local thisOk=0
+    local thisFail=0
+    local thisError=0
 
     # Method output. 
     if [ -r "$testOk" ]; then
@@ -213,7 +284,7 @@ set +x
 
     # Method message output. 
     if [ -r "$testMsgok" ]; then
-	let thisTest+=1
+	let thisTests+=1
 	if [ -r "$testMsgout" ]; then
 	    let thisRun+=1
 	    compareMessages "$testMsgok" "$testMsgout" "$testName"
@@ -224,7 +295,6 @@ set +x
     fi
 
     # Method TAP. 
-    let tapTestCnt=0
     if [ -r "$testTap" ]; then
 	parseTapOutput "$testTap" "$testName"
     fi
@@ -244,27 +314,46 @@ set +x
     fi
     if [ $thisFail -ge 1 ]; then
 	let cntFail+=thisFail
-	addToListFailed "$testName%"
+	addToListFailed "$testName"
     fi
     if [ $thisError -ge 1 ]; then
 	let cntError+=thisError
-	addToListError "$testName%"
+	addToListError "$testName"
     fi
 
-    popd
+    popd >/dev/null
 }
 
 readonly scriptDir=$(readonly scriptFile="$(type -P -- "$0")" && dirname -- "$scriptFile" || exit 1)
 [ -d "$scriptDir" ] || { echo >&2 "ERROR: cannot determine script directory!"; exit 1; } 
 
+# Prerequisite VIM script to match the message assumptions against the actual
+# message output. 
+readonly runVimMsgFilterScript=${scriptDir}/runVimMsgFilter.vim
+if [ ! -r "$runVimMsgFilterScript" ];then
+    echo >&2 "ERROR: Script prerequisite \"${runVimMsgFilterScript}\" does not exist!"
+    exit 1
+fi
+
+# VIM variables set by the test framework. 
+readonly vimVariableOptionsName=g:runVimTests
+vimVariableOptionsValue=
+readonly vimVariableTestName=g:runVimTest
+
+# VIM executable and command-line arguments. 
 vimExecutable='vim'
-vimArguments=''
-vimLocalSetupScript=_setup.vim
-vimGlobalSetupScript=${scriptDir}/$(basename "$0")Setup.vim
+vimArguments=
+
+# Use silent-batch mode (-e -s) when the test log is not printed to stdout (but
+# redirected into a file or pipe). This avoids that the output is littered with
+# escape sequences and suppresses the VIM warning: "Vim: Warning: Output is not
+# to a terminal". (Just passing '-T dumb' is not enough.)
+[ -t 1 ] || vimArguments="$vimArguments -e -s"
+
+# Optional user-provided setup scripts. 
+readonly vimLocalSetupScript=_setup.vim
+readonly vimGlobalSetupScript=${scriptDir}/$(basename -- "$0")Setup.vim
 [ -r "$vimGlobalSetupScript" ] && vimArguments="$vimArguments -S '${vimGlobalSetupScript}'"
-vimVariableOptionsName=g:runVimTests
-vimVariableOptionsValue=''
-vimVariableTestName=g:runVimTest
 
 isExecutionOutput='true'
 
@@ -281,13 +370,27 @@ do
 			    vimVariableOptionsValue="${vimVariableOptionsValue}pure,"
 			    ;;
 	--default)	    shift
-			    vimArguments="--cmd 'set rtp=$VIM/vimfiles,$VIMRUNTIME,$VIM/vimfiles/after' -N -u NORC -c 'set rtp&' $vimArguments"
+			    vimArguments="--cmd 'set rtp=\$VIM/vimfiles,\$VIMRUNTIME,\$VIM/vimfiles/after' -N -u NORC -c 'set rtp&' $vimArguments"
 			    vimVariableOptionsValue="${vimVariableOptionsValue}default,"
 			    ;;
 	--runtime)	    shift; vimArguments="$vimArguments -S '$HOME/.vim/$1'"; shift;;
 	--source)	    shift; vimArguments="$vimArguments -S '$1'"; shift;;
-	--vimexecutable)    shift; vimExecutable=$1; shift;;
-	--graphical|-g)	    shift; vimArguments="-g $vimArguments";;
+	--vimexecutable)    shift
+			    vimExecutable=$1
+			    shift
+			    if ! type -P -- "$vimExecutable" >/dev/null; then
+				echo >&2 "ERROR: \"${vimExecutable}\" is not a VIM executable!"
+				exit 1
+			    fi
+			    ;;
+	--graphical|-g)	    shift
+			    gvimExecutable=$(echo "$vimExecutable" | sed -e 's+^vim$+gvim+' -e 's+/vim$+/gvim+')
+			    if [ "$gvimExecutable" != "$vimExecutable" ] && type -- -P "$gvimExecutable" >/dev/null; then
+				vimExecutable=$gvimExecutable
+			    else
+				vimArguments="-g $vimArguments"
+			    fi
+			    ;;
 	--summaryonly)	    shift; isExecutionOutput='true';;
 	--debug)	    shift; vimVariableOptionsValue="${vimVariableOptionsValue}debug,";;
 	--)		    shift; break;;
@@ -298,13 +401,13 @@ done
 vimVariableOptionsValue=${vimVariableOptionsValue%,}
 vimArguments="$vimArguments --cmd \"let ${vimVariableOptionsName}='${vimVariableOptionsValue}'\""
 
-let cntTests=0
-let cntRun=0
-let cntOk=0
-let cntFail=0
-let cntError=0
-listFailed=""
-listError=""
+cntTests=0
+cntRun=0
+cntOk=0
+cntFail=0
+cntError=0
+listFailed=
+listError=
 
 executionOutput
 if [ "$vimArguments" ]; then
@@ -320,9 +423,10 @@ do
     processTestEntry "$arg"
 done
 
-echo "$cntTests $(makePlural $cntTests 'test'), $cntRun run: $cndOk OK, $cntFail $(makePlural $cntFail 'failure'), $cntError $(makePlural $cntError 'error')."
-[ "$listFailed" ] && echo "Failed tests: $listFailed"
-[ "$listError" ] && echo "Tests with errors: $listError"
+echo
+echo "$cntTests $(makePlural $cntTests 'test'), $cntRun run: $cntOk OK, $cntFail $(makePlural $cntFail 'failure'), $cntError $(makePlural $cntError 'error')."
+[ "$listFailed" ] && echo "Failed tests: ${listFailed%, }"
+[ "$listError" ] && echo "Tests with errors: ${listError%, }"
 
 let cntAllProblems=cntError+cntFail
 if [ $cntAllProblems -ne 0 ]; then
