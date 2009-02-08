@@ -1,0 +1,12 @@
+"this dir\some file.txt" 
+
+Test: Should complain that the relative directory does not exist.
++Backup directory '.*[/\\]another dir[/\\]backup[/\\]\?' does not exist!+
+
++"E:[\\/]temp[\\/]WriteBackupTest[\\/]another dir[\\/]next file" +
+
+Test: Should complain that the relative directory does not exist.
++Backup directory '.*[/\\]another dir[/\\]backup[/\\]\?' does not exist!+
+
+40 more lines
+
