@@ -1,0 +1,14 @@
+
+hihi
+
+hehe
+
+
+/.*fo.*/
+/fo\+/
+/ba[rz]/
+
+/\s*\d/
+no more
+
+the end.
