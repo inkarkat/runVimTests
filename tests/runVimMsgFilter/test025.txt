@@ -1,0 +1,21 @@
+"important.txt" 
+/"important.txt" \d\+L, \d\+C/
+
+"another dir\some file.txt" 
+?"another dir[/\\]some file.txt" \d\+L, \d\+C?
+Test: Should complain that the relative directory does not exist.
++Backup directory '.*[/\\]another dir[/\\]backup[/\\]\?' does NOT exist!+
+
++"E:[\\/]temp[\\/]WriteBackupTest[\\/]another dir[\\/]new file" +
+
+Test: Should complain that the relative directory does not exist.
++Backup directory '.*[/\\]another dir[/\\]backup[/\\]\?' does not exist!+
++"backup[\\/]new file.\d\{8}[a-z]" +
+?"backup/new file.\d\{8}[a-z]" \[New] \d\+L, \d\+C written?
+
+40 more lines
+
+/\nE486: Pattern not found: ...\n/
+
+/\nE486: Pattern not found: ...\n/
+
