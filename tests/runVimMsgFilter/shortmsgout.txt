@@ -1,0 +1,24 @@
+the start. 
+
+---
+
+haha
+hihi
+huhu
+hehe
+hoho
+
+The foo is in the fox. 
+foo
+bar
+baz
+
+counting
+    1
+    2
+    3
+    ERROR
+    5
+no more
+
+the end.
