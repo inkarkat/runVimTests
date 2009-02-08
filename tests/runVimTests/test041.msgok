@@ -1,0 +1,2 @@
++\%(.*[/\\]runVimTestsSetup.vim\n\)\?.*[/\\]runVimTests[/\\]_setup.vim+
++.*[/\\]runVimTests[/\\]test041.vim+
