@@ -7,6 +7,8 @@
 "   ~/.vim/plugin). 
 
 " DEPENDENCIES:
+"   - escapings.vim autoload script (for VIM 7.0/7.1). 
+"
 " CONFIGURATION:
 " INTEGRATION:
 " LIMITATIONS:
@@ -25,6 +27,10 @@
 "				is now done as a separate process with
 "				'runVimMsgFilter.vim'. 
 "				Now escaping saved *.out filespec. 
+"				Passing of the test name is not optional, it is
+"				can be determined automatically from
+"				g:vimRunTest, if the test is run from within the
+"				test framework. 
 "	001	25-Jan-2009	file creation
 
 function! vimtest#Quit()
@@ -33,14 +39,19 @@ function! vimtest#Quit()
     endif
 endfunction
 
-function! vimtest#StartTap( sfile )
-    call vimtap#Output(fnamemodify(a:sfile, ':p:r') . '.tap') 
+function! s:MakeFilename( arguments, extension )
+    let l:testname = (len(a:arguments) > 0 ? a:arguments[0] : (exists('g:runVimTest') ? g:runVimTest : 'unknown'))
+    return fnamemodify(l:testname, ':p:r') . a:extension
 endfunction
-function! vimtest#SaveOut( sfile )
+function! vimtest#StartTap( ... )
+    call vimtap#Output(s:MakeFilename(a:000, '.tap'))
+endfunction
+function! vimtest#SaveOut( ... )
+    let l:outname = s:MakeFilename(a:000, '.out')
     if v:version >= 702
-	execute 'saveas! ' . fnameescape(fnamemodify(a:sfile, ':p:r') . '.out')
+	execute 'saveas! ' . fnameescape(l:outname)
     else
-	execute 'saveas! ' . escapings#fnameescape(fnamemodify(a:sfile, ':p:r') . '.out')
+	execute 'saveas! ' . escapings#fnameescape(l:outname)
     endif
 endfunction
 
