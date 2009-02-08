@@ -85,29 +85,41 @@ processTestEntry()
     fi
 }
 
+# Note: The suite file needs to be read through another filedescriptor, so that
+# stdin is still connected to the terminal. Otherwise, VIM complains "Vim:
+# Warning: Input is not from a terminal". 
+# Because suites can contain other suites, each recursion must use a fresh
+# filedescriptor; we implement a simple sequential stack of numbers. 
+suiteFiledescriptor=3
 runSuite()
 {
     typeset -r suiteDir=$(dirname -- "$1")
+    typeset -r suiteFilename=$(basename -- "$1")
 
     # Change to suite directory so that relative paths and filenames are
     # resolved correctly. 
     pushd "$suiteDir" >/dev/null
+    local fd=$suiteFiledescriptor
+    let suiteFiledescriptor+=1
 
     local testEntry
-    while read testEntry
+    eval "exec ${fd}< '$suiteFilename'"
+    while read -u $fd testEntry
     do
 	case "$testEntry" in
 	    \#*|'') continue;;
 	esac
 	processTestEntry "$testEntry"
-    done < "$1"
+    done
+    eval "exec ${fd}>&-"
 
+    let suiteFiledescriptor-=1
     popd >/dev/null
 }
 runDir()
 {
     local testFilename
-    for testFilename in *.vim
+    for testFilename in "${1}/"*.vim
     do
 	runTest "$testFilename"
     done
@@ -324,7 +336,6 @@ runTest()
     popd >/dev/null
 }
 
-#- initialization -------------------------------------------------------------
 readonly scriptDir=$(readonly scriptFile="$(type -P -- "$0")" && dirname -- "$scriptFile" || exit 1)
 [ -d "$scriptDir" ] || { echo >&2 "ERROR: cannot determine script directory!"; exit 1; } 
 
@@ -358,7 +369,6 @@ readonly vimGlobalSetupScript=${scriptDir}/$(basename -- "$0")Setup.vim
 
 isExecutionOutput='true'
 
-#- command-line argument parsing ----------------------------------------------
 if [ $# -eq 0 ]; then
     printUsage "$0"
     exit 1
@@ -403,7 +413,6 @@ done
 vimVariableOptionsValue=${vimVariableOptionsValue%,}
 vimArguments="$vimArguments --cmd \"let ${vimVariableOptionsName}='${vimVariableOptionsValue}'\""
 
-#- test execution -------------------------------------------------------------
 cntTests=0
 cntRun=0
 cntOk=0
@@ -426,7 +435,6 @@ do
     processTestEntry "$arg"
 done
 
-#- reporting of results -------------------------------------------------------
 echo
 echo "$cntTests $(makePlural $cntTests 'test'), $cntRun run: $cntOk OK, $cntFail $(makePlural $cntFail 'failure'), $cntError $(makePlural $cntError 'error')."
 [ "$listFailed" ] && echo "Failed tests: ${listFailed%, }"
