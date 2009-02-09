@@ -85,7 +85,7 @@ Usage: "$(basename "$0")" [--pure|--default] [--source filespec [--source filesp
 			load the script-under-test when using --pure.
     --vimexecutable path/to/vim   Use passed VIM executable instead of the one
 			found in \$PATH.
-    -g^|--graphical	Use GUI version of VIM.
+    -g|--graphical	Use GUI version of VIM.
     --summaryonly	Do not show detailed transcript and differences, during
 			test run, only summary. 
     --debug		Test debugging mode: Adds 'debug' to ${vimVariableOptionsName}
@@ -440,7 +440,7 @@ do
 	--summaryonly)	    shift; isExecutionOutput='true';;
 	--debug)	    shift; vimVariableOptionsValue="${vimVariableOptionsValue}debug,";;
 	--)		    shift; break;;
-	--*)		    echo >&2 "ERROR: Unknown option \"${1}\"!"; printUsage; exit 1;;
+	-*)		    echo >&2 "ERROR: Unknown option \"${1}\"!"; printUsage; exit 1;;
 	*)		    break;;
     esac
 done
