@@ -40,6 +40,18 @@
 "   complex multi-line regexp with multiplicity (\{n,m}), or include a simple
 "   assertion multiple times in a row. 
 "
+" TIPS:
+"   To make sure that a message was actually generated from a particular
+"   instruction (and not accidentally by something unrelated), print a unique
+"   message immediately before the tested instruction, and include that text in
+"   the message condition, e.g.
+"   test001.vim: 
+"	echomsg 'Test: Nothing substituted'
+"	MySubstitutionCmd x=y y=x
+"   test001.msgok:
+"	Test: Nothing substituted
+"	MySubstitution - Didn't substitute anything.
+"
 " INSTALLATION:
 "   This script will be automatically sourced by the runVimTests unit test
 "   launcher script. 
