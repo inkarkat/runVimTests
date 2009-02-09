@@ -142,7 +142,7 @@ compareOutput()
     elif [ $? -eq 1 ]; then
 	let thisFail+=1
 	if [ "$isExecutionOutput" ]; then
-	    echo "FAIL (out): expected output                                                                                 |   actual output" | sed 's/\(^.\{'$((${COLUMNS:-80}/2-2))'\}\) *\(|.*$\)/\1\2/'
+	    printf "%-$((${COLUMNS:-80}/2-2))s| %s\n" "FAIL (out): expected output" "actual output"
 	    diff --side-by-side --width ${COLUMNS:-80} -- "$1" "$2"
 	fi
     else
