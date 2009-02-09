@@ -181,7 +181,8 @@ if not "%arg%" == "" (
 	(goto:commandLineArguments)
     ) else if /I "%arg:~0,1%" == "-" (
 	(echo.ERROR: Unknown option "%~1"!)
-	(goto:printUsage)
+	(echo.)
+	(goto:printShortUsage)
     ) else (
 	(goto:commandLineArguments)
     )
@@ -252,13 +253,15 @@ exit /B 1
 (goto:EOF)
 
 :printShortUsage
-(echo."%~nx0" [--pure^|--default] [--source filespec [--source filespec [...]]] [--runtime plugin/file.vim [--runtime autoload/file.vim [...]]] [--vimexecutable path\to\vim.exe^|--vimversion NN] [-g^|--graphical] [--summaryonly] [--debug] [--help] test001.vim^|testsuite.txt^|path\to\testdir\ [...])
+(echo.Usage: "%~nx0" [--pure^|--default] [--source filespec [--source filespec [...]]] [--runtime plugin/file.vim [--runtime autoload/file.vim [...]]] [--vimexecutable path\to\vim.exe^|--vimversion NN] [-g^|--graphical] [--summaryonly] [--debug] [--help] test001.vim^|testsuite.txt^|path\to\testdir\ [...])
 (goto:EOF)
 :printUsage
 call :printShortUsage
 (echo.Try "%~nx0" --help for more information.)
 (goto:EOF)
 :printLongUsage
+(echo.A small unit testing framework for VIM.)
+(echo.)
 call :printShortUsage
 (echo.    --pure		Start VIM without loading any .vimrc and plugins,)
 (echo.    			but in nocompatible mode. Adds 'pure' to %vimVariableOptionsName%.)
