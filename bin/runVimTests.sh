@@ -22,13 +22,32 @@
 # (?(pattern-list), !(pattern-list), ...) in bash. 
 shopt -qs extglob
 
+initialize()
+{
+    readonly scriptDir=$(readonly scriptFile="$(type -P -- "$0")" && dirname -- "$scriptFile" || exit 1)
+    [ -d "$scriptDir" ] || { echo >&2 "ERROR: cannot determine script directory!"; exit 1; } 
+
+    # Prerequisite VIM script to match the message assumptions against the actual
+    # message output. 
+    readonly runVimMsgFilterScript=${scriptDir}/runVimMsgFilter.vim
+    if [ ! -r "$runVimMsgFilterScript" ]; then
+	echo >&2 "ERROR: Script prerequisite \"${runVimMsgFilterScript}\" does not exist!"
+	exit 1
+    fi
+
+    # VIM variables set by the test framework. 
+    readonly vimVariableOptionsName=g:runVimTests
+    vimVariableOptionsValue=
+    readonly vimVariableTestName=g:runVimTest
+}
+
 printUsage()
 {
     # This is the short help when launched with no or incorrect arguments. 
     # It is printed to stderr to avoid accidental processing. 
     cat >&2 <<SHORTHELPTEXT
-Usage: "$(basename "$1")" [--pure|--default] [--source filespec [--source filespec [...]]] [--runtime plugin/file.vim [--runtime autoload/file.vim [...]]] [--vimexecutable path/to/vim] [-g|--graphical] [--summaryonly] [--debug] [--help] test001.vim|testsuite.txt|path/to/testdir/ [...]
-Try "$(basename "$1")" --help for more information.
+Usage: "$(basename "$0")" [--pure|--default] [--source filespec [--source filespec [...]]] [--runtime plugin/file.vim [--runtime autoload/file.vim [...]]] [--vimexecutable path/to/vim] [-g|--graphical] [--summaryonly] [--debug] [--help] test001.vim|testsuite.txt|path/to/testdir/ [...]
+Try "$(basename "$0")" --help for more information.
 SHORTHELPTEXT
 }
 printLongUsage()
@@ -38,7 +57,7 @@ printLongUsage()
     cat <<HELPTEXT
 A small unit testing framework for VIM. 
 
-Usage: "$(basename "$1")" [--pure|--default] [--source filespec [--source filespec [...]]] [--runtime plugin/file.vim [--runtime autoload/file.vim [...]]] [--vimexecutable path/to/vim] [-g|--graphical] [--summaryonly] [--debug] [--help] test001.vim|testsuite.txt|path/to/testdir/ [...]
+Usage: "$(basename "$0")" [--pure|--default] [--source filespec [--source filespec [...]]] [--runtime plugin/file.vim [--runtime autoload/file.vim [...]]] [--vimexecutable path/to/vim] [-g|--graphical] [--summaryonly] [--debug] [--help] test001.vim|testsuite.txt|path/to/testdir/ [...]
     --pure		Start VIM without loading .vimrc and plugins, but in
 			nocompatible mode. Adds 'pure' to ${vimVariableOptionsName}.
     --default		Start VIM only with default settings and plugins,
@@ -56,6 +75,71 @@ Usage: "$(basename "$1")" [--pure|--default] [--source filespec [--source filesp
 			variable inside VIM (so that tests do not exit or can
 			produce additional debug info).
 HELPTEXT
+}
+parseCommandLineArguments()
+{
+    # VIM executable and command-line arguments. 
+    vimExecutable='vim'
+    vimArguments=
+
+    # Use silent-batch mode (-e -s) when the test log is not printed to stdout (but
+    # redirected into a file or pipe). This avoids that the output is littered with
+    # escape sequences and suppresses the VIM warning: "Vim: Warning: Output is not
+    # to a terminal". (Just passing '-T dumb' is not enough.)
+    [ -t 1 ] || vimArguments="$vimArguments -e -s"
+
+    # Optional user-provided setup scripts. 
+    readonly vimLocalSetupScript=_setup.vim
+    readonly vimGlobalSetupScript=${scriptDir}/$(basename -- "$0")Setup.vim
+    [ -r "$vimGlobalSetupScript" ] && vimArguments="$vimArguments -S '${vimGlobalSetupScript}'"
+
+    isExecutionOutput='true'
+
+    if [ $# -eq 0 ]; then
+	printUsage
+	exit 1
+    fi
+    while [ $# -ne 0 ]
+    do
+	case "$1" in
+	    --help|-h|-\?)	    shift; printLongUsage; exit 1;;
+	    --pure)		    shift
+				    vimArguments="-N -u NONE $vimArguments"
+				    vimVariableOptionsValue="${vimVariableOptionsValue}pure,"
+				    ;;
+	    --default)		    shift
+				    vimArguments="--cmd 'set rtp=\$VIM/vimfiles,\$VIMRUNTIME,\$VIM/vimfiles/after' -N -u NORC -c 'set rtp&' $vimArguments"
+				    vimVariableOptionsValue="${vimVariableOptionsValue}default,"
+				    ;;
+	    --runtime)		    shift; vimArguments="$vimArguments -S '$HOME/.vim/$1'"; shift;;
+	    --source)		    shift; vimArguments="$vimArguments -S '$1'"; shift;;
+	    --vimexecutable)	    shift
+				    vimExecutable=$1
+				    shift
+				    if ! type -P -- "$vimExecutable" >/dev/null; then
+					echo >&2 "ERROR: \"${vimExecutable}\" is not a VIM executable!"
+					exit 1
+				    fi
+				    ;;
+	    --graphical|-g)	    shift
+				    gvimExecutable=$(echo "$vimExecutable" | sed -e 's+^vim$+gvim+' -e 's+/vim$+/gvim+')
+				    if [ "$gvimExecutable" != "$vimExecutable" ] && type -- -P "$gvimExecutable" >/dev/null; then
+					vimExecutable=$gvimExecutable
+				    else
+					vimArguments="-g $vimArguments"
+				    fi
+				    ;;
+	    --summaryonly)	    shift; isExecutionOutput='true';;
+	    --debug)		    shift; vimVariableOptionsValue="${vimVariableOptionsValue}debug,";;
+	    --)			    shift; break;;
+	    *)			    break;;
+	esac
+    done
+    [ $# -eq 0 ] && { printUsage; exit 1; }
+    vimVariableOptionsValue=${vimVariableOptionsValue%,}
+    vimArguments="$vimArguments --cmd \"let ${vimVariableOptionsName}='${vimVariableOptionsValue}'\""
+
+    readonly tests="$@"
 }
 
 executionOutput()
@@ -327,112 +411,44 @@ runTest()
     popd >/dev/null
 }
 
-readonly scriptDir=$(readonly scriptFile="$(type -P -- "$0")" && dirname -- "$scriptFile" || exit 1)
-[ -d "$scriptDir" ] || { echo >&2 "ERROR: cannot determine script directory!"; exit 1; } 
+execute()
+{
+    cntTests=0
+    cntRun=0
+    cntOk=0
+    cntFail=0
+    cntError=0
+    listFailed=
+    listError=
 
-# Prerequisite VIM script to match the message assumptions against the actual
-# message output. 
-readonly runVimMsgFilterScript=${scriptDir}/runVimMsgFilter.vim
-if [ ! -r "$runVimMsgFilterScript" ]; then
-    echo >&2 "ERROR: Script prerequisite \"${runVimMsgFilterScript}\" does not exist!"
-    exit 1
-fi
+    executionOutput
+    if [ "$vimArguments" ]; then
+	executionOutput "Starting test run with these VIM options:"
+	executionOutput "$vimExecutable $vimArguments"
+    else
+	executionOutput "Starting test run."
+    fi
+    executionOutput
 
-# VIM variables set by the test framework. 
-readonly vimVariableOptionsName=g:runVimTests
-vimVariableOptionsValue=
-readonly vimVariableTestName=g:runVimTest
+    echo "$tests"
+    exit
+    for arg in "$tests"
+    do
+	processTestEntry "$arg"
+    done
 
-# VIM executable and command-line arguments. 
-vimExecutable='vim'
-vimArguments=
+    echo
+    echo "$cntTests $(makePlural $cntTests 'test'), $cntRun run: $cntOk OK, $cntFail $(makePlural $cntFail 'failure'), $cntError $(makePlural $cntError 'error')."
+    [ "$listFailed" ] && echo "Failed tests: ${listFailed%, }"
+    [ "$listError" ] && echo "Tests with errors: ${listError%, }"
 
-# Use silent-batch mode (-e -s) when the test log is not printed to stdout (but
-# redirected into a file or pipe). This avoids that the output is littered with
-# escape sequences and suppresses the VIM warning: "Vim: Warning: Output is not
-# to a terminal". (Just passing '-T dumb' is not enough.)
-[ -t 1 ] || vimArguments="$vimArguments -e -s"
+    let cntAllProblems=cntError+cntFail
+    if [ $cntAllProblems -ne 0 ]; then
+	exit 1
+    fi
+}
 
-# Optional user-provided setup scripts. 
-readonly vimLocalSetupScript=_setup.vim
-readonly vimGlobalSetupScript=${scriptDir}/$(basename -- "$0")Setup.vim
-[ -r "$vimGlobalSetupScript" ] && vimArguments="$vimArguments -S '${vimGlobalSetupScript}'"
-
-isExecutionOutput='true'
-
-if [ $# -eq 0 ]; then
-    printUsage "$0"
-    exit 1
-fi
-while [ $# -ne 0 ]
-do
-    case "$1" in
-	--help|-h|-\?)	    shift; printLongUsage "$0"; exit 1;;
-	--pure)		    shift
-			    vimArguments="-N -u NONE $vimArguments"
-			    vimVariableOptionsValue="${vimVariableOptionsValue}pure,"
-			    ;;
-	--default)	    shift
-			    vimArguments="--cmd 'set rtp=\$VIM/vimfiles,\$VIMRUNTIME,\$VIM/vimfiles/after' -N -u NORC -c 'set rtp&' $vimArguments"
-			    vimVariableOptionsValue="${vimVariableOptionsValue}default,"
-			    ;;
-	--runtime)	    shift; vimArguments="$vimArguments -S '$HOME/.vim/$1'"; shift;;
-	--source)	    shift; vimArguments="$vimArguments -S '$1'"; shift;;
-	--vimexecutable)    shift
-			    vimExecutable=$1
-			    shift
-			    if ! type -P -- "$vimExecutable" >/dev/null; then
-				echo >&2 "ERROR: \"${vimExecutable}\" is not a VIM executable!"
-				exit 1
-			    fi
-			    ;;
-	--graphical|-g)	    shift
-			    gvimExecutable=$(echo "$vimExecutable" | sed -e 's+^vim$+gvim+' -e 's+/vim$+/gvim+')
-			    if [ "$gvimExecutable" != "$vimExecutable" ] && type -- -P "$gvimExecutable" >/dev/null; then
-				vimExecutable=$gvimExecutable
-			    else
-				vimArguments="-g $vimArguments"
-			    fi
-			    ;;
-	--summaryonly)	    shift; isExecutionOutput='true';;
-	--debug)	    shift; vimVariableOptionsValue="${vimVariableOptionsValue}debug,";;
-	--)		    shift; break;;
-	*)		    break;;
-    esac
-done
-[ $# -eq 0 ] && { printLongUsage "$0"; exit 1; }
-vimVariableOptionsValue=${vimVariableOptionsValue%,}
-vimArguments="$vimArguments --cmd \"let ${vimVariableOptionsName}='${vimVariableOptionsValue}'\""
-
-cntTests=0
-cntRun=0
-cntOk=0
-cntFail=0
-cntError=0
-listFailed=
-listError=
-
-executionOutput
-if [ "$vimArguments" ]; then
-    executionOutput "Starting test run with these VIM options:"
-    executionOutput "$vimExecutable $vimArguments"
-else
-    executionOutput "Starting test run."
-fi
-executionOutput
-
-for arg
-do
-    processTestEntry "$arg"
-done
-
-echo
-echo "$cntTests $(makePlural $cntTests 'test'), $cntRun run: $cntOk OK, $cntFail $(makePlural $cntFail 'failure'), $cntError $(makePlural $cntError 'error')."
-[ "$listFailed" ] && echo "Failed tests: ${listFailed%, }"
-[ "$listError" ] && echo "Tests with errors: ${listError%, }"
-
-let cntAllProblems=cntError+cntFail
-if [ $cntAllProblems -ne 0 ]; then
-    exit 1
-fi
+initialize
+parseCommandLineArguments "$@"
+execute
 
