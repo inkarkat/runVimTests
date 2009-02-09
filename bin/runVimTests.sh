@@ -39,6 +39,23 @@ initialize()
     readonly vimVariableOptionsName=g:runVimTests
     vimVariableOptionsValue=
     readonly vimVariableTestName=g:runVimTest
+
+    # VIM executable and command-line arguments. 
+    vimExecutable='vim'
+    vimArguments=
+
+    # Use silent-batch mode (-e -s) when the test log is not printed to stdout (but
+    # redirected into a file or pipe). This avoids that the output is littered with
+    # escape sequences and suppresses the VIM warning: "Vim: Warning: Output is not
+    # to a terminal". (Just passing '-T dumb' is not enough.)
+    [ -t 1 ] || vimArguments="$vimArguments -e -s"
+
+    # Optional user-provided setup scripts. 
+    readonly vimLocalSetupScript=_setup.vim
+    readonly vimGlobalSetupScript=${scriptDir}/$(basename -- "$0")Setup.vim
+    [ -r "$vimGlobalSetupScript" ] && vimArguments="$vimArguments -S '${vimGlobalSetupScript}'"
+
+    isExecutionOutput='true'
 }
 
 printUsage()
@@ -75,71 +92,6 @@ Usage: "$(basename "$0")" [--pure|--default] [--source filespec [--source filesp
 			variable inside VIM (so that tests do not exit or can
 			produce additional debug info).
 HELPTEXT
-}
-parseCommandLineArguments()
-{
-    # VIM executable and command-line arguments. 
-    vimExecutable='vim'
-    vimArguments=
-
-    # Use silent-batch mode (-e -s) when the test log is not printed to stdout (but
-    # redirected into a file or pipe). This avoids that the output is littered with
-    # escape sequences and suppresses the VIM warning: "Vim: Warning: Output is not
-    # to a terminal". (Just passing '-T dumb' is not enough.)
-    [ -t 1 ] || vimArguments="$vimArguments -e -s"
-
-    # Optional user-provided setup scripts. 
-    readonly vimLocalSetupScript=_setup.vim
-    readonly vimGlobalSetupScript=${scriptDir}/$(basename -- "$0")Setup.vim
-    [ -r "$vimGlobalSetupScript" ] && vimArguments="$vimArguments -S '${vimGlobalSetupScript}'"
-
-    isExecutionOutput='true'
-
-    if [ $# -eq 0 ]; then
-	printUsage
-	exit 1
-    fi
-    while [ $# -ne 0 ]
-    do
-	case "$1" in
-	    --help|-h|-\?)	    shift; printLongUsage; exit 1;;
-	    --pure)		    shift
-				    vimArguments="-N -u NONE $vimArguments"
-				    vimVariableOptionsValue="${vimVariableOptionsValue}pure,"
-				    ;;
-	    --default)		    shift
-				    vimArguments="--cmd 'set rtp=\$VIM/vimfiles,\$VIMRUNTIME,\$VIM/vimfiles/after' -N -u NORC -c 'set rtp&' $vimArguments"
-				    vimVariableOptionsValue="${vimVariableOptionsValue}default,"
-				    ;;
-	    --runtime)		    shift; vimArguments="$vimArguments -S '$HOME/.vim/$1'"; shift;;
-	    --source)		    shift; vimArguments="$vimArguments -S '$1'"; shift;;
-	    --vimexecutable)	    shift
-				    vimExecutable=$1
-				    shift
-				    if ! type -P -- "$vimExecutable" >/dev/null; then
-					echo >&2 "ERROR: \"${vimExecutable}\" is not a VIM executable!"
-					exit 1
-				    fi
-				    ;;
-	    --graphical|-g)	    shift
-				    gvimExecutable=$(echo "$vimExecutable" | sed -e 's+^vim$+gvim+' -e 's+/vim$+/gvim+')
-				    if [ "$gvimExecutable" != "$vimExecutable" ] && type -- -P "$gvimExecutable" >/dev/null; then
-					vimExecutable=$gvimExecutable
-				    else
-					vimArguments="-g $vimArguments"
-				    fi
-				    ;;
-	    --summaryonly)	    shift; isExecutionOutput='true';;
-	    --debug)		    shift; vimVariableOptionsValue="${vimVariableOptionsValue}debug,";;
-	    --)			    shift; break;;
-	    *)			    break;;
-	esac
-    done
-    [ $# -eq 0 ] && { printUsage; exit 1; }
-    vimVariableOptionsValue=${vimVariableOptionsValue%,}
-    vimArguments="$vimArguments --cmd \"let ${vimVariableOptionsName}='${vimVariableOptionsValue}'\""
-
-    readonly tests="$@"
 }
 
 executionOutput()
@@ -430,13 +382,13 @@ execute()
     fi
     executionOutput
 
-    echo "$tests"
-    exit
-    for arg in "$tests"
+    for arg
     do
 	processTestEntry "$arg"
     done
-
+}
+report()
+{
     echo
     echo "$cntTests $(makePlural $cntTests 'test'), $cntRun run: $cntOk OK, $cntFail $(makePlural $cntFail 'failure'), $cntError $(makePlural $cntError 'error')."
     [ "$listFailed" ] && echo "Failed tests: ${listFailed%, }"
@@ -448,7 +400,54 @@ execute()
     fi
 }
 
+#- main -----------------------------------------------------------------------
 initialize
-parseCommandLineArguments "$@"
-execute
+
+if [ $# -eq 0 ]; then
+    printUsage
+    exit 1
+fi
+while [ $# -ne 0 ]
+do
+    case "$1" in
+	--help|-h|-\?)	    shift; printLongUsage; exit 1;;
+	--pure)		    shift
+			    vimArguments="-N -u NONE $vimArguments"
+			    vimVariableOptionsValue="${vimVariableOptionsValue}pure,"
+			    ;;
+	--default)	    shift
+			    vimArguments="--cmd 'set rtp=\$VIM/vimfiles,\$VIMRUNTIME,\$VIM/vimfiles/after' -N -u NORC -c 'set rtp&' $vimArguments"
+			    vimVariableOptionsValue="${vimVariableOptionsValue}default,"
+			    ;;
+	--runtime)	    shift; vimArguments="$vimArguments -S '$HOME/.vim/$1'"; shift;;
+	--source)	    shift; vimArguments="$vimArguments -S '$1'"; shift;;
+	--vimexecutable)    shift
+			    vimExecutable=$1
+			    shift
+			    if ! type -P -- "$vimExecutable" >/dev/null; then
+				echo >&2 "ERROR: \"${vimExecutable}\" is not a VIM executable!"
+				exit 1
+			    fi
+			    ;;
+	--graphical|-g)	    shift
+			    gvimExecutable=$(echo "$vimExecutable" | sed -e 's+^vim$+gvim+' -e 's+/vim$+/gvim+')
+			    if [ "$gvimExecutable" != "$vimExecutable" ] && type -- -P "$gvimExecutable" >/dev/null; then
+				vimExecutable=$gvimExecutable
+			    else
+				vimArguments="-g $vimArguments"
+			    fi
+			    ;;
+	--summaryonly)	    shift; isExecutionOutput='true';;
+	--debug)	    shift; vimVariableOptionsValue="${vimVariableOptionsValue}debug,";;
+	--)		    shift; break;;
+	--*)		    echo >&2 "ERROR: Unknown option \"${1}\"!"; printUsage; exit 1;;
+	*)		    break;;
+    esac
+done
+[ $# -eq 0 ] && { printLongUsage; exit 1; }
+vimVariableOptionsValue=${vimVariableOptionsValue%,}
+vimArguments="$vimArguments --cmd \"let ${vimVariableOptionsName}='${vimVariableOptionsValue}'\""
+
+execute "$@"
+report
 
