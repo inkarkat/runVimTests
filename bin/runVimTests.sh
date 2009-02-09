@@ -65,23 +65,31 @@ initialize()
     isExecutionOutput='true'
 }
 
+printShortUsage()
+{
+    cat >&2 <<SHORTHELPTEXT
+Usage: "$(basename "$0")" [--pure|--default] [--source filespec [--source filespec [...]]] [--runtime plugin/file.vim [--runtime autoload/file.vim [...]]] [--vimexecutable path/to/vim] [-g|--graphical] [--summaryonly] [--debug] [--help] test001.vim|testsuite.txt|path/to/testdir/ [...]
+SHORTHELPTEXT
+}
 printUsage()
 {
     # This is the short help when launched with no or incorrect arguments. 
     # It is printed to stderr to avoid accidental processing. 
-    cat >&2 <<SHORTHELPTEXT
-Usage: "$(basename "$0")" [--pure|--default] [--source filespec [--source filespec [...]]] [--runtime plugin/file.vim [--runtime autoload/file.vim [...]]] [--vimexecutable path/to/vim] [-g|--graphical] [--summaryonly] [--debug] [--help] test001.vim|testsuite.txt|path/to/testdir/ [...]
+    printShortUsage >&2
+    cat >&2 <<MOREHELP
 Try "$(basename "$0")" --help for more information.
-SHORTHELPTEXT
+MOREHELP
 }
 printLongUsage()
 {
     # This is the long "man page" when launched with the help argument. 
     # It is printed to stdout to allow paging with 'more'. 
-    cat <<HELPTEXT
+    cat <<HELPDESCRIPTION
 A small unit testing framework for VIM. 
-
-Usage: "$(basename "$0")" [--pure|--default] [--source filespec [--source filespec [...]]] [--runtime plugin/file.vim [--runtime autoload/file.vim [...]]] [--vimexecutable path/to/vim] [-g|--graphical] [--summaryonly] [--debug] [--help] test001.vim|testsuite.txt|path/to/testdir/ [...]
+HELPDESCRIPTION
+    echo
+    printShortUsage
+    cat <<HELPTEXT
     --pure		Start VIM without loading .vimrc and plugins, but in
 			nocompatible mode. Adds 'pure' to ${vimVariableOptionsName}.
     --default		Start VIM only with default settings and plugins,
@@ -453,11 +461,11 @@ do
 	--summaryonly)	    shift; isExecutionOutput='true';;
 	--debug)	    shift; vimVariableOptionsValue="${vimVariableOptionsValue}debug,";;
 	--)		    shift; break;;
-	-*)		    echo >&2 "ERROR: Unknown option \"${1}\"!"; printUsage; exit 1;;
+	-*)		    { echo "ERROR: Unknown option \"${1}\"!"; echo; printShortUsage; } >&2; exit 1;;
 	*)		    break;;
     esac
 done
-[ $# -eq 0 ] && { printLongUsage; exit 1; }
+[ $# -eq 0 ] && { printUsage; exit 1; }
 vimVariableOptionsValue=${vimVariableOptionsValue%,}
 vimArguments="$vimArguments --cmd \"let ${vimVariableOptionsName}='${vimVariableOptionsValue}'\""
 
