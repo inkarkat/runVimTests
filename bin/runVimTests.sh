@@ -85,12 +85,6 @@ processTestEntry()
     fi
 }
 
-# Note: The suite file needs to be read through another filedescriptor, so that
-# stdin is still connected to the terminal. Otherwise, VIM complains "Vim:
-# Warning: Input is not from a terminal". 
-# Because suites can contain other suites, each recursion must use a fresh
-# filedescriptor; we implement a simple sequential stack of numbers. 
-suiteFiledescriptor=3
 runSuite()
 {
     typeset -r suiteDir=$(dirname -- "$1")
@@ -99,21 +93,17 @@ runSuite()
     # Change to suite directory so that relative paths and filenames are
     # resolved correctly. 
     pushd "$suiteDir" >/dev/null
-    local fd=$suiteFiledescriptor
-    let suiteFiledescriptor+=1
 
     local testEntry
-    eval "exec ${fd}< '$suiteFilename'"
-    while read -u $fd testEntry
+    local IFS=$'\n'
+    for testEntry in $(cat -- "$suiteFilename")
     do
 	case "$testEntry" in
 	    \#*|'') continue;;
 	esac
 	processTestEntry "$testEntry"
     done
-    eval "exec ${fd}>&-"
 
-    let suiteFiledescriptor-=1
     popd >/dev/null
 }
 runDir()
@@ -191,6 +181,7 @@ parseTapOutput()
     local tapTestCnt=0
 
     local tapLine
+    local IFS=$'\n'
     while read tapLine
     do
 	case "$tapLine" in
