@@ -306,13 +306,15 @@ if not exist "%userVimFilesDirspec%" set userVimFilesDirspec=$VIMRUNTIME/
 :: missing from the executable name, so a simple ~$PATH:I search wouldn't be
 :: sufficient.) 
 set capturedVimErrorOutput=%TEMP%\capturedVimErrorOutput
+set vimTerminalArguments=
 call %vimExecutable% -f -N -u NONE -c "quitall!" 2>"%capturedVimErrorOutput%"
 if %ERRORLEVEL% NEQ 0 (
     (echo.ERROR: "%vimExecutable%" is not a VIM executable!)
     set vimExecutable=
 ) else (
-    findstr /C:"Output is not to a terminal" "%capturedVimErrorOutput%" >NUL && set vimArguments=%vimArguments% -e -s
+    findstr /C:"Output is not to a terminal" "%capturedVimErrorOutput%" >NUL && set vimTerminalArguments= -e -s
 )
+set vimArguments=%vimArguments%%vimTerminalArguments%
 del "%capturedVimErrorOutput%" >NUL 2>&1
 (goto:EOF)
 
@@ -494,8 +496,9 @@ if %ERRORLEVEL% EQU 0 (
 set testMsgresult=%~3.msgresult
 if exist "%testMsgresult%" del "%testMsgresult%"
 :: Note: Cannot use silent-batch mode (-e -s) here, because that one messes up
-:: the console. 
-call vim -N -u NONE -n -c "set nomore" -S "%runVimMsgFilterScript%" -c "RunVimMsgFilter" -c "quitall!" -- "%testMsgok%"
+:: the console. (Except when the entire test log is not printed to stdout but
+:: redirected.) 
+call vim %vimTerminalArguments% -N -u NONE -n -c "set nomore" -S "%runVimMsgFilterScript%" -c "RunVimMsgFilter" -c "quitall!" -- "%testMsgok%"
 if not exist "%testMsgresult%" (
     set /A thisError+=1
     %EXECUTIONOUTPUT% echo.ERROR ^(msgout^): Evaluation of test messages failed.
