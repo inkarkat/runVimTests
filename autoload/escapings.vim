@@ -3,12 +3,13 @@
 "
 " TODO:
 "   - Refine the VIM 7.0/7.1 emulation functions. 
-"   - Test the functionality of the built-in functions; do they actually
-"     deliver?
 "
 " Maintainer:	Ingo Karkat <ingo@karkat.de>
 "
 " REVISION	DATE		REMARKS 
+"	002	05-Feb-2009	Added improved version of escapings#exescape()
+"				that relies on fnameescape() to properly escape
+"				all special Ex characters. 
 "	001	05-Jan-2009	file creation
 
 function! escapings#bufnameescape( filespec )
@@ -18,12 +19,14 @@ function! escapings#bufnameescape( filespec )
 "   bufnr(), bufwinnr(), ... commands. 
 "   Ensure that there are no double (back-/forward) slashes inside the path; the
 "   anchored pattern doesn't match in those cases! 
+"
 "* ASSUMPTIONS / PRECONDITIONS:
 "	? List of any external variable, control, or other element whose state affects this procedure.
 "* EFFECTS / POSTCONDITIONS:
 "	? List of the procedure's effect on each external variable, control, or other element.
 "* INPUTS:
-"	? Explanation of each argument that isn't obvious.
+"   a:filespec	    normal filespec
+"
 "* RETURN VALUES: 
 "	? Explanation of the value returned.
 "*******************************************************************************
@@ -60,7 +63,11 @@ function! escapings#exescape( command )
 "* RETURN VALUES: 
 "	? Explanation of the value returned.
 "*******************************************************************************
+if v:version >= 702
+    return join(map(split(a:command, ' '), 'fnameescape(v:val)'), ' ')
+else
     return escape(a:command, '\%#|' )
+endif
 endfunction
 
 function! escapings#fnameescape( filespec )
