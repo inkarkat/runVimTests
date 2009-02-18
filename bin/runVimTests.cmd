@@ -17,6 +17,12 @@
 ::  - runVimMsgFilter.vim, located in this script's directory. 
 ::
 ::* REVISION	DATE		REMARKS 
+::	014	12-Feb-2009	Shortened -e -s to -es. 
+::	013	11-Feb-2009	Merged in changes resulting from the bash
+::				implementation of this script: 
+::				Variable renamings. 
+::				Checking whether VIM executable exists and
+::				whether output is to terminal. 
 ::	012	06-Feb-2009	Renamed g:debug to g:runVimTests; now, script
 ::				options 'debug' and 'pure' are appended to this
 ::				variable. This allows for greater flexibility
@@ -292,7 +298,7 @@ if not exist "%userVimFilesDirspec%" set userVimFilesDirspec=%HOMEDRIVE%%HOMEPAT
 if not exist "%userVimFilesDirspec%" set userVimFilesDirspec=$VIMRUNTIME/
 (goto:EOF)
 :determineTerminalAndValidVimExecutable
-:: Use silent-batch mode (-e -s) when the test log is not printed to stdout (but
+:: Use silent-batch mode (-es) when the test log is not printed to stdout (but
 :: redirected into a file or pipe). This avoids that the output is littered with
 :: escape sequences and suppresses the VIM warning and a small delay:
 :: "Vim: Warning: Output is not to a terminal".
@@ -312,7 +318,7 @@ if %ERRORLEVEL% NEQ 0 (
     (echo.ERROR: "%vimExecutable%" is not a VIM executable!)
     set vimExecutable=
 ) else (
-    findstr /C:"Output is not to a terminal" "%capturedVimErrorOutput%" >NUL && set vimTerminalArguments= -e -s
+    findstr /C:"Output is not to a terminal" "%capturedVimErrorOutput%" >NUL && set vimTerminalArguments= -es
 )
 set vimArguments=%vimArguments%%vimTerminalArguments%
 del "%capturedVimErrorOutput%" >NUL 2>&1
@@ -495,7 +501,7 @@ if %ERRORLEVEL% EQU 0 (
 :compareMessages
 set testMsgresult=%~3.msgresult
 if exist "%testMsgresult%" del "%testMsgresult%"
-:: Note: Cannot use silent-batch mode (-e -s) here, because that one messes up
+:: Note: Cannot use silent-batch mode (-es) here, because that one messes up
 :: the console. (Except when the entire test log is not printed to stdout but
 :: redirected.) 
 call vim %vimTerminalArguments% -N -u NONE -n -c "set nomore" -S "%runVimMsgFilterScript%" -c "RunVimMsgFilter" -c "quitall!" -- "%testMsgok%"
