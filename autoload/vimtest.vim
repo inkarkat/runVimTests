@@ -22,6 +22,8 @@
 " Maintainer:	Ingo Karkat <ingo@karkat.de>
 "
 " REVISION	DATE		REMARKS 
+"	004	19-Feb-2009	Added vimtest#System() and vimtap#Error(), plus
+"				a stub for vimtest#Skip(). 
 "	003	09-Feb-2009	The *.out files are always written with
 "				fileformat=unix to allow platform-independent
 "				comparisons. 
@@ -39,6 +41,32 @@
 function! vimtest#Quit()
     if ! (exists('g:runVimTests') && g:runVimTests =~# '\<debug\>')
 	quitall!
+    endif
+endfunction
+function! vimtest#Error( reason )
+    " TODO: Implement. 
+    call vimtest#Quit()
+endfunction
+function! vimtest#Skip( reason )
+    " TODO: Implement. 
+    call vimtest#Quit()
+endfunction
+" function! vimtest#SkipOut( reason )
+" function! vimtest#SkipMsgout( reason )
+" function! vimtest#SkipTap( reason )
+
+function! vimtest#System( shellcmd )
+    " In case the shellcmd is a batch file, the invocation via 'cmd.exe /c ...'
+    " doesn't return the batch file's exit status. Since it's safe to invoke
+    " all executables through 'cmd.exe /c call ...', we always interject this. 
+    let l:shellcmd = (&shell =~? 'cmd\.exe$' ? 'call ' : '') . a:shellcmd
+
+    let l:shelloutput = system(l:shellcmd)
+    echo 'Executing shell command: ' . a:shellcmd
+    echo l:shelloutput
+    if v:shell_error
+	echo printf('Execution failed with exit status %d, aborting test.', v:shell_error)
+	call vimtest#Error(printf("Execution of '%s' failed with exit status %d.", a:shellcmd, v:shell_error))
     endif
 endfunction
 
