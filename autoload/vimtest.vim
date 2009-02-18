@@ -22,6 +22,9 @@
 " Maintainer:	Ingo Karkat <ingo@karkat.de>
 "
 " REVISION	DATE		REMARKS 
+"	003	09-Feb-2009	The *.out files are always written with
+"				fileformat=unix to allow platform-independent
+"				comparisons. 
 "	002	06-Feb-2009	Renamed g:debug to g:runVimTests. 
 "				Removed check for processed msgout output, this
 "				is now done as a separate process with
@@ -49,9 +52,9 @@ endfunction
 function! vimtest#SaveOut( ... )
     let l:outname = s:MakeFilename(a:000, '.out')
     if v:version >= 702
-	execute 'saveas! ' . fnameescape(l:outname)
+	execute 'saveas! ++ff=unix ' . fnameescape(l:outname)
     else
-	execute 'saveas! ' . escapings#fnameescape(l:outname)
+	execute 'saveas! ++ff=unix ' . escapings#fnameescape(l:outname)
     endif
 endfunction
 
