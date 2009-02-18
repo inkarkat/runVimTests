@@ -1,0 +1,221 @@
+*runVimTestsname.txt*      Summary sentence. 
+
+		       MY PLUGIN NAME    by Ingo Karkat
+							     *runVimTests-plugin*
+description			|runVimTests-description|
+usage	    			|runVimTests-usage|
+installation   			|runVimTests-installation|
+configuration  			|runVimTests-configuration|
+integration			|runVimTests-integration|
+framework			|runVimTests-framework|
+test scripts			|runVimTests-testscripts|
+limitations			|runVimTests-limitations|
+assumptions			|runVimTests-assumptions|
+known problems			|runVimTests-known-problems|
+todo				|runVimTests-todo|
+history				|runVimTests-history|
+
+==============================================================================
+DESCRIPTION					     *runVimTests-description*
+
+runVimTests implements a small unit testing framework for VIM. 
+
+Similar to the tests that are part of VIM's source distribution, each test
+consists of a testXXX.vim file which is executed in a a separate VIM instance.
+The outcome of a test can be determined by a combination of the following
+methods:
+
+SAVED BUFFER OUTPUT					      *runVimTests-ok*
+If a testXXX.ok file is provided, the testXXX.vim should save a testXXX.out
+file at the end of its execution. The contents of the testXXX.out test file
+must be identical to the provided testXXX.ok file for the test to succeed. The
+test can either generate the test output itself, or start by editing a
+testXXX.in (or similar) file and doing modifications to it. 
+
+CAPTURED MESSAGES					   *runVimTests-msgok*
+If a testXXX.msgok file is provided, the testXXX.vim file should generate VIM
+messages (from built-in VIM commands, or via :echo[msg]), which are captured
+during test execution in a testXXX.msgout file. The testXXX.msgok file
+contains multiple message assertions (separated by empty lines), each of which
+is compiled into a VIM regexp and then matched against the captured messages.
+Each assertion can match exactly once, and all assertions must match in the
+same order in the captured VIM messages. (But there can be additional VIM
+messages before, after and in between matches, so that you can omit irrelevant
+or platform-specific messages from the testXXX.msgok file.) For details, see
+runVimMsgFilter.vim. 
+
+TAP UNIT TESTS						     *runVimTests-tap*
+If a testXXX.tap file exists at the end of a test execution, it is assumed to
+represent unit test output in the Test Anything Protocol [1], which is then
+parsed and incorporated into the test run. This method allows detailed
+verification of custom commands, mappings as well as internal functions; the
+entire determination of the test result is done in VIM script. Each TAP unit
+test counts as one test, even though all those test results are produced by a
+single testXXX.vim file. If a plan announced more or less tests than what was
+found in the test output, the test is assumed to be erroneous. 
+
+[1]
+web site: http://testanything.org,
+original implementation: http://search.cpan.org/~petdance/TAP-1.00/TAP.pm,
+TAP protocol for VIM: http://www.vim.org/scripts/script.php?script_id=2213
+
+
+A test causes an error if none of these ok-files exist for a test, and no
+testXXX.tap file was generated (so actually no verification is possible), or
+if the test execution does not produce the corresponding output files. 
+
+
+==============================================================================
+USAGE							   *runVimTests-usage*
+
+The tests are specified through these three methods, which can be combined: 
+- Directly specify the filespec of testXXX.vim test script file(s). 
+- Specify a directory; all *.vim files inside this directory (except for an
+  optional special _setup.vim file) will be used as test scripts. 
+- A test suite is a text file containing (relative or absolute) filespecs to
+  test scripts, directories or other test suites, one filespec per line.
+  (Commented lines start with #.) 
+
+The script returns 0 if all tests were successful, 1 if any errors or failures
+occurred. 
+
+After test execution, a summary is printed like this:
+    33 tests, 27 run: 16 OK, 11 failures, 6 errors. ~
+    Failed tests: test002, test012, test014, test022, test032, test033 ~
+    Tests with errors: test003, test013, test023, test033 ~
+
+A test is counted as each existing *.[msg]ok file, or by an announcement of
+the planned tests by a TAP test. Tests have "run" when corresponding output
+has been produced. If it hasn't, that's an ERROR, as well as when there were
+neither *.[msg]ok files nor any TAP output, or if the test result evaluation
+had a problem. The result of a correct test evaluation is either OK or FAIL. 
+
+==============================================================================
+INSTALLATION					    *runVimTests-installation*
+
+TODO
+						    *runVimTests-dependencies*
+- Requires VIM 7.0 or higher. 
+
+==============================================================================
+CONFIGURATION					   *runVimTests-configuration*
+
+==============================================================================
+INTEGRATION					     *runVimTests-integration*
+
+==============================================================================
+FRAMEWORK					       *runVimTests-framework*
+
+Each testXXX.vim test is executed in a separate VIM process. The test file is
+sourced via the |-S|testXXX.vim command-line argument. No filename is passed,
+i.e. the test run starts with a single empty buffer. The CWD is always the
+test's directory. 
+
+						       *runVimTests-variables*
+The test framework sets these variables within the VIM test process:
+								*g:runVimTest*
+The g:runVimTest variable contains the absolute filespec of the currently
+executing test (which should be the same as expand('<sfile>:p')). 
+							       *g:runVimTests*
+The g:runVimTests variable contains the test options for this test run,
+concatenated with ',':
+    pure    Test without loading .vimrc and plugins (runVimTests --pure). 
+    debug   In test debugging mode (runVimTests --debug). 
+
+							   *runVimTests-setup*
+Setup scripts can be sourced automatically by the framework before the
+execution of a testXXX.vim test. It is recommended to only do this for
+functionality common to ALL tests. Alternatively, you can explicitly source
+additional scripts from a testXXX.vim test. Do this if only a few tests
+require some additional library functions: >
+    " buffertest001.vim
+    source helpers/listbuffers.vim
+    ...
+    call IsBufferList(['foo.txt', 'bar.txt'], 'opened all text files')
+
+A global setup script "runVimTestsSetup.vim" must reside in the same directory
+as the "runVimTests" shell script. It should contain system-specific setup
+code (e.g. if you have set a non-default 'runtimepath' in your .vimrc and you
+also want this set when run in pure mode, as your .vimrc isn't sourced then). 
+
+A local setup script "_setup.vim" is sourced if it is found in the
+testXXX.vim's directory. You can use this to|:source|the script under test
+and/or source some general helper scripts that all tests in this directory are
+using. 
+
+==============================================================================
+TEST SCRIPTS					     *runVimTests-testscripts*
+						      *runVimTests-testnaming*
+Each test is implemented in a testXXX.vim file. Actually, you can use any
+filename with a .vim file extension. You may for example use prefixes like
+"basic" or "errorcondition", or structure the tests around "MyCommand",
+"MyOtherCommand", etc. By including a number, you establish an execution order
+(from simple to more advanced tests), and make it easy to add additional
+tests. 
+
+Depending on which method(s) shall be used for verification, the tests need
+to do:
+
+SAVED BUFFER OUTPUT
+Load a predefined test input (e.g. testXXX.in), or start from scratch in the
+empty buffer, and make modifications to it. Finally, save the result in
+testXXX.out (in the same directory as the test itself). >
+    " Test successful saved buffer output. 
+    normal! iSuccessful execution.
+    call vimtest#SaveOut()
+    call vimtest#Quit()
+<
+CAPTURED MESSAGES
+Issue :echo or :echomsg, or execute commands that will cause messages. The
+messages are automatically captured in testXXX.msgout. >
+    " Test successful message output. 
+    echomsg 'Successful execution.'
+    call vimtest#Quit()
+<
+TAP UNIT TESTS
+Initialize the TAP testing framework with the output file name testXXX.tap,
+submit a plan (i.e. how many tests you intend to run; this is optional, but
+highly recommended), execute the test and verify the outcomes with the
+TAP-provided functions. The TAP framework will automatically save the TAP
+output. >
+    " Test successful TAP output. 
+    call vimtest#StartTap()
+    call vimtap#Plan(3)
+    call vimtap#Ok(1, 'all right')
+    call vimtap#Is(1, 1, '1 == 1')
+    call vimtap#Like('foobar 2000', 'fo\+.* \d\+', 'matches')
+    call vimtap#Diag('Some diagnostic message.')
+    call vimtest#Quit()
+<
+
+If the first line of the test contains a comment starting with: '" Test', this
+is taken as the test synopsis and included in the test header that is printed
+before each test is executed. Example: >
+    " Test mutation that adds lines after the current line. 
+
+Finally, the test must|:quit|VIM (unless the --debug option was specified), so
+that the next test can be executed in a newly spawned VIM instance. The
+|vimtest#Quit()|function takes care of that. 
+
+==============================================================================
+LIMITATIONS					     *runVimTests-limitations*
+
+==============================================================================
+ASSUMPTIONS					     *runVimTests-assumptions*
+
+==============================================================================
+KNOWN PROBLEMS					  *runVimTests-known-problems*
+
+==============================================================================
+TODO							    *runVimTests-todo*
+
+==============================================================================
+HISTORY							 *runVimTests-history*
+
+==============================================================================
+Copyright: (C) 2009 by Ingo Karkat
+The VIM LICENSE applies to this script; see|copyright|. 
+
+Maintainer:	Ingo Karkat <ingo@karkat.de>
+==============================================================================
+ vim:tw=78:ts=8:ft=help:norl:
