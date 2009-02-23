@@ -17,6 +17,8 @@
 ::  - runVimMsgFilter.vim, located in this script's directory. 
 ::
 ::* REVISION	DATE		REMARKS 
+::	016	24-Feb-2009	Added short options -0/1/2 for the plugin load
+::				level. 
 ::	015	19-Feb-2009	Added explicit option '--user' for the default
 ::				VIM mode, and adding 'user' to
 ::				%vimVariableOptionsValue% (so that tests can
@@ -139,8 +141,17 @@ set EXECUTIONOUTPUT=
 
 :commandLineOptions
 set arg=%~1
+
+:: Allow short /o and -o option syntax. 
+if /I "%arg:/=-%" == "-h" set arg=--help
+if /I "%arg:/=-%" == "-g" set arg=--graphical
+if /I "%arg:/=-%" == "-0" set arg=--pure
+if /I "%arg:/=-%" == "-1" set arg=--default
+if /I "%arg:/=-%" == "-2" set arg=--user
+
 :: Allow both /option and --option syntax. 
 if not "%arg%" == "" set arg=%arg:/=--%
+
 if not "%arg%" == "" (
     if /I "%arg%" == "--help" (
 	(goto:printLongUsage)
@@ -189,13 +200,6 @@ if not "%arg%" == "" (
 	shift /1
 	shift /1
     ) else if /I "%arg%" == "--graphical" (
-	if %vimExecutable% == vim (
-	    set vimExecutable=gvim
-	) else (
-	    set vimExecutable=%vimExecutable:vim.exe=gvim.exe%
-	)
-	shift /1
-    ) else if /I "%arg%" == "-g" (
 	if %vimExecutable% == vim (
 	    set vimExecutable=gvim
 	) else (
@@ -288,7 +292,7 @@ exit /B 1
 (goto:EOF)
 
 :printShortUsage
-(echo.Usage: "%~nx0" [--pure^|--default^|--user] [--source filespec [--source filespec [...]]] [--runtime plugin/file.vim [--runtime autoload/file.vim [...]]] [--vimexecutable path\to\vim.exe^|--vimversion NN] [-g^|--graphical] [--summaryonly] [--debug] [--help] test001.vim^|testsuite.txt^|path\to\testdir\ [...])
+(echo.Usage: "%~nx0" [-0^|--pure^|-1^|--default^|-2^|--user] [--source filespec [--source filespec [...]]] [--runtime plugin/file.vim [--runtime autoload/file.vim [...]]] [--vimexecutable path\to\vim.exe^|--vimversion NN] [-g^|--graphical] [--summaryonly] [--debug] [-?^|-h^|--help] test001.vim^|testsuite.txt^|path\to\testdir\ [...])
 (goto:EOF)
 :printUsage
 call :printShortUsage
@@ -298,12 +302,12 @@ call :printShortUsage
 (echo.A small unit testing framework for VIM.)
 (echo.)
 call :printShortUsage
-(echo.    --pure		Start VIM without loading any .vimrc and plugins,)
+(echo.    -0^|--pure		Start VIM without loading any .vimrc and plugins,)
 (echo.    			but in nocompatible mode. Adds 'pure' to %vimVariableOptionsName%.)
-(echo.    --default		Start VIM only with default settings and plugins,)
+(echo.    -1^|--default		Start VIM only with default settings and plugins,)
 (echo.    			without loading user .vimrc and plugins.)
 (echo.    			Adds 'default' to %vimVariableOptionsName%.)
-(echo.    --user		^(Default:^) Start VIM with user .vimrc and plugins.)
+(echo.    -2^|--user		^(Default:^) Start VIM with user .vimrc and plugins.)
 (echo.    --source filespec	Source filespec before test execution.)
 (echo.    --runtime filespec	Source filespec relative to ~/.vim. Can be used to)
 (echo.    			load the script-under-test when using --pure.)
