@@ -1,5 +1,5 @@
 @echo off %debug%
-::/**************************************************************************HP**
+::/*************************************************************************/^--*
 ::**
 ::* FILE: 	runVimTests.cmd
 ::* PRODUCT:	VIM tools
@@ -8,7 +8,7 @@
 ::*
 ::*******************************************************************************
 ::* DESCRIPTION: 
-::	This script implements a small unit testing framework for VIM. 
+::	This script implements a small testing framework for VIM. 
 ::
 ::* REMARKS: 
 ::       	
@@ -16,9 +16,14 @@
 ::  - GNU grep, sed, diff available through 'unix.cmd' script. 
 ::  - runVimMsgFilter.vim, located in this script's directory. 
 ::
+::* Copyright: (C) 2009 by Ingo Karkat
+::   The VIM LICENSE applies to this script; see 'vim -c ":help copyright"'.  
+::
 ::* REVISION	DATE		REMARKS 
 ::	016	24-Feb-2009	Added short options -0/1/2 for the plugin load
 ::				level. 
+::				Added check for Unix tools; Unix tools can be
+::				winked in via 'unix' script. 
 ::	015	19-Feb-2009	Added explicit option '--user' for the default
 ::				VIM mode, and adding 'user' to
 ::				%vimVariableOptionsValue% (so that tests can
@@ -101,7 +106,8 @@
 ::*******************************************************************************
 setlocal enableextensions
 
-call unix --quiet || goto:prerequisiteError
+call :checkUnixTools || call unix --quiet || goto:prerequisiteError
+call :checkUnixTools || goto:prerequisiteError
 
 call :determineUserVimFilesDirspec
 
@@ -299,7 +305,7 @@ call :printShortUsage
 (echo.Try "%~nx0" --help for more information.)
 (goto:EOF)
 :printLongUsage
-(echo.A small unit testing framework for VIM.)
+(echo.A small testing framework for VIM.)
 (echo.)
 call :printShortUsage
 (echo.    -0^|--pure		Start VIM without loading any .vimrc and plugins,)
@@ -321,6 +327,11 @@ call :printShortUsage
 (echo.    --debug		Test debugging mode: Adds 'debug' to %vimVariableOptionsName%)
 (echo.    			variable inside VIM ^(so that tests do not exit or can)
 (echo.    			produce additional debug info^).)
+(goto:EOF)
+
+:checkUnixTools
+for %%F in (grep.exe sed.exe diff.exe) do if "%%~$PATH:F" == "" exit /B 1
+exit /B 0
 (goto:EOF)
 
 :determineUserVimFilesDirspec
