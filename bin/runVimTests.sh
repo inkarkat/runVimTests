@@ -12,9 +12,15 @@
 #   
 # REMARKS: 
 #   
-# FILE_SCCS = "@(#)runVimTests.sh	001	(02-Feb-2009)	VIM Tools";
+# FILE_SCCS = "@(#)runVimTests.sh	003	(19-Feb-2009)	VIM Tools";
 #
 # REVISION	DATE		REMARKS 
+#	003	19-Feb-2009	Added explicit option '--user' for the default
+#				VIM mode, and adding 'user' to
+#				%vimVariableOptionsValue% (so that tests can
+#				easily check for that mode). Command-line
+#				argument parsing now ensures that only one mode
+#				is specified. 
 #	002	11-Feb-2009	Completed porting of Windows shell script. 
 #	001	02-Feb-2009	file creation
 ###############################################################################
@@ -41,6 +47,9 @@ initialize()
     vimVariableOptionsValue=
     readonly vimVariableTestName=g:runVimTest
 
+    # VIM mode of sourcing scripts. 
+    vimMode=
+
     # Default VIM executable. 
     vimExecutable='vim'
 
@@ -65,11 +74,17 @@ initialize()
 
     isExecutionOutput='true'
 }
+verifyVimModeSetOnlyOnce()
+{
+    if [ "$vimMode" ]; then
+	{ echo "ERROR: \"${1}\": Mode already set!"; echo; printShortUsage; } >&2; exit 1
+    fi
+}
 
 printShortUsage()
 {
     cat <<SHORTHELPTEXT
-Usage: "$(basename "$0")" [--pure|--default] [--source filespec [--source filespec [...]]] [--runtime plugin/file.vim [--runtime autoload/file.vim [...]]] [--vimexecutable path/to/vim] [-g|--graphical] [--summaryonly] [--debug] [--help] test001.vim|testsuite.txt|path/to/testdir/ [...]
+Usage: "$(basename "$0")" [--pure|--default|--user] [--source filespec [--source filespec [...]]] [--runtime plugin/file.vim [--runtime autoload/file.vim [...]]] [--vimexecutable path/to/vim] [-g|--graphical] [--summaryonly] [--debug] [--help] test001.vim|testsuite.txt|path/to/testdir/ [...]
 SHORTHELPTEXT
 }
 printUsage()
@@ -96,6 +111,7 @@ HELPDESCRIPTION
     --default		Start VIM only with default settings and plugins,
 			without loading user .vimrc and plugins.
 			Adds 'default' to ${vimVariableOptionsName}.
+    --user		(Default:) Start VIM with user .vimrc and plugins.
     --source filespec	Source filespec before test execution.
     --runtime filespec	Source filespec relative to ~/.vim. Can be used to
 			load the script-under-test when using --pure.
@@ -436,13 +452,19 @@ while [ $# -ne 0 ]
 do
     case "$1" in
 	--help|-h|-\?)	    shift; printLongUsage; exit 1;;
-	--pure)		    shift
+	--pure)		    verifyVimModeSetOnlyOnce "$1"
+			    shift
 			    vimArguments="-N -u NONE $vimArguments"
-			    vimVariableOptionsValue="${vimVariableOptionsValue}pure,"
+			    vimMode='pure'
 			    ;;
-	--default)	    shift
+	--default)	    verifyVimModeSetOnlyOnce "$1"
+			    shift
 			    vimArguments="--cmd 'set rtp=\$VIM/vimfiles,\$VIMRUNTIME,\$VIM/vimfiles/after' -N -u NORC -c 'set rtp&' $vimArguments"
-			    vimVariableOptionsValue="${vimVariableOptionsValue}default,"
+			    vimMode='default'
+			    ;;
+	--user)		    verifyVimModeSetOnlyOnce "$1"
+			    shift
+			    vimMode='user'
 			    ;;
 	--runtime)	    shift; vimArguments="$vimArguments $(vimSourceCommand "$HOME/.vim/$1")"; shift;;
 	--source)	    shift; vimArguments="$vimArguments $(vimSourceCommand "$1")"; shift;;
@@ -470,7 +492,9 @@ do
     esac
 done
 [ $# -eq 0 ] && { printUsage; exit 1; }
-vimVariableOptionsValue=${vimVariableOptionsValue%,}
+[ "$vimMode" ] || vimMode='user'
+vimVariableOptionsValue="${vimMode},${vimVariableOptionsValue}"
+vimVariableOptionsValue="${vimVariableOptionsValue%,}"
 vimArguments="$vimArguments --cmd \"let ${vimVariableOptionsName}='${vimVariableOptionsValue}'\""
 
 execute "$@"
