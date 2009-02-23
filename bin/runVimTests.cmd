@@ -17,6 +17,12 @@
 ::  - runVimMsgFilter.vim, located in this script's directory. 
 ::
 ::* REVISION	DATE		REMARKS 
+::	015	19-Feb-2009	Added explicit option '--user' for the default
+::				VIM mode, and adding 'user' to
+::				%vimVariableOptionsValue% (so that tests can
+::				easily check for that mode). Command-line
+::				argument parsing now ensures that only one mode
+::				is specified. 
 ::	014	12-Feb-2009	Shortened -e -s to -es. 
 ::	013	11-Feb-2009	Merged in changes resulting from the bash
 ::				implementation of this script: 
@@ -110,6 +116,9 @@ set vimVariableOptionsName=g:runVimTests
 set vimVariableOptionsValue=
 set vimVariableTestName=g:runVimTest
 
+:: VIM mode of sourcing scripts. 
+set vimMode=
+
 :: Default VIM executable. 
 set vimExecutable=vim
 
@@ -138,12 +147,30 @@ if not "%arg%" == "" (
     ) else if /I "%arg%" == "--?" (
 	(goto:printLongUsage)
     ) else if /I "%arg%" == "--pure" (
+	if defined vimMode (
+	    (echo.ERROR: "%~1": Mode already set!)
+	    (echo.)
+	    (goto:printShortUsage)
+	)
 	set vimArguments=-N -u NONE %vimArguments%
-	set vimVariableOptionsValue=%vimVariableOptionsValue%pure,
+	set vimMode=pure
 	shift /1
     ) else if /I "%arg%" == "--default" (
+	if defined vimMode (
+	    (echo.ERROR: "%~1": Mode already set!)
+	    (echo.)
+	    (goto:printShortUsage)
+	)
 	set vimArguments=--cmd "set rtp=$VIM/vimfiles,$VIMRUNTIME,$VIM/vimfiles/after" -N -u NORC -c "set rtp&" %vimArguments%
-	set vimVariableOptionsValue=%vimVariableOptionsValue%default,
+	set vimMode=default
+	shift /1
+    ) else if /I "%arg%" == "--user" (
+	if defined vimMode (
+	    (echo.ERROR: "%~1": Mode already set!)
+	    (echo.)
+	    (goto:printShortUsage)
+	)
+	set vimMode=user
 	shift /1
     ) else if /I "%arg%" == "--runtime" (
 	set vimArguments=%vimArguments% -S "%userVimFilesDirspec%%~2"
@@ -201,7 +228,9 @@ if "%~1" == "" (goto:printUsage)
 call :determineTerminalAndValidVimExecutable
 if not defined vimExecutable (exit /B 1)
 
-if defined vimVariableOptionsValue (set vimVariableOptionsValue=%vimVariableOptionsValue:~0,-1%)
+if not defined vimMode (set vimMode=user)
+set vimVariableOptionsValue=%vimMode%,%vimVariableOptionsValue%
+set vimVariableOptionsValue=%vimVariableOptionsValue:~0,-1%
 set vimArguments=%vimArguments% --cmd "let %vimVariableOptionsName%='%vimVariableOptionsValue%'"
 
 set /A cntTests=0
@@ -259,7 +288,7 @@ exit /B 1
 (goto:EOF)
 
 :printShortUsage
-(echo.Usage: "%~nx0" [--pure^|--default] [--source filespec [--source filespec [...]]] [--runtime plugin/file.vim [--runtime autoload/file.vim [...]]] [--vimexecutable path\to\vim.exe^|--vimversion NN] [-g^|--graphical] [--summaryonly] [--debug] [--help] test001.vim^|testsuite.txt^|path\to\testdir\ [...])
+(echo.Usage: "%~nx0" [--pure^|--default^|--user] [--source filespec [--source filespec [...]]] [--runtime plugin/file.vim [--runtime autoload/file.vim [...]]] [--vimexecutable path\to\vim.exe^|--vimversion NN] [-g^|--graphical] [--summaryonly] [--debug] [--help] test001.vim^|testsuite.txt^|path\to\testdir\ [...])
 (goto:EOF)
 :printUsage
 call :printShortUsage
@@ -274,6 +303,7 @@ call :printShortUsage
 (echo.    --default		Start VIM only with default settings and plugins,)
 (echo.    			without loading user .vimrc and plugins.)
 (echo.    			Adds 'default' to %vimVariableOptionsName%.)
+(echo.    --user		^(Default:^) Start VIM with user .vimrc and plugins.)
 (echo.    --source filespec	Source filespec before test execution.)
 (echo.    --runtime filespec	Source filespec relative to ~/.vim. Can be used to)
 (echo.    			load the script-under-test when using --pure.)
