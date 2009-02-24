@@ -7,12 +7,15 @@
 " Maintainer:	Ingo Karkat <ingo@karkat.de>
 "
 " REVISION	DATE		REMARKS 
+"	003	17-Feb-2009	Added optional a:isFullMatch argument to
+"				escapings#bufnameescape(). 
+"				Cleaned up documentation. 
 "	002	05-Feb-2009	Added improved version of escapings#exescape()
 "				that relies on fnameescape() to properly escape
 "				all special Ex characters. 
 "	001	05-Jan-2009	file creation
 
-function! escapings#bufnameescape( filespec )
+function! escapings#bufnameescape( filespec, ... )
 "*******************************************************************************
 "* PURPOSE:
 "   Escape a normal filespec syntax so that it can be used for the bufname(),
@@ -26,10 +29,14 @@ function! escapings#bufnameescape( filespec )
 "	? List of the procedure's effect on each external variable, control, or other element.
 "* INPUTS:
 "   a:filespec	    normal filespec
-"
+"   a:isFullMatch   Optional flag whether only the full filespec should be
+"		    matched (default=1). If 0, the escaped filespec will not be
+"		    anchored. 
 "* RETURN VALUES: 
-"	? Explanation of the value returned.
+"   Filespec escaped for the buf...() commands. 
 "*******************************************************************************
+    let l:isFullMatch = (a:0 ? a:1 : 1)
+
     " Backslashes are converted to forward slashes, as the comparison is done with
     " these on all platforms, anyway (cp. :help file-pattern). 
     let l:escapedFilespec = tr(a:filespec, '\', '/')
@@ -45,23 +52,31 @@ function! escapings#bufnameescape( filespec )
     " wildcard. 
     let l:escapedFilespec = substitute(l:escapedFilespec, '[{}]', '?', 'g')
 
-    " The filespec must be anchored to ^ and $ to avoid matching filespec
-    " fragments. 
-    return '^' . l:escapedFilespec . '$'
+    if l:isFullMatch
+	" The filespec must be anchored to ^ and $ to avoid matching filespec
+	" fragments. 
+	return '^' . l:escapedFilespec . '$'
+    else
+	return l:escapedFilespec
+    endif
 endfunction
 
 function! escapings#exescape( command )
 "*******************************************************************************
 "* PURPOSE:
-"   Escape a shell command so that it can be used in ex commands. 
+"   Escape a shell command (potentially consisting of multiple commands and
+"   including (already quoted) command-line arguments) so that it can be used in
+"   ex commands. For example: 'hostname && ps -ef | grep -e "foo"'. 
+"
 "* ASSUMPTIONS / PRECONDITIONS:
 "	? List of any external variable, control, or other element whose state affects this procedure.
 "* EFFECTS / POSTCONDITIONS:
 "	? List of the procedure's effect on each external variable, control, or other element.
 "* INPUTS:
-"   a:filespec	    normal filespec
+"   a:command	    Shell command-line. 
+"
 "* RETURN VALUES: 
-"	? Explanation of the value returned.
+"   Escaped shell command to be passed to the !{cmd} or :r !{cmd} commands. 
 "*******************************************************************************
 if v:version >= 702
     return join(map(split(a:command, ' '), 'fnameescape(v:val)'), ' ')
@@ -81,7 +96,7 @@ function! escapings#fnameescape( filespec )
 "* INPUTS:
 "   a:filespec	    normal filespec
 "* RETURN VALUES: 
-"	? Explanation of the value returned.
+"   Escaped filespec to be passed as a {file} argument to an ex command. 
 "*******************************************************************************
 if v:version >= 702
     return fnameescape(a:filespec)
@@ -105,8 +120,10 @@ function! escapings#shellescape( filespec, ... )
 "	? List of the procedure's effect on each external variable, control, or other element.
 "* INPUTS:
 "   a:filespec	    normal filespec
+"   a:special	    Flag whether special items will be escaped, too. 
+"
 "* RETURN VALUES: 
-"	? Explanation of the value returned.
+"   Escaped filespec to be used in a :! command or inside a system() call. 
 "*******************************************************************************
     let l:isSpecial = (a:0 > 0 ? a:1 : 0)
 if v:version >= 702
