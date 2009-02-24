@@ -89,7 +89,7 @@ verifyVimModeSetOnlyOnce()
 printShortUsage()
 {
     cat <<SHORTHELPTEXT
-Usage: "$(basename "$0")" [-0|--pure|-1|--default|-2|--user] [--source filespec [--source filespec [...]]] [--runtime plugin/file.vim [--runtime autoload/file.vim [...]]] [--vimexecutable path/to/vim] [-g|--graphical] [--summaryonly] [--debug] [-?|-h|--help] test001.vim|testsuite.txt|path/to/testdir/ [...]
+Usage: "$(basename "$0")" [-0|--pure|-1|--default|-2|--user] [--source filespec [--source filespec [...]]] [--runtime plugin/file.vim [--runtime autoload/file.vim [...]]] [--vimexecutable path/to/vim] [-g|--graphical] [--summaryonly|-v|--verbose] [-d|--debug] [-?|-h|--help] test001.vim|testsuite.txt|path/to/testdir/ [...]
 SHORTHELPTEXT
 }
 printUsage()
@@ -120,12 +120,13 @@ HELPDESCRIPTION
     --source filespec	Source filespec before test execution.
     --runtime filespec	Source filespec relative to ~/.vim. Can be used to
 			load the script-under-test when using --pure.
-    --vimexecutable path/to/vim   Use passed VIM executable instead of the one
-			found in \$PATH.
+    --vimexecutable	Use passed VIM executable instead of the one
+        path/to/vim	found in \$PATH.
     -g|--graphical	Use GUI version of VIM.
     --summaryonly	Do not show detailed transcript and differences, during
 			test run, only summary. 
-    --debug		Test debugging mode: Adds 'debug' to ${vimVariableOptionsName}
+    -v^|--verbose	Show passed tests and more details during test execution.
+    -d|--debug		Test debugging mode: Adds 'debug' to ${vimVariableOptionsName}
 			variable inside VIM (so that tests do not exit or can
 			produce additional debug info).
 HELPTEXT
@@ -490,7 +491,7 @@ do
 			    fi
 			    ;;
 	--summaryonly)	    shift; isExecutionOutput='true';;
-	--debug)	    shift; vimVariableOptionsValue="${vimVariableOptionsValue}debug,";;
+	-d|--debug)	    shift; vimVariableOptionsValue="${vimVariableOptionsValue}debug,";;
 	--)		    shift; break;;
 	-*)		    { echo "ERROR: Unknown option \"${1}\"!"; echo; printShortUsage; } >&2; exit 1;;
 	*)		    break;;
