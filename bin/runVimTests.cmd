@@ -13,7 +13,7 @@
 ::* REMARKS: 
 ::       	
 ::* DEPENDENCIES:
-::  - GNU grep, sed, diff available through 'unix.cmd' script. 
+::  - GNU grep, sed, diff available through %PATH% or 'unix.cmd' script. 
 ::  - runVimMsgFilter.vim, located in this script's directory. 
 ::
 ::* Copyright: (C) 2009 by Ingo Karkat
@@ -21,9 +21,16 @@
 ::
 ::* REVISION	DATE		REMARKS 
 ::	016	24-Feb-2009	Added short options -0/1/2 for the plugin load
-::				level. 
+::				level and -d for --debug. 
 ::				Added check for Unix tools; Unix tools can be
 ::				winked in via 'unix' script. 
+::				Now only printing failed tests and errors, and
+::				only explicitly mentioning the test if it wasn't
+::				successful. This greatly reduces the visual
+::				output the user has to scan.
+::				Added --verbose option to also print successful
+::				tests, the previous default behavior. 
+::				Added empty line between individual tests. 
 ::	015	19-Feb-2009	Added explicit option '--user' for the default
 ::				VIM mode, and adding 'user' to
 ::				%vimVariableOptionsValue% (so that tests can
@@ -142,6 +149,7 @@ set vimLocalSetupScript=_setup.vim
 set vimGlobalSetupScript=%~dpn0Setup.vim
 if exist "%vimGlobalSetupScript%" set vimArguments=%vimArguments% -S "%vimGlobalSetupScript%"
 
+set verboseLevel=0
 set isExecutionOutput=1
 set EXECUTIONOUTPUT=
 
@@ -151,9 +159,11 @@ set arg=%~1
 :: Allow short /o and -o option syntax. 
 if /I "%arg:/=-%" == "-h" set arg=--help
 if /I "%arg:/=-%" == "-g" set arg=--graphical
+if /I "%arg:/=-%" == "-v" set arg=--verbose
 if /I "%arg:/=-%" == "-0" set arg=--pure
 if /I "%arg:/=-%" == "-1" set arg=--default
 if /I "%arg:/=-%" == "-2" set arg=--user
+if /I "%arg:/=-%" == "-d" set arg=--debug
 
 :: Allow both /option and --option syntax. 
 if not "%arg%" == "" set arg=%arg:/=--%
@@ -216,6 +226,9 @@ if not "%arg%" == "" (
 	set isExecutionOutput=
 	set EXECUTIONOUTPUT=rem
 	shift /1
+    ) else if /I "%arg%" == "--verbose" (
+	set /A verboseLevel+=1
+	shift /1
     ) else if /I "%arg%" == "--debug" (
 	set vimVariableOptionsValue=%vimVariableOptionsValue%debug,
 	shift /1
@@ -258,7 +271,6 @@ if defined vimArguments (
 ) else (
     %EXECUTIONOUTPUT% echo.Starting test run.
 )
-%EXECUTIONOUTPUT% echo.
 
 :commandLineLoop
 set arg=%~1
@@ -298,7 +310,7 @@ exit /B 1
 (goto:EOF)
 
 :printShortUsage
-(echo.Usage: "%~nx0" [-0^|--pure^|-1^|--default^|-2^|--user] [--source filespec [--source filespec [...]]] [--runtime plugin/file.vim [--runtime autoload/file.vim [...]]] [--vimexecutable path\to\vim.exe^|--vimversion NN] [-g^|--graphical] [--summaryonly] [--debug] [-?^|-h^|--help] test001.vim^|testsuite.txt^|path\to\testdir\ [...])
+(echo.Usage: "%~nx0" [-0^|--pure^|-1^|--default^|-2^|--user] [--source filespec [--source filespec [...]]] [--runtime plugin/file.vim [--runtime autoload/file.vim [...]]] [--vimexecutable path\to\vim.exe^|--vimversion NN] [-g^|--graphical] [--summaryonly^|-v^|--verbose] [-d^|--debug] [-?^|-h^|--help] test001.vim^|testsuite.txt^|path\to\testdir\ [...])
 (goto:EOF)
 :printUsage
 call :printShortUsage
@@ -310,21 +322,22 @@ call :printShortUsage
 call :printShortUsage
 (echo.    -0^|--pure		Start VIM without loading any .vimrc and plugins,)
 (echo.    			but in nocompatible mode. Adds 'pure' to %vimVariableOptionsName%.)
-(echo.    -1^|--default		Start VIM only with default settings and plugins,)
+(echo.    -1^|--default	Start VIM only with default settings and plugins,)
 (echo.    			without loading user .vimrc and plugins.)
 (echo.    			Adds 'default' to %vimVariableOptionsName%.)
 (echo.    -2^|--user		^(Default:^) Start VIM with user .vimrc and plugins.)
 (echo.    --source filespec	Source filespec before test execution.)
 (echo.    --runtime filespec	Source filespec relative to ~/.vim. Can be used to)
 (echo.    			load the script-under-test when using --pure.)
-(echo.    --vimexecutable path\to\vim.exe   Use passed VIM executable instead)
-(echo.    			of the one found in %%PATH%%.)
+(echo.    --vimexecutable	Use passed VIM executable instead)
+(echo.        path\to\vim.exe	of the one found in %%PATH%%.)
 (echo.    --vimversion NN	Use VIM version N.N. ^(Must be in standard installation)
 (echo.    			directory %ProgramFiles%\vim\vimNN\.^))
 (echo.    -g^|--graphical	Use GVIM.)
 (echo.    --summaryonly	Do not show detailed transcript and differences,)
 (echo.    			during test run, only summary.)
-(echo.    --debug		Test debugging mode: Adds 'debug' to %vimVariableOptionsName%)
+(echo.    -v^|--verbose	Show passed tests and more details during test execution.)
+(echo.    -d^|--debug		Test debugging mode: Adds 'debug' to %vimVariableOptionsName%)
 (echo.    			variable inside VIM ^(so that tests do not exit or can)
 (echo.    			produce additional debug info^).)
 (goto:EOF)
@@ -370,12 +383,16 @@ del "%capturedVimErrorOutput%" >NUL 2>&1
 (goto:EOF)
 
 :printTestHeader
+set isPrintedHeader=1
 if not defined isExecutionOutput (goto:EOF)
+
+set headerMessage=%~2:
+echo.
 :: If the first line of the test script starts with '" Test', include this as
 :: the test's synopsis in the test header. Otherwise, just print the test name. 
 :: Limit the test header to one unwrapped output line, i.e. truncate to 80
 :: characters. 
-sed -n -e "1s/^\d034 \(Test.*\)$/Running %~2: \1/p" -e "tx" -e "1cRunning %~2:" -e ":x" -- %1 | sed "/^.\{80,\}/s/\(^.\{,76\}\).*$/\1.../"
+sed -n -e "1s/^\d034 \(Test.*\)$/%headerMessage% \1/p" -e "tx" -e "1c%headerMessage%" -e ":x" -- %1 | sed "/^.\{80,\}/s/\(^.\{,76\}\).*$/\1.../"
 (goto:EOF)
 
 :addToListFailed
@@ -383,6 +400,31 @@ echo.%listFailed% | findstr /C:%1 >NUL || set listFailed=%listFailed%%~1,
 (goto:EOF)
 :addToListError
 echo.%listError% | findstr /C:%1 >NUL || set listError=%listError%%~1, 
+(goto:EOF)
+
+:echoOk
+if not defined isExecutionOutput (goto:EOF)
+if %verboseLevel% GTR 0 (
+    echo.OK ^(%~1^)
+)
+(goto:EOF)
+:echoError
+if not defined isPrintedHeader call :printTestHeader "%testFile%" "%testName%"
+if not defined isExecutionOutput (goto:EOF)
+if "%~2" == "" (
+    echo.ERROR: %~1
+) else (
+    echo.ERROR ^(%~1^): %~2
+)
+(goto:EOF)
+:echoFail
+if not defined isPrintedHeader call :printTestHeader "%testFile%" "%testName%"
+if not defined isExecutionOutput (goto:EOF)
+if "%~2" == "" (
+    echo.FAIL: %~1
+) else (
+    echo.FAIL ^(%~1^): %~2
+)
 (goto:EOF)
 
 ::------------------------------------------------------------------------------
@@ -450,7 +492,8 @@ if exist "%vimLocalSetupScript%" (
     set vimLocalSetup= -S "%vimLocalSetupScript%"
 )
 
-call :printTestHeader "%testFile%" "%testName%"
+set isPrintedHeader=
+if %verboseLevel% GTR 0 call :printTestHeader "%testFile%" "%testName%"
 
 :: Default VIM arguments and options:
 :: -n		No swapfile. 
@@ -468,6 +511,8 @@ call :printTestHeader "%testFile%" "%testName%"
 :: # or <cword>) is part of a test filename. (On Windows somehow spaces must not
 :: necessarily be escaped?!)
 call %vimExecutable% -n -c "let %vimVariableTestName%='%testFilespec:'=''%'|set nomore verbosefile=%testMsgoutForSet%" %vimArguments%%vimLocalSetup% -S "%testFile: =\ %"
+@echo on
+@echo off %debug%
 
 set /A thisTests=0
 set /A thisRun=0
@@ -483,7 +528,7 @@ if exist "%testOk%" (
 	call :compareOutput "%testOk%" "%testOut%" "%testName%"
     ) else (
 	set /A thisError+=1
-	%EXECUTIONOUTPUT% echo.ERROR ^(out^): No test output.
+	call :echoError "out" "No test output."
     )
 )
 
@@ -495,7 +540,7 @@ if exist "%testMsgok%" (
 	call :compareMessages "%testMsgok%" "%testMsgout%" "%testName%"
     ) else (
 	set /A thisError+=1
-	%EXECUTIONOUTPUT% echo.ERROR ^(msgout^): No test messages.
+	call :echoError "msgout" "No test messages."
     )
 )
 
@@ -507,7 +552,7 @@ if exist "%testTap%" (
 :resultsEvaluation
 if %thisTests% EQU 0 (
     set /A thisError+=1
-    %EXECUTIONOUTPUT% echo.ERROR: No test results at all.
+    call :echoError "No test results at all."
 ) else (
     set /A cntTests+=%thisTests%
 )
@@ -532,14 +577,14 @@ popd
 diff -q -- %1 %2 >NUL
 if %ERRORLEVEL% EQU 0 (
     set /A thisOk+=1
-    %EXECUTIONOUTPUT% echo.OK ^(out^)
+    call :echoOk "out"
 ) else if %ERRORLEVEL% EQU 1 (
     set /A thisFail+=1
-    %EXECUTIONOUTPUT% echo.FAIL ^(out^): expected output           ^|   actual output
+    call :echoFail "out" "expected output           I   actual output"
     %EXECUTIONOUTPUT% diff --side-by-side --width 80 -- %1 %2
 ) else (
     set /A thisError+=1
-    %EXECUTIONOUTPUT% echo.ERROR ^(out^): diff operation failed.
+    call :echoError "out" "diff operation failed."
 )
 (goto:EOF)
 
@@ -552,7 +597,7 @@ if exist "%testMsgresult%" del "%testMsgresult%"
 call vim %vimTerminalArguments% -N -u NONE -n -c "set nomore" -S "%runVimMsgFilterScript%" -c "RunVimMsgFilter" -c "quitall!" -- "%testMsgok%"
 if not exist "%testMsgresult%" (
     set /A thisError+=1
-    %EXECUTIONOUTPUT% echo.ERROR ^(msgout^): Evaluation of test messages failed.
+    call :echoError "msgout" "Evaluation of test messages failed."
     (goto:EOF)
 )
 for /F "delims=" %%r in ('sed -n "1s/^\([A-Z][A-Z]*\).*/\1/p" -- "%testMsgresult%"') do set result=%%r
@@ -565,6 +610,9 @@ if "%result%" == "OK" (
 ) else (
     (echo.ASSERT: Received unknown result "%result%" from RunVimMsgFilter.)
     exit 1
+)
+if "%result%" == "OK" (
+    if %verboseLevel% EQU 0 (goto:EOF)
 )
 %EXECUTIONOUTPUT% type "%testMsgresult%"
 (goto:EOF)
@@ -590,7 +638,13 @@ for /F "tokens=1,2 delims=." %%a in ("%~1") do set /A tapTestNum=%%b - %%a + 1
 set tapTestNum=
 set /A tapTestCnt=0
 for /F "eol=# tokens=1-3 delims= " %%i in (%~1) do call :parseTapLine "%%i" "%%j" "%%k" %2
-%EXECUTIONOUTPUT% type "%~1"
+:: Print the entire TAP output if in verbose mode, else only print the failed
+:: TAP test plus any failure details in the lines following it. 
+if %verboseLevel% GTR 0 (
+    %EXECUTIONOUTPUT% type "%~1"
+) else (
+    %EXECUTIONOUTPUT% type "%~1" | sed -n -e "${/^#/H;x;/^not ok/p}" -e "/^not ok/{x;/^not ok/p;b}" -e "/^#/{H;b}" -e "x;/^not ok/p"
+)
 
 if not defined tapTestNum (
     set /A thisTests+=%tapTestCnt%
@@ -602,11 +656,11 @@ if %tapTestDifference% NEQ 1 (set tapTestDifferencePlural=s) else (set tapTestDi
 
 if %tapTestCnt% LSS %tapTestNum% (
     set /A thisTests+=%tapTestNum%
-    %EXECUTIONOUTPUT% echo.ERROR ^(tap^): Not all %tapTestNum% planned tests have been executed, %tapTestDifference% test%tapTestDifferencePlural% missed.
+    call :echoError "tap" "Not all %tapTestNum% planned tests have been executed, %tapTestDifference% test%tapTestDifferencePlural% missed."
     set /A thisError+=1
 ) else if %tapTestCnt% GTR %tapTestNum% (
     set /A thisTests+=%tapTestCnt%
-    %EXECUTIONOUTPUT% echo.ERROR ^(tap^): %tapTestDifference% more test execution%tapTestDifferencePlural% than planned.
+    call :echoError "tap" "%tapTestDifference% more test execution%tapTestDifferencePlural% than planned."
     set /A thisError+=1
 ) else (
     set /A thisTests+=%tapTestNum%
