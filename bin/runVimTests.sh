@@ -1,5 +1,5 @@
 #!/bin/bash
-###########################################################################HP##
+##########################################################################/^--#
 ##
 # FILE: 	runVimTests.sh
 # PRODUCT:	VIM tools
@@ -8,13 +8,18 @@
 #
 ###############################################################################
 # CONTENTS: 
-#   This script implements a small unit testing framework for VIM. 
+#   This script implements a small testing framework for VIM. 
 #   
 # REMARKS: 
 #   
-# FILE_SCCS = "@(#)runVimTests.sh	003	(19-Feb-2009)	VIM Tools";
+# Copyright: (C) 2009 by Ingo Karkat
+#   The VIM LICENSE applies to this script; see 'vim -c ":help copyright"'.  
+#
+# FILE_SCCS = "@(#)runVimTests.sh	004	(24-Feb-2009)	VIM Tools";
 #
 # REVISION	DATE		REMARKS 
+#	004	24-Feb-2009	Added short options -0/1/2 for the plugin load
+#				level. 
 #	003	19-Feb-2009	Added explicit option '--user' for the default
 #				VIM mode, and adding 'user' to
 #				%vimVariableOptionsValue% (so that tests can
@@ -84,7 +89,7 @@ verifyVimModeSetOnlyOnce()
 printShortUsage()
 {
     cat <<SHORTHELPTEXT
-Usage: "$(basename "$0")" [--pure|--default|--user] [--source filespec [--source filespec [...]]] [--runtime plugin/file.vim [--runtime autoload/file.vim [...]]] [--vimexecutable path/to/vim] [-g|--graphical] [--summaryonly] [--debug] [--help] test001.vim|testsuite.txt|path/to/testdir/ [...]
+Usage: "$(basename "$0")" [-0|--pure|-1|--default|-2|--user] [--source filespec [--source filespec [...]]] [--runtime plugin/file.vim [--runtime autoload/file.vim [...]]] [--vimexecutable path/to/vim] [-g|--graphical] [--summaryonly] [--debug] [-?|-h|--help] test001.vim|testsuite.txt|path/to/testdir/ [...]
 SHORTHELPTEXT
 }
 printUsage()
@@ -101,17 +106,17 @@ printLongUsage()
     # This is the long "man page" when launched with the help argument. 
     # It is printed to stdout to allow paging with 'more'. 
     cat <<HELPDESCRIPTION
-A small unit testing framework for VIM. 
+A small testing framework for VIM. 
 HELPDESCRIPTION
     echo
     printShortUsage
     cat <<HELPTEXT
-    --pure		Start VIM without loading .vimrc and plugins, but in
+    -0|--pure		Start VIM without loading .vimrc and plugins, but in
 			nocompatible mode. Adds 'pure' to ${vimVariableOptionsName}.
-    --default		Start VIM only with default settings and plugins,
+    -1|--default	Start VIM only with default settings and plugins,
 			without loading user .vimrc and plugins.
 			Adds 'default' to ${vimVariableOptionsName}.
-    --user		(Default:) Start VIM with user .vimrc and plugins.
+    -2|--user		(Default:) Start VIM with user .vimrc and plugins.
     --source filespec	Source filespec before test execution.
     --runtime filespec	Source filespec relative to ~/.vim. Can be used to
 			load the script-under-test when using --pure.
@@ -452,17 +457,17 @@ while [ $# -ne 0 ]
 do
     case "$1" in
 	--help|-h|-\?)	    shift; printLongUsage; exit 1;;
-	--pure)		    verifyVimModeSetOnlyOnce "$1"
+	--pure|-0)	    verifyVimModeSetOnlyOnce "$1"
 			    shift
 			    vimArguments="-N -u NONE $vimArguments"
 			    vimMode='pure'
 			    ;;
-	--default)	    verifyVimModeSetOnlyOnce "$1"
+	--default|-1)	    verifyVimModeSetOnlyOnce "$1"
 			    shift
 			    vimArguments="--cmd 'set rtp=\$VIM/vimfiles,\$VIMRUNTIME,\$VIM/vimfiles/after' -N -u NORC -c 'set rtp&' $vimArguments"
 			    vimMode='default'
 			    ;;
-	--user)		    verifyVimModeSetOnlyOnce "$1"
+	--user|-2)	    verifyVimModeSetOnlyOnce "$1"
 			    shift
 			    vimMode='user'
 			    ;;
