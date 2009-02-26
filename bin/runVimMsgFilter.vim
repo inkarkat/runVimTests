@@ -57,6 +57,8 @@
 "   launcher script. 
 
 " DEPENDENCIES:
+"   - Requires VIM 7.2 or higher.  
+"
 " CONFIGURATION:
 " INTEGRATION:
 " LIMITATIONS:
@@ -70,6 +72,7 @@
 " Maintainer:	Ingo Karkat <ingo@karkat.de>
 "
 " REVISION	DATE		REMARKS 
+"	003	10-Feb-2009	Using fnameescape(). 
 "	002	28-Jan-2009	Now removing trailing empty line in result
 "				buffer, so that the test results dump to stdout
 "				isn't torn apart by an empty line. 
@@ -78,7 +81,7 @@
 "	001	26-Jan-2009	file creation
 
 " Avoid installing twice or when in unsupported VIM version. 
-if exists('g:loaded_runVimMsgFilter') || (v:version < 700)
+if exists('g:loaded_runVimMsgFilter') || (v:version < 702)
     finish
 endif
 let g:loaded_runVimMsgFilter = 1
@@ -247,11 +250,11 @@ function! s:LoadAndRun()
 	return
     endif
 
-    execute 'edit' l:baseFilespec . '.msgok'
+    execute 'edit' fnameescape(l:baseFilespec . '.msgok')
     let l:msgokBufNr = bufnr('')
-    execute 'edit' l:baseFilespec . '.msgout'
+    execute 'edit' fnameescape(l:baseFilespec . '.msgout')
     let l:msgoutBufNr = bufnr('')
-    execute 'edit' l:baseFilespec . '.msgresult'
+    execute 'edit' fnameescape(l:baseFilespec . '.msgresult')
     let l:resultBufNr = bufnr('')
 
     call s:Run(l:msgokBufNr, l:msgoutBufNr, l:resultBufNr)
