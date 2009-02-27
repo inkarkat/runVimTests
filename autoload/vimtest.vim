@@ -1,20 +1,7 @@
-" TODO: summary
+" vimtest.vim: General utility functions for the runVimTests testing framework. 
 "
-" DESCRIPTION:
-" USAGE:
-" INSTALLATION:
-"   Put the script into your user or system VIM plugin directory (e.g.
-"   ~/.vim/plugin). 
-
 " DEPENDENCIES:
 "   - escapings.vim autoload script (for VIM 7.0/7.1). 
-"
-" CONFIGURATION:
-" INTEGRATION:
-" LIMITATIONS:
-" ASSUMPTIONS:
-" KNOWN PROBLEMS:
-" TODO:
 "
 " Copyright: (C) 2009 by Ingo Karkat
 "   The VIM LICENSE applies to this script; see ':help copyright'. 
@@ -22,8 +9,9 @@
 " Maintainer:	Ingo Karkat <ingo@karkat.de>
 "
 " REVISION	DATE		REMARKS 
-"	004	19-Feb-2009	Added vimtest#System() and vimtap#Error(), plus
-"				a stub for vimtest#Skip(). 
+"	004	19-Feb-2009	Added vimtest#System(), vimtap#Error() and
+"				vimtest#RequestInput(), plus a stub for
+"				vimtest#Skip(). 
 "	003	09-Feb-2009	The *.out files are always written with
 "				fileformat=unix to allow platform-independent
 "				comparisons. 
@@ -84,6 +72,16 @@ function! vimtest#SaveOut( ... )
     else
 	execute 'saveas! ++ff=unix ' . escapings#fnameescape(l:outname)
     endif
+endfunction
+
+function! vimtest#RequestInput( input )
+    echohl Search
+    echo "User: PLEASE PRESS '"
+    echohl ErrorMsg
+    echon a:input
+    echohl Search
+    echon "'"
+    echohl None
 endfunction
 
 " vim: set sts=4 sw=4 noexpandtab ff=unix fdm=syntax :
