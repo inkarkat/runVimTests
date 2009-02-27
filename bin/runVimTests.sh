@@ -300,6 +300,7 @@ compareMessages()
 	*)	echo >&2 "ASSERT: Received unknown result \"${evaluationResult}\" from RunVimMsgFilter."; exit 1;;
     esac
     if [ "$isExecutionOutput" -a "$isPrintEvaluation" ]; then
+	[ "$isPrintedHeader" ] || printTestHeader "$testFile" "$testName"
 	cat -- "$testMsgresult"
     fi
 }
@@ -326,6 +327,7 @@ parseTapOutput()
     # Print the entire TAP output if in verbose mode, else only print the failed
     # TAP test plus any failure details in the lines following it. 
     if [ "$isExecutionOutput" ]; then
+	[ "$isPrintedHeader" ] || printTestHeader "$testFile" "$testName"
 	if [ $verboseLevel -gt 0 ]; then
 	    cat -- "$1"
 	else
