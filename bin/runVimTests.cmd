@@ -8,7 +8,7 @@
 ::*
 ::*******************************************************************************
 ::* DESCRIPTION: 
-::	This script implements a small testing framework for VIM. 
+::	This script implements a testing framework for VIM. 
 ::
 ::* REMARKS: 
 ::       	
@@ -152,6 +152,9 @@ if exist "%vimGlobalSetupScript%" set vimArguments=%vimArguments% -S "%vimGlobal
 set verboseLevel=0
 set isExecutionOutput=1
 set EXECUTIONOUTPUT=
+
+:: Constants
+set PIPE=!PIPE!
 
 :commandLineOptions
 set arg=%~1
@@ -317,7 +320,7 @@ call :printShortUsage
 (echo.Try "%~nx0" --help for more information.)
 (goto:EOF)
 :printLongUsage
-(echo.A small testing framework for VIM.)
+(echo.A testing framework for VIM.)
 (echo.)
 call :printShortUsage
 (echo.    -0^|--pure		Start VIM without loading any .vimrc and plugins,)
@@ -408,23 +411,20 @@ if %verboseLevel% GTR 0 (
     echo.OK ^(%~1^)
 )
 (goto:EOF)
-:echoError
+:echoStatus
 if not defined isPrintedHeader call :printTestHeader "%testFile%" "%testName%"
 if not defined isExecutionOutput (goto:EOF)
-if "%~2" == "" (
-    echo.ERROR: %~1
+if "%~3" == "" (
+    echo.%~1: %~2|sed "s/%PIPE%/|/g"
 ) else (
-    echo.ERROR ^(%~1^): %~2
+    echo.%~1 ^(%~2^): %~3|sed "s/%PIPE%/|/g"
 )
 (goto:EOF)
+:echoError
+call :echoStatus "ERROR" %1 %2
+(goto:EOF)
 :echoFail
-if not defined isPrintedHeader call :printTestHeader "%testFile%" "%testName%"
-if not defined isExecutionOutput (goto:EOF)
-if "%~2" == "" (
-    echo.FAIL: %~1
-) else (
-    echo.FAIL ^(%~1^): %~2
-)
+call :echoStatus "FAIL" %1 %2
 (goto:EOF)
 
 ::------------------------------------------------------------------------------
@@ -511,6 +511,7 @@ if %verboseLevel% GTR 0 call :printTestHeader "%testFile%" "%testName%"
 :: # or <cword>) is part of a test filename. (On Windows somehow spaces must not
 :: necessarily be escaped?!)
 call %vimExecutable% -n -c "let %vimVariableTestName%='%testFilespec:'=''%'|set nomore verbosefile=%testMsgoutForSet%" %vimArguments%%vimLocalSetup% -S "%testFile: =\ %"
+:: vim.bat turns echo off. Redo here to allow debugging to continue. 
 @echo on
 @echo off %debug%
 
@@ -580,7 +581,7 @@ if %ERRORLEVEL% EQU 0 (
     call :echoOk "out"
 ) else if %ERRORLEVEL% EQU 1 (
     set /A thisFail+=1
-    call :echoFail "out" "expected output           I   actual output"
+    call :echoFail "out" "expected output           %PIPE%   actual output"
     %EXECUTIONOUTPUT% diff --side-by-side --width 80 -- %1 %2
 ) else (
     set /A thisError+=1
