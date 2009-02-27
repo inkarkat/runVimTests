@@ -8,16 +8,26 @@
 #
 ###############################################################################
 # CONTENTS: 
-#   This script implements a small testing framework for VIM. 
+#   This script implements a testing framework for VIM. 
 #   
 # REMARKS: 
 #   
+# DEPENDENCIES:
+#   - runVimMsgFilter.vim, located in this script's directory. 
+#
 # Copyright: (C) 2009 by Ingo Karkat
 #   The VIM LICENSE applies to this script; see 'vim -c ":help copyright"'.  
 #
-# FILE_SCCS = "@(#)runVimTests.sh	004	(24-Feb-2009)	VIM Tools";
+# FILE_SCCS = "@(#)runVimTests.sh	005	(25-Feb-2009)	VIM Tools";
 #
 # REVISION	DATE		REMARKS 
+#	005	25-Feb-2009	Now only printing failed tests and errors, and
+#				only explicitly mentioning the test if it wasn't
+#				successful. This greatly reduces the visual
+#				output the user has to scan.
+#				Added --verbose option to also print successful
+#				tests, the previous default behavior. 
+#				Added empty line between individual tests. 
 #	004	24-Feb-2009	Added short options -0/1/2 for the plugin load
 #				level. 
 #	003	19-Feb-2009	Added explicit option '--user' for the default
@@ -77,6 +87,7 @@ initialize()
     readonly vimGlobalSetupScript=${scriptDir}/$(basename -- "$0")Setup.vim
     [ -r "$vimGlobalSetupScript" ] && vimArguments="$vimArguments $(vimSourceCommand "$vimGlobalSetupScript")"
 
+    verboseLevel=0
     isExecutionOutput='true'
 }
 verifyVimModeSetOnlyOnce()
@@ -106,7 +117,7 @@ printLongUsage()
     # This is the long "man page" when launched with the help argument. 
     # It is printed to stdout to allow paging with 'more'. 
     cat <<HELPDESCRIPTION
-A small testing framework for VIM. 
+A testing framework for VIM. 
 HELPDESCRIPTION
     echo
     printShortUsage
@@ -121,7 +132,7 @@ HELPDESCRIPTION
     --runtime filespec	Source filespec relative to ~/.vim. Can be used to
 			load the script-under-test when using --pure.
     --vimexecutable	Use passed VIM executable instead of the one
-        path/to/vim	found in \$PATH.
+	path/to/vim	found in \$PATH.
     -g|--graphical	Use GUI version of VIM.
     --summaryonly	Do not show detailed transcript and differences, during
 			test run, only summary. 
@@ -136,12 +147,35 @@ executionOutput()
 {
     [ "$isExecutionOutput" ] && echo "$@"
 }
+echoOk()
+{
+    [ "$isExecutionOutput" -a $verboseLevel -gt 0 ] && echo "OK ($1)"
+}
+echoStatus()
+{
+    [ "$isPrintedHeader" ] || printTestHeader "$testFile" "$testName"
+    if [ "$isExecutionOutput" ]; then
+	if [ "$3" ]; then
+	    echo "$1 ($2): $3"
+	else
+	    echo "$1: $2"
+	fi
+    fi
+}
+echoError()
+{
+    echoStatus 'ERROR' "$@"
+}
+echoFail()
+{
+    echoStatus 'FAIL' "$@"
+}
 makePlural()
 {
     if [ $1 -eq 1 ]; then
 	echo "$2"
     else
-	echo "$2s"
+	echo "${2}s"
     fi
 }
 vimSourceCommand()
@@ -209,12 +243,16 @@ addToListError()
 }
 printTestHeader()
 {
+    isPrintedHeader='true'
     [ ! "$isExecutionOutput" ] && return
+
+    local -r headerMessage="${2}:"
+    echo
     # If the first line of the test script starts with '" Test', include this as
     # the test's synopsis in the test header. Otherwise, just print the test
     # name. Limit the test header to one unwrapped output line, i.e. truncate to
     # 80 characters. 
-    sed -n -e "1s/^\\d034 \\(Test.*\\)$/Running ${2}: \\1/p" -e 'tx' -e "1cRunning ${2}:" -e ':x' -- "$1" | sed '/^.\{80,\}/s/\(^.\{,76\}\).*$/\1.../'
+    sed -n -e "1s/^\\d034 \\(Test.*\\)$/${headerMessage} \\1/p" -e 'tx' -e "1c${headerMessage}" -e ':x' -- "$1" | sed '/^.\{80,\}/s/\(^.\{,76\}\).*$/\1.../'
 }
 
 compareOutput()
@@ -222,16 +260,17 @@ compareOutput()
     diff -q -- "$1" "$2" >/dev/null
     if [ $? -eq 0 ]; then
 	let thisOk+=1
-	executionOutput "OK (out)"
+	echoOk 'out'
     elif [ $? -eq 1 ]; then
 	let thisFail+=1
 	if [ "$isExecutionOutput" ]; then
+	    [ "$isPrintedHeader" ] || printTestHeader "$testFile" "$testName"
 	    printf "%-$((${COLUMNS:-80}/2-2))s|   %s\n" "FAIL (out): expected output" "actual output"
 	    diff --side-by-side --width ${COLUMNS:-80} -- "$1" "$2"
 	fi
     else
 	let thisError+=1
-	executionOutput "ERROR (out): diff operation failed."
+	echoError 'out' 'diff operation failed.'
     fi
 }
 compareMessages()
@@ -245,17 +284,22 @@ compareMessages()
 
     if [ ! -r "$testMsgresult" ]; then
 	let thisError+=1
-	executionOutput "ERROR (msgout): Evaluation of test messages failed."
+	echoError 'msgout' 'Evaluation of test messages failed.'
 	return
     fi
     typeset -r evaluationResult=$(sed -n '1s/^\([A-Z][A-Z]*\).*/\1/p' -- "$testMsgresult")
+    local isPrintEvaluation='true'
     case "$evaluationResult" in
-	OK)	let thisOk+=1;;
+	OK)	let thisOk+=1
+		if [ $verboseLevel -eq 0 ]; then
+		    isPrintEvaluation=
+		fi
+		;;
 	FAIL)	let thisFail+=1;;
 	ERROR)	let thisError+=1;;
 	*)	echo >&2 "ASSERT: Received unknown result \"${evaluationResult}\" from RunVimMsgFilter."; exit 1;;
     esac
-    if [ "$isExecutionOutput" ]; then
+    if [ "$isExecutionOutput" -a "$isPrintEvaluation" ]; then
 	cat -- "$testMsgresult"
     fi
 }
@@ -279,8 +323,14 @@ parseTapOutput()
 	esac
     done < "$1"
 
+    # Print the entire TAP output if in verbose mode, else only print the failed
+    # TAP test plus any failure details in the lines following it. 
     if [ "$isExecutionOutput" ]; then
-	cat -- "$1"
+	if [ $verboseLevel -gt 0 ]; then
+	    cat -- "$1"
+	else
+	    cat -- "$1" | sed -n -e '${/^#/H;x;/^not ok/p}' -e '/^not ok/{x;/^not ok/p;b}' -e '/^#/{H;b}' -e 'x;/^not ok/p'
+	fi
     fi
 
     if [ ! "$tapTestNum" ]; then
@@ -293,11 +343,11 @@ parseTapOutput()
     [ $tapTestDifference -lt 0 ] && let tapTestDifference*=-1
     if [ $tapTestCnt -lt $tapTestNum ]; then
 	let thisTests+=tapTestNum
-	executionOutput "ERROR (tap): Not all $tapTestNum planned tests have been executed, $tapTestDifference $(makePlural $tapTestDifference 'test') missed."
+	echoError 'tap' "Not all $tapTestNum planned tests have been executed, $tapTestDifference $(makePlural $tapTestDifference 'test') missed."
 	let thisError+=1
     elif [ $tapTestCnt -gt $tapTestNum ]; then
 	let thisTests+=tapTestCnt
-	executionOutput "ERROR (tap): $tapTestDifference more test $(makePlural $tapTestDifference 'execution') than planned."
+	echoError 'tap' "$tapTestDifference more test $(makePlural $tapTestDifference 'execution') than planned."
 	let thisError+=1
     else
 	let thisTests+=tapTestNum
@@ -339,7 +389,8 @@ runTest()
     local vimLocalSetup
     [ -f "$vimLocalSetupScript" ] && vimLocalSetup=" $(vimSourceCommand "${vimLocalSetupScript}")"
 
-    printTestHeader "$testFile" "$testName"
+    local isPrintedHeader=
+    [ $verboseLevel -gt 0 ] && printTestHeader "$testFile" "$testName"
 
     # Default VIM arguments and options:
     # -n		No swapfile. 
@@ -364,7 +415,7 @@ runTest()
 	    compareOutput "$testOk" "$testOut" "$testName"
 	else
 	    let thisError+=1
-	    executionOutput "ERROR (out): No test output."
+	    echoError 'out' 'No test output.'
 	fi
     fi
 
@@ -376,7 +427,7 @@ runTest()
 	    compareMessages "$testMsgok" "$testMsgout" "$testName"
 	else
 	    let thisError+=1
-	    executionOutput "ERROR (msgout): No test messages."
+	    echoError 'msgout' 'No test messages.'
 	fi
     fi
 
@@ -388,7 +439,7 @@ runTest()
     # Results evaluation. 
     if [ $thisTests -eq 0 ]; then
 	let thisError+=1
-	executionOutput "ERROR: No test results at all."
+	echoError 'No test results at all.'
     else
 	let cntTests+=thisTests
     fi
@@ -422,12 +473,11 @@ execute()
 
     executionOutput
     if [ "$vimArguments" ]; then
-	executionOutput "Starting test run with these VIM options:"
+	executionOutput 'Starting test run with these VIM options:'
 	executionOutput "$vimExecutable $vimArguments"
     else
-	executionOutput "Starting test run."
+	executionOutput 'Starting test run.'
     fi
-    executionOutput
 
     for arg
     do
@@ -491,6 +541,7 @@ do
 			    fi
 			    ;;
 	--summaryonly)	    shift; isExecutionOutput='true';;
+	--verbose|-v)	    shift; let verboseLevel+=1;;
 	-d|--debug)	    shift; vimVariableOptionsValue="${vimVariableOptionsValue}debug,";;
 	--)		    shift; break;;
 	-*)		    { echo "ERROR: Unknown option \"${1}\"!"; echo; printShortUsage; } >&2; exit 1;;
