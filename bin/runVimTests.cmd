@@ -20,6 +20,8 @@
 ::   The VIM LICENSE applies to this script; see 'vim -c ":help copyright"'.  
 ::
 ::* REVISION	DATE		REMARKS 
+::	017	28-Feb-2009	BF: FAIL (msgout) and FAIL (tap) didn't print
+::				test header in non-verbose mode. 
 ::	016	24-Feb-2009	Added short options -0/1/2 for the plugin load
 ::				level and -d for --debug. 
 ::				Added check for Unix tools; Unix tools can be
@@ -615,6 +617,7 @@ if "%result%" == "OK" (
 if "%result%" == "OK" (
     if %verboseLevel% EQU 0 (goto:EOF)
 )
+if not defined isPrintedHeader call :printTestHeader "%testFile%" "%testName%"
 %EXECUTIONOUTPUT% type "%testMsgresult%"
 (goto:EOF)
 
@@ -629,6 +632,7 @@ if "%~1 %~2" == "not ok" (
     set /A thisFail+=1
     set /A thisRun+=1
     set /A tapTestCnt+=1
+    set tapTestIsFailures=true
     (goto:EOF)
 )
 echo.%~1|grep -q -e "^[0-9][0-9]*\.\.[0-9][0-9]*$" || (goto:EOF)
@@ -637,6 +641,7 @@ for /F "tokens=1,2 delims=." %%a in ("%~1") do set /A tapTestNum=%%b - %%a + 1
 
 :parseTapOutput
 set tapTestNum=
+set tapTestIsFailures=
 set /A tapTestCnt=0
 for /F "eol=# tokens=1-3 delims= " %%i in (%~1) do call :parseTapLine "%%i" "%%j" "%%k" %2
 :: Print the entire TAP output if in verbose mode, else only print the failed
@@ -644,6 +649,9 @@ for /F "eol=# tokens=1-3 delims= " %%i in (%~1) do call :parseTapLine "%%i" "%%j
 if %verboseLevel% GTR 0 (
     %EXECUTIONOUTPUT% type "%~1"
 ) else (
+    if defined tapTestIsFailures (
+	if not defined isPrintedHeader call :printTestHeader "%testFile%" "%testName%"
+    )
     %EXECUTIONOUTPUT% type "%~1" | sed -n -e "${/^#/H;x;/^not ok/p}" -e "/^not ok/{x;/^not ok/p;b}" -e "/^#/{H;b}" -e "x;/^not ok/p"
 )
 
