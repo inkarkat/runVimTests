@@ -9,6 +9,8 @@
 " Maintainer:	Ingo Karkat <ingo@karkat.de>
 "
 " REVISION	DATE		REMARKS 
+"	005	28-Feb-2009	BF: Improved insertion of 'call' in
+"				vimtest#System(). 
 "	004	19-Feb-2009	Added vimtest#System(), vimtap#Error() and
 "				vimtest#RequestInput(), plus a stub for
 "				vimtest#Skip(). 
@@ -44,10 +46,19 @@ endfunction
 " function! vimtest#SkipTap( reason )
 
 function! vimtest#System( shellcmd )
-    " In case the shellcmd is a batch file, the invocation via 'cmd.exe /c ...'
-    " doesn't return the batch file's exit status. Since it's safe to invoke
-    " all executables through 'cmd.exe /c call ...', we always interject this. 
-    let l:shellcmd = (&shell =~? 'cmd\.exe$' ? 'call ' : '') . a:shellcmd
+    let l:shellcmd = a:shellcmd
+    if &shell =~? 'cmd\.exe$'
+	" In case the shellcmd is a batch file, the invocation via 'cmd.exe /c ...'
+	" doesn't return the batch file's exit status. Since it's safe to invoke
+	" all executables through 'cmd.exe /c call ...', we always interject
+	" this, unless it's already there. 
+	" We need to do a careful replacement here, the entire shell command may
+	" be enclosed in double quotes, so that command lists (e.g. cmd1 &&
+	" cmd2) work. 
+	if l:shellcmd !~# '^\("\)\?call .*\1$'
+	    let l:shellcmd = substitute(l:shellcmd, '^\("\)\?\zs\ze.*\1$', 'call ', '')
+	endif
+    endif
 
     let l:shelloutput = system(l:shellcmd)
     echo 'Executing shell command: ' . a:shellcmd
