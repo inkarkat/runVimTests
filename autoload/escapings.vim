@@ -7,6 +7,8 @@
 " Maintainer:	Ingo Karkat <ingo@karkat.de>
 "
 " REVISION	DATE		REMARKS 
+"	004	25-Feb-2009	Now using character list from ':help
+"				fnameescape()' (plus converting \ to /). 
 "	003	17-Feb-2009	Added optional a:isFullMatch argument to
 "				escapings#bufnameescape(). 
 "				Cleaned up documentation. 
@@ -101,7 +103,7 @@ function! escapings#fnameescape( filespec )
 if v:version >= 702
     return fnameescape(a:filespec)
 else
-    return escape( tr( a:filespec, '\', '/' ), ' \%#' )
+    return escape(tr( a:filespec, '\', '/' ), " \t\n*?[{`$\\%#'\"|!<")
 endif
 endfunction
 
