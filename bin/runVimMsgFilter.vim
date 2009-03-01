@@ -1,70 +1,8 @@
 " runVimMsgFilter.vim: Matching of *.msgok message assumptions against *.msgout
 " file, writing results into *.msgresult. 
 "
-" DESCRIPTION:
-"
-" USAGE:
-"   Invoke VIM via
-"	vim -S runVimMsgFilter.vim -c "RunVimMsgFilter" -c "quitall!" testXXX.msgok
-"   The filter run will save the results in testXXX.msgresult in the same
-"   directory as the *.msgok file; it will override a previous result. 
-"
-"   The first line of the result will contain a summary, starting with either
-"   'OK (msgout):', 'ERROR (msgout):' or 'FAIL (msgout):'. In case of failures
-"   (but not when everything failed), details about the unmatched message
-"   assertion and the affected lines will be appended. 
-"
-" MSGOK:
-"   The testXXX.msgok file contains multiple message assertions, which are
-"   separated by empty (i.e. containing only optional whitespace) lines. 
-"   Each message assertion is compiled into a VIM regexp, e.g.
-"	foo
-"	bar
-"	baz
-"   is compiled into (more or less): /^foo\nbar\nbaz\n/
-"   A message assertion can be a mix of literal strings and regular expressions,
-"   which are delimited by a common non-alphabetic, non-whitespace character
-"   (e.g. /.../ or +...+, but not \...\ or "..."), e.g.
-"	/foo\+ is \d\{3,6} in \(here\|there\)/. 
-"   Each regular expression line is automatically anchored to the start and end
-"   of a line, so the '^' and '$' atoms need not be specified. 
-"
-"   During the filtering run, message assertions are processed sequentially from
-"   first to last, trying to match the actual message output from top to bottom.
-"   If a message assertion matches, it consumes that part of the message output,
-"   i.e. the next assertions will only be tried at the remainder. If a message
-"   assertion doesn't match until the end of the message output, it has failed
-"   and the next assertion is tried, beginning at the same current start
-"   position. If a message condition matches, it is spent and is not reapplied.
-"   Thus, if you want to match the same text multiple times, either build a
-"   complex multi-line regexp with multiplicity (\{n,m}), or include a simple
-"   assertion multiple times in a row. 
-"
-" TIPS:
-"   To make sure that a message was actually generated from a particular
-"   instruction (and not accidentally by something unrelated), print a unique
-"   message immediately before the tested instruction, and include that text in
-"   the message condition, e.g.
-"   test001.vim: 
-"	echomsg 'Test: Nothing substituted'
-"	MySubstitutionCmd x=y y=x
-"   test001.msgok:
-"	Test: Nothing substituted
-"	MySubstitution - Didn't substitute anything.
-"
-" INSTALLATION:
-"   This script will be automatically sourced by the runVimTests unit test
-"   launcher script. 
-
 " DEPENDENCIES:
 "   - Requires VIM 7.2 or higher.  
-"
-" CONFIGURATION:
-" INTEGRATION:
-" LIMITATIONS:
-" ASSUMPTIONS:
-" KNOWN PROBLEMS:
-" TODO:
 "
 " Copyright: (C) 2009 by Ingo Karkat
 "   The VIM LICENSE applies to this script; see ':help copyright'. 
