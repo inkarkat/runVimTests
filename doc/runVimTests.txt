@@ -1,9 +1,11 @@
-*runVimTestsname.txt*      Summary sentence. 
+*runVimTests.txt*       A testing framework for VIM. 
 
-		       MY PLUGIN NAME    by Ingo Karkat
-							     *runVimTests-plugin*
+		       RUN VIM TESTS    by Ingo Karkat
+								 *runVimTests*
+motivation			|runVimTests-motivation|
 description			|runVimTests-description|
 usage	    			|runVimTests-usage|
+invoking    			|runVimTests-invoking|
 installation   			|runVimTests-installation|
 configuration  			|runVimTests-configuration|
 integration			|runVimTests-integration|
@@ -16,9 +18,44 @@ todo				|runVimTests-todo|
 history				|runVimTests-history|
 
 ==============================================================================
+MOTIVATION					      *runVimTests-motivation*
+
+Every script writer knows how tedious it is to update a published script. In
+addition to the basic functionality, many corner cases (empty line, last line,
+etc.) and failures (invalid filename, nomodifiable buffer) need to be tested,
+and people use VIM on different platforms (Windows / Linux), UIs (Console /
+GUI), with different sets of settings (.vimrc) and other loaded plugins.
+There already exist multiple unit test plugins and assertion facilities [1],
+which are good for checking invariants and verifying side effect-free
+implementation functions, but it is still hard to verify the complete plugin
+functionality because custom commands and mappings typically change the buffer
+contents, open additional windows, or produce other side effects. 
+
+This work aims to show that VIM, together with a shell script driver built
+around it, allows to write succinct, fully automated regression test suites
+through a combination of these verification methods:
+- Comparing buffer contents with a predefined nominal file. 
+- Matching actual VIM message output with a set of expected messages. 
+- Running unit tests or assertions inside VIM and evaluating the test results. 
+
+With this testing framework, Test-Driven Development can finally be practiced
+for VIM plugins, too. If you have existing plugins, just add a couple of basic
+test cases for a start. Soon, further updates and modifications can be done
+much more rapidly with reduced testing effort, and you can finally tackle that
+big refactoring that you've been wanting to do all the time, but were too
+afraid of because of the testing effort. The author has been following both
+approaches with great success. 
+
+[1]
+- vimUnit (by Staale Flock), vimscript #1125
+- tAssert (by Tom Link), vimscript #1730
+- VimTAP (by Meikel Brandmeyer), vimscript #2213
+- UT (by Luc Hermitte), http://code.google.com/p/lh-vim/wiki/UT
+
+
 DESCRIPTION					     *runVimTests-description*
 
-runVimTests implements a small unit testing framework for VIM. 
+runVimTests implements a testing framework for VIM. 
 
 Similar to the tests that are part of VIM's source distribution, each test
 consists of a testXXX.vim file which is executed in a a separate VIM instance.
@@ -31,6 +68,7 @@ file at the end of its execution. The contents of the testXXX.out test file
 must be identical to the provided testXXX.ok file for the test to succeed. The
 test can either generate the test output itself, or start by editing a
 testXXX.in (or similar) file and doing modifications to it. 
+Use this method to test commands or mappings that modify buffer contents. 
 
 CAPTURED MESSAGES					   *runVimTests-msgok*
 If a testXXX.msgok file is provided, the testXXX.vim file should generate VIM
@@ -42,19 +80,23 @@ Each assertion can match exactly once, and all assertions must match in the
 same order in the captured VIM messages. (But there can be additional VIM
 messages before, after and in between matches, so that you can omit irrelevant
 or platform-specific messages from the testXXX.msgok file.) For details, see
-runVimMsgFilter.vim. 
+|runVimMsgFilter|. 
+This method can verify that errors are reported correctly. Also use this
+method to test commands or mappings that print informational messages. 
 
 TAP UNIT TESTS						     *runVimTests-tap*
 If a testXXX.tap file exists at the end of a test execution, it is assumed to
-represent unit test output in the Test Anything Protocol [1], which is then
+represent unit test output in the Test Anything Protocol [2], which is then
 parsed and incorporated into the test run. This method allows detailed
 verification of custom commands, mappings as well as internal functions; the
 entire determination of the test result is done in VIM script. Each TAP unit
 test counts as one test, even though all those test results are produced by a
 single testXXX.vim file. If a plan announced more or less tests than what was
 found in the test output, the test is assumed to be erroneous. 
+Use this method to test the internal implementation functions, or to verify
+things that can be checked easily with VIM script. 
 
-[1]
+[2]
 web site: http://testanything.org,
 original implementation: http://search.cpan.org/~petdance/TAP-1.00/TAP.pm,
 TAP protocol for VIM: http://www.vim.org/scripts/script.php?script_id=2213
@@ -68,6 +110,9 @@ if the test execution does not produce the corresponding output files.
 ==============================================================================
 USAGE							   *runVimTests-usage*
 
+A test run is started through the "runVimTests.(sh|cmd)" script: >
+    $ runVimTests [{options}] test001.vim|testsuite.txt|path/to/testdir/ [...]
+<
 The tests are specified through these three methods, which can be combined: 
 - Directly specify the filespec of testXXX.vim test script file(s). 
 - Specify a directory; all *.vim files inside this directory (except for an
@@ -91,11 +136,100 @@ neither *.[msg]ok files nor any TAP output, or if the test result evaluation
 had a problem. The result of a correct test evaluation is either OK or FAIL. 
 
 ==============================================================================
+INVOKING						*runVimTests-invoking*
+
+The runVimTests script and thus the environment in which the tests are run can
+be configured via command-line options. 
+
+Additonal VIM scripts can be sourced via the --source {filespec} and --runtime
+{filespec} options. (Though it's often better to do this permanently in
+_setup.vim or by sourcing the scripts from within the testXXX.vim. Cp.
+|runVimTests-setup|.) 
+
+The VIM executable and version to run the tests can be specified via the
+--vimexecutable {path/to/vim} option (on Windows alternatively via
+--vimversion {NN}). Without this option, the default "vim" executable as found
+in $PATH is used. (You always need this default VIM, even if you specify a
+different executable for test execution, because that VIM is used to process
+the message output.) The --graphical options uses the GUI version GVIM. 
+
+In order to ensure that your script-under-test is compatible with other users'
+settings and not dependent on any of your personal settings, it is advisable
+to test at least with the default VIM settings in addition to your customized
+setup. For this, the plugin load level can be specified: 
+    -0 / --pure	    Starts VIM without loading any .vimrc and plugins, but in
+		    'nocompatible' mode. This is the most pure mode of using
+		    VIM. 
+    -1 / --default  Starts VIM only with default settings and plugins from the
+		    system $VIM directory. No user .vimrc or plugins are
+		    loaded. This emulates a fresh install of VIM. 
+    -2 / --user	    Starts VIM with user .vimrc and plugins, and thus provides
+		    exactly your personal setup you're used to. 
+Tip: If you have lots of plugins in your ~/.vim directory, using -1 can
+greatly speed up test execution. The default is -2, though. 
+Tip: If you want to test with especially unusual or tough settings, put them
+into a separate VIM script and use --source to include it in the test run. 
+
+Normally, only results of tests that do not succeed are listed, so that you
+can quickly focus on the problems. To see the entire test output, specify
+option --verbose. On the other hand, if you're only interested in a summary of
+the test execution, not in the individual test results, use --summaryonly. 
+
+To debug problematic tests, you normally can only inspect the message output
+after the fact. By specifying --debug, this option is accessible to the test
+via the|g:runVimTests|variable and can be used to add additional debug
+information or to leave the VIM instance running after the test has finished,
+so that you can inspect things in the live environment. The|vimtest#Quit()|
+function behaves in exactly this way. 
+
+==============================================================================
 INSTALLATION					    *runVimTests-installation*
 
-TODO
-						    *runVimTests-dependencies*
-- Requires VIM 7.0 or higher. 
+This framework is packaged as a ZIP archive. You can unpack it directly into
+|your-runtime-dir|(~/.vim), but you can also install the script executables
+somewhere else. 
+
+The script executables are in the bin/ subdirectory: >
+    bin/runVimTests.cmd
+    bin/runVimTests.sh
+    bin/runVimMsgFilter.vim
+They can be put anywhere (preferably somewhere in $PATH for easy invokation).
+runVimMsgFilter.vim must be in the same directory as the shell script. 
+
+The doc/ subdirectory contains the documentation. Put the files into
+~/.vim/doc and execute|:helptags|~/.vim/doc to re-generate the help tags. 
+
+The autoload/ subdirectory contains optional convenience and helper functions.
+(E.g.|vimtest#Quit()|, |vimtest#SaveOut()|, |vimtest#RequestInput()|, and
+more. See|vimtest-usage|for a full reference.) 
+Their use is not required, but they simplify the writing of tests. 
+
+The VimTAP plugin (vimscript #2213) needs to be installed separately. 
+
+The test/ subdirectory contains example test suites and a self-test of the
+test framework. For a simple sanity check, execute: >
+    $ runVimTests test/runVimTests/successful.suite
+which should print something like:
+    19 tests, 19 run: 19 OK, 0 failures, 0 errors. ~
+If this is the case, you can start exploring the example tests or just start
+writing your own|runVimTests-testscripts|! 
+
+DEPENDENCIES					    *runVimTests-dependencies*
+
+- Requires VIM 7.2 or higher as the default VIM found in $PATH.
+  Can run tests under older VIM versions, though: VIM 7.0 or higher is
+  required to use captured messages (as this depends on the 'verbosefile'
+  option) and TAP unit tests (vimtap.vim is an autoload script). The saved
+  buffer output method should even work with VIM 6. 
+
+The Windows version requires these ported Unix tools:
+- grep, sed, diff
+Windows binaries can be downloaded from the GnuWin32 project: 
+    http://gnuwin32.sourceforge.net/
+These binaries must be accessible through %PATH%. Alternatively, you can just
+make accessible an Windows shell script named "unix.cmd", which is then
+sourced in order to modify %PATH% to include the Unix tools. This way, you can
+avoid to permanently place these Unix tools into %PATH%. 
 
 ==============================================================================
 CONFIGURATION					   *runVimTests-configuration*
@@ -115,11 +249,16 @@ test's directory.
 The test framework sets these variables within the VIM test process:
 								*g:runVimTest*
 The g:runVimTest variable contains the absolute filespec of the currently
-executing test (which should be the same as expand('<sfile>:p')). 
+executing test (i.e. the same as expand('<sfile>:p')). 
 							       *g:runVimTests*
 The g:runVimTests variable contains the test options for this test run,
-concatenated with ',':
-    pure    Test without loading .vimrc and plugins (runVimTests --pure). 
+concatenated with ",". The test options correspond to the default options and
+command-line arguments. 
+The VIM mode is one of: 
+    pure    Test without loading .vimrc and plugins. 
+    default Test without loading user .vimrc and plugins. 
+    user    (Default) test with user .vimrc and plugins. 
+In addition, these flags may be set: 
     debug   In test debugging mode (runVimTests --debug). 
 
 							   *runVimTests-setup*
@@ -133,7 +272,7 @@ require some additional library functions: >
     ...
     call IsBufferList(['foo.txt', 'bar.txt'], 'opened all text files')
 
-A global setup script "runVimTestsSetup.vim" must reside in the same directory
+A global setup script "runVimTestsSetup.vim" can reside in the same directory
 as the "runVimTests" shell script. It should contain system-specific setup
 code (e.g. if you have set a non-default 'runtimepath' in your .vimrc and you
 also want this set when run in pure mode, as your .vimrc isn't sourced then). 
@@ -154,23 +293,32 @@ filename with a .vim file extension. You may for example use prefixes like
 tests. 
 
 Depending on which method(s) shall be used for verification, the tests need
-to do:
+to do the following:
 
 SAVED BUFFER OUTPUT
 Load a predefined test input (e.g. testXXX.in), or start from scratch in the
 empty buffer, and make modifications to it. Finally, save the result in
-testXXX.out (in the same directory as the test itself). >
+testXXX.out (in the same directory as the test itself). You can do this via
+:saveas testXXX.out, but the|vimtest#SaveOut()|function is more comfortable
+and avoids hard-coding of the test name. >
     " Test successful saved buffer output. 
     normal! iSuccessful execution.
     call vimtest#SaveOut()
     call vimtest#Quit()
+In addition, you need to provide a testXXX.ok file to which the output is
+compared against: >
+    Successful execution. 
 <
 CAPTURED MESSAGES
-Issue :echo or :echomsg, or execute commands that will cause messages. The
+Issue|:echo| or|:echomsg|, or execute commands that will cause messages. The
 messages are automatically captured in testXXX.msgout. >
     " Test successful message output. 
     echomsg 'Successful execution.'
     call vimtest#Quit()
+In addition, you need to provide a testXXX.msgok file to which the captured
+messages are compared against; the|runVimMsgFilter|also allows to match
+against patterns: >
+    /Successful \([rR]un\|[eE]xecution\)./
 <
 TAP UNIT TESTS
 Initialize the TAP testing framework with the output file name testXXX.tap,
@@ -186,8 +334,11 @@ output. >
     call vimtap#Like('foobar 2000', 'fo\+.* \d\+', 'matches')
     call vimtap#Diag('Some diagnostic message.')
     call vimtest#Quit()
-<
+Here, no additional file needs to be provided, as the verification is
+implemented in the TAP test itself. 
 
+
+GENERAL CONSIDERATIONS
 If the first line of the test contains a comment starting with: '" Test', this
 is taken as the test synopsis and included in the test header that is printed
 before each test is executed. Example: >
@@ -198,19 +349,39 @@ that the next test can be executed in a newly spawned VIM instance. The
 |vimtest#Quit()|function takes care of that. 
 
 ==============================================================================
-LIMITATIONS					     *runVimTests-limitations*
+LIMITATIONS					     runVimTests-limitations
 
 ==============================================================================
-ASSUMPTIONS					     *runVimTests-assumptions*
+ASSUMPTIONS					     runVimTests-assumptions
 
 ==============================================================================
-KNOWN PROBLEMS					  *runVimTests-known-problems*
+KNOWN PROBLEMS					  runVimTests-known-problems
 
 ==============================================================================
 TODO							    *runVimTests-todo*
 
+- Implemented skipping of tests (via special message in *.msgout and by
+  parsing TAP output). 
+- Store failed tests in lastfailed.suite and add option --lastfailed to
+  re-run. 
+- Also count test files (*.vim). 
+
+IDEAS							   *runVimTests-ideas*
+- Replace the bash / Windows shell scripts with a cross-platform (Perl, Ruby?)
+  script once it becomes too unwieldy. (Many will argue it already did.)
+
 ==============================================================================
 HISTORY							 *runVimTests-history*
+
+1.00	02-Mar-2009
+First published version. 
+
+0.10	11-Feb-2009
+Completed initial porting of runVimTests.cmd to Bash shell script
+runVimTests.sh. 
+
+0.01	12-Jan-2009
+Started development. 
 
 ==============================================================================
 Copyright: (C) 2009 by Ingo Karkat
