@@ -1,0 +1,7 @@
+Test: Expecting E21 here
+/.*[/\\]test002\.vim:/
+/.*\d:/
+/E21: .*'modifiable'.*/
+
+Test: Expecting no error here
+Test: Done
