@@ -1,6 +1,7 @@
 " vimtest.vim: General utility functions for the runVimTests testing framework. 
 "
 " DEPENDENCIES:
+"   - Requires VIM 7.0 or higher.  
 "   - escapings.vim autoload script (for VIM 7.0/7.1). 
 "
 " Copyright: (C) 2009 by Ingo Karkat
@@ -9,6 +10,9 @@
 " Maintainer:	Ingo Karkat <ingo@karkat.de>
 "
 " REVISION	DATE		REMARKS 
+"   1.00.006	02-Mar-2009	Adapted to VimTAP 0.3: Changed function name to
+"				vimtap#SetOutputFile() and added
+"				vimtap#FlushOutput(). 
 "	005	28-Feb-2009	BF: Improved insertion of 'call' in
 "				vimtest#System(). 
 "	004	19-Feb-2009	Added vimtest#System(), vimtap#Error() and
@@ -29,6 +33,10 @@
 "	001	25-Jan-2009	file creation
 
 function! vimtest#Quit()
+    if s:isTap
+	call vimtap#FlushOutput()
+    endif
+
     if ! (exists('g:runVimTests') && g:runVimTests =~# '\<debug\>')
 	quitall!
     endif
@@ -73,12 +81,14 @@ function! s:MakeFilename( arguments, extension )
     let l:testname = (len(a:arguments) > 0 ? a:arguments[0] : (exists('g:runVimTest') ? g:runVimTest : 'unknown'))
     return fnamemodify(l:testname, ':p:r') . a:extension
 endfunction
+let s:isTap = 0
 function! vimtest#StartTap( ... )
-    call vimtap#Output(s:MakeFilename(a:000, '.tap'))
+    call vimtap#SetOutputFile(s:MakeFilename(a:000, '.tap'))
+    let s:isTap = 1
 endfunction
 function! vimtest#SaveOut( ... )
     let l:outname = s:MakeFilename(a:000, '.out')
-    if v:version >= 702
+    if exists('*fnameescape')
 	execute 'saveas! ++ff=unix ' . fnameescape(l:outname)
     else
 	execute 'saveas! ++ff=unix ' . escapings#fnameescape(l:outname)
