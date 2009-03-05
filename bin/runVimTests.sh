@@ -2,8 +2,8 @@
 ##########################################################################/^--#
 ##
 # FILE: 	runVimTests.sh
-# PRODUCT:	VIM tools
-# AUTHOR: 	/^--
+# PRODUCT:	runVimTests
+# AUTHOR: 	Ingo Karkat <ingo@karkat.de>
 # DATE CREATED:	02-Feb-2009
 #
 ###############################################################################
@@ -18,9 +18,14 @@
 # Copyright: (C) 2009 by Ingo Karkat
 #   The VIM LICENSE applies to this script; see 'vim -c ":help copyright"'.  
 #
-# FILE_SCCS = "@(#)runVimTests.sh	005	(25-Feb-2009)	VIM Tools";
+# FILE_SCCS = "@(#)runVimTests.sh	1.00.007	(02-Mar-2009)	runVimTests";
 #
 # REVISION	DATE		REMARKS 
+#   1.00.007	02-Mar-2009	Reviewed for publication. 
+#	006	28-Feb-2009	BF: FAIL (msgout) and FAIL (tap) didn't print
+#				test header in non-verbose mode. 
+#				Refactored :printTestHeader so that it does the
+#				check for already printed header itself. 
 #	005	25-Feb-2009	Now only printing failed tests and errors, and
 #				only explicitly mentioning the test if it wasn't
 #				successful. This greatly reduces the visual
@@ -153,7 +158,7 @@ echoOk()
 }
 echoStatus()
 {
-    [ "$isPrintedHeader" ] || printTestHeader "$testFile" "$testName"
+    printTestHeader "$testFile" "$testName"
     if [ "$isExecutionOutput" ]; then
 	if [ "$3" ]; then
 	    echo "$1 ($2): $3"
@@ -243,6 +248,7 @@ addToListError()
 }
 printTestHeader()
 {
+    [ "$isPrintedHeader" ] && return
     isPrintedHeader='true'
     [ ! "$isExecutionOutput" ] && return
 
@@ -264,7 +270,7 @@ compareOutput()
     elif [ $? -eq 1 ]; then
 	let thisFail+=1
 	if [ "$isExecutionOutput" ]; then
-	    [ "$isPrintedHeader" ] || printTestHeader "$testFile" "$testName"
+	    printTestHeader "$testFile" "$testName"
 	    printf "%-$((${COLUMNS:-80}/2-2))s|   %s\n" "FAIL (out): expected output" "actual output"
 	    diff --side-by-side --width ${COLUMNS:-80} -- "$1" "$2"
 	fi
@@ -300,7 +306,7 @@ compareMessages()
 	*)	echo >&2 "ASSERT: Received unknown result \"${evaluationResult}\" from RunVimMsgFilter."; exit 1;;
     esac
     if [ "$isExecutionOutput" -a "$isPrintEvaluation" ]; then
-	[ "$isPrintedHeader" ] || printTestHeader "$testFile" "$testName"
+	printTestHeader "$testFile" "$testName"
 	cat -- "$testMsgresult"
     fi
 }
@@ -308,6 +314,7 @@ parseTapOutput()
 {
     local tapTestNum=
     local tapTestCnt=0
+    local tapTestIsFailures=
 
     local tapLine
     local IFS=$'\n'
@@ -316,7 +323,7 @@ parseTapOutput()
 	case "$tapLine" in
 	    \#*|'')		continue;;
 	    ok*)		let thisOk+=1   thisRun+=1 tapTestCnt+=1;;
-	    not\ ok*)		let thisFail+=1 thisRun+=1 tapTestCnt+=1;;
+	    not\ ok*)		let thisFail+=1 thisRun+=1 tapTestCnt+=1; tapTestIsFailures='true';;
 	    +([0-9])..+([0-9]))	local startNum=${tapLine%%.*}
 				local endNum=${tapLine##*.}
 				let tapTestNum=endNum-startNum+1
@@ -327,10 +334,11 @@ parseTapOutput()
     # Print the entire TAP output if in verbose mode, else only print the failed
     # TAP test plus any failure details in the lines following it. 
     if [ "$isExecutionOutput" ]; then
-	[ "$isPrintedHeader" ] || printTestHeader "$testFile" "$testName"
 	if [ $verboseLevel -gt 0 ]; then
+	    # In verbose mode, the test header has already been printed. 
 	    cat -- "$1"
 	else
+	    [ "$tapTestIsFailures" ] && printTestHeader "$testFile" "$testName"
 	    cat -- "$1" | sed -n -e '${/^#/H;x;/^not ok/p}' -e '/^not ok/{x;/^not ok/p;b}' -e '/^#/{H;b}' -e 'x;/^not ok/p'
 	fi
     fi
