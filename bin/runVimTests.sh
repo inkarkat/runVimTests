@@ -18,9 +18,10 @@
 # Copyright: (C) 2009 by Ingo Karkat
 #   The VIM LICENSE applies to this script; see 'vim -c ":help copyright"'.  
 #
-# FILE_SCCS = "@(#)runVimTests.sh	1.00.007	(02-Mar-2009)	runVimTests";
+# FILE_SCCS = "@(#)runVimTests.sh	1.10.008	(06-Mar-2009)	runVimTests";
 #
 # REVISION	DATE		REMARKS 
+#   1.10.008	06-Mar-2009	ENH: Also counting test files. 
 #   1.00.007	02-Mar-2009	Reviewed for publication. 
 #	006	28-Feb-2009	BF: FAIL (msgout) and FAIL (tap) didn't print
 #				test header in non-verbose mode. 
@@ -371,6 +372,7 @@ runTest()
 	echo >&2 "ERROR: Test file \"$1\" doesn't exist."
 	return
     fi
+    let cntTestFiles+=1
 
     typeset -r testDirspec=$(dirname -- "$1")
     typeset -r testFile=$(basename -- "$1")
@@ -473,6 +475,7 @@ runTest()
 
 execute()
 {
+    cntTestFiles=0
     cntTests=0
     cntRun=0
     cntOk=0
@@ -497,7 +500,7 @@ execute()
 report()
 {
     echo
-    echo "$cntTests $(makePlural $cntTests 'test'), $cntRun run: $cntOk OK, $cntFail $(makePlural $cntFail 'failure'), $cntError $(makePlural $cntError 'error')."
+    echo "$cntTestFiles $(makePlural $cntTestFiles 'file') with $cntTests $(makePlural $cntTests 'test'), $cntRun run: $cntOk OK, $cntFail $(makePlural $cntFail 'failure'), $cntError $(makePlural $cntError 'error')."
     [ "$listFailed" ] && echo "Failed tests: ${listFailed%, }"
     [ "$listError" ] && echo "Tests with errors: ${listError%, }"
 
