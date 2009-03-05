@@ -2,8 +2,8 @@
 ::/*************************************************************************/^--*
 ::**
 ::* FILE: 	runVimTests.cmd
-::* PRODUCT:	VIM tools
-::* AUTHOR: 	/^--
+::* PRODUCT:	runVimTests
+::* AUTHOR: 	Ingo Karkat <ingo@karkat.de>
 ::* DATE CREATED:   12-Jan-2009
 ::*
 ::*******************************************************************************
@@ -20,8 +20,11 @@
 ::   The VIM LICENSE applies to this script; see 'vim -c ":help copyright"'.  
 ::
 ::* REVISION	DATE		REMARKS 
+::  1.00.018	02-Mar-2009	Reviewed for publication. 
 ::	017	28-Feb-2009	BF: FAIL (msgout) and FAIL (tap) didn't print
 ::				test header in non-verbose mode. 
+::				Refactored :printTestHeader so that it does the
+::				check for already printed header itself. 
 ::	016	24-Feb-2009	Added short options -0/1/2 for the plugin load
 ::				level and -d for --debug. 
 ::				Added check for Unix tools; Unix tools can be
@@ -388,7 +391,8 @@ del "%capturedVimErrorOutput%" >NUL 2>&1
 (goto:EOF)
 
 :printTestHeader
-set isPrintedHeader=1
+if defined isPrintedHeader (goto:EOF)
+set isPrintedHeader=true
 if not defined isExecutionOutput (goto:EOF)
 
 set headerMessage=%~2:
@@ -414,7 +418,7 @@ if %verboseLevel% GTR 0 (
 )
 (goto:EOF)
 :echoStatus
-if not defined isPrintedHeader call :printTestHeader "%testFile%" "%testName%"
+call :printTestHeader "%testFile%" "%testName%"
 if not defined isExecutionOutput (goto:EOF)
 if "%~3" == "" (
     echo.%~1: %~2|sed "s/%PIPE%/|/g"
@@ -617,7 +621,7 @@ if "%result%" == "OK" (
 if "%result%" == "OK" (
     if %verboseLevel% EQU 0 (goto:EOF)
 )
-if not defined isPrintedHeader call :printTestHeader "%testFile%" "%testName%"
+call :printTestHeader "%testFile%" "%testName%"
 %EXECUTIONOUTPUT% type "%testMsgresult%"
 (goto:EOF)
 
@@ -641,8 +645,8 @@ for /F "tokens=1,2 delims=." %%a in ("%~1") do set /A tapTestNum=%%b - %%a + 1
 
 :parseTapOutput
 set tapTestNum=
-set tapTestIsFailures=
 set /A tapTestCnt=0
+set tapTestIsFailures=
 for /F "eol=# tokens=1-3 delims= " %%i in (%~1) do call :parseTapLine "%%i" "%%j" "%%k" %2
 :: Print the entire TAP output if in verbose mode, else only print the failed
 :: TAP test plus any failure details in the lines following it. 
@@ -650,7 +654,7 @@ if %verboseLevel% GTR 0 (
     %EXECUTIONOUTPUT% type "%~1"
 ) else (
     if defined tapTestIsFailures (
-	if not defined isPrintedHeader call :printTestHeader "%testFile%" "%testName%"
+	call :printTestHeader "%testFile%" "%testName%"
     )
     %EXECUTIONOUTPUT% type "%~1" | sed -n -e "${/^#/H;x;/^not ok/p}" -e "/^not ok/{x;/^not ok/p;b}" -e "/^#/{H;b}" -e "x;/^not ok/p"
 )
