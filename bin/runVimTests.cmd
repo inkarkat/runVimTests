@@ -24,6 +24,14 @@
 ::				ENH: Message output is now parsed for signals to
 ::				this test driver. Implemented signals: BAILOUT!,
 ::				ERROR, SKIP, SKIP(out), SKIP(msgout), SKIP(tap). 
+::				Summary reports skipped tests and tests with
+::				skips. 
+::				Replaced duplicate processing in
+::				:commandLineLoop with call to
+::				:processSuiteEntry. 
+::				Changed API for :echoStatus. 
+::				BF: Also re-enable debugging after VIM
+::				invocation in :compareMessages. 
 ::  1.00.018	02-Mar-2009	Reviewed for publication. 
 ::	017	28-Feb-2009	BF: FAIL (msgout) and FAIL (tap) didn't print
 ::				test header in non-verbose mode. 
@@ -277,6 +285,7 @@ set /A cntSkip=0
 set /A cntFail=0
 set /A cntError=0
 set listSkipped=
+set listSkips=
 set listFailed=
 set listError=
 
@@ -299,10 +308,11 @@ if %cntTestFiles% NEQ 1 set pluralTestFiles=s
 if %cntTests% NEQ 1 set pluralTests=s
 if %cntFail% NEQ 1 set pluralFail=s
 if %cntError% NEQ 1 set pluralError=s
-if defined isBailOut set bailOutMessage= ^(aborted^)
+if defined isBailOut set bailOutNotification= ^(aborted^)
 echo.
-echo.%cntTestFiles% file%pluralTestFiles% with %cntTests% test%pluralTests%%bailOutMessage%; %cntSkip% skipped, %cntRun% run: %cntOk% OK, %cntFail% failure%pluralFail%, %cntError% error%pluralError%.
+echo.%cntTestFiles% file%pluralTestFiles% with %cntTests% test%pluralTests%%bailOutNotification%; %cntSkip% skipped, %cntRun% run: %cntOk% OK, %cntFail% failure%pluralFail%, %cntError% error%pluralError%.
 if defined listSkipped (echo.Skipped tests: %listSkipped:~0,-2%)
+if defined listSkips (echo.Tests with skips: %listSkips:~0,-2%)
 if defined listFailed (echo.Failed tests: %listFailed:~0,-2%)
 if defined listError (echo.Tests with errors: %listError:~0,-2%)
 
@@ -405,6 +415,9 @@ sed -n -e "1s/^\d034 \(Test.*\)$/%headerMessage% \1/p" -e "tx" -e "1c%headerMess
 
 :addToListSkipped
 echo.%listSkipped% | findstr /C:%1 >NUL || set listSkipped=%listSkipped%%~1, 
+(goto:EOF)
+:addToListSkips
+echo.%listSkips% | findstr /C:%1 >NUL || set listSkips=%listSkips%%~1, 
 (goto:EOF)
 :addToListFailed
 echo.%listFailed% | findstr /C:%1 >NUL || set listFailed=%listFailed%%~1, 
@@ -617,7 +630,11 @@ if %thisOk% GEQ 1 (
 )
 if %thisSkip% GEQ 1 (
     set /A cntSkip+=%thisSkip%
-    call :addToListSkipped "%testName%"
+    if %thisSkip% EQU %thisTests% (
+	call :addToListSkipped "%testName%"
+    ) else (
+	call :addToListSkips "%testName%"
+    )
 )
 if %thisFail% GEQ 1 (
     set /A cntFail+=%thisFail%
