@@ -372,8 +372,6 @@ runTest()
 	echo >&2 "ERROR: Test file \"$1\" doesn't exist."
 	return
     fi
-    let cntTestFiles+=1
-
     typeset -r testDirspec=$(dirname -- "$1")
     typeset -r testFile=$(basename -- "$1")
     typeset -r testFilespec=$(cd "$testDirspec" && echo "${PWD}/${testFile}") || { echo >&2 "ERROR: Cannot determine absolute filespec!"; exit 1; }
@@ -388,6 +386,7 @@ runTest()
     typeset -r testMsgout=${testName}.msgout
     typeset -r testTap=${testName}.tap
 
+    let cntTestFiles+=1
     pushd "$testDirspec" >/dev/null
 
     # Remove old output files from the previous test run. 
@@ -479,8 +478,10 @@ execute()
     cntTests=0
     cntRun=0
     cntOk=0
+    cntSkip=0
     cntFail=0
     cntError=0
+    listSkipped=
     listFailed=
     listError=
 
@@ -500,7 +501,8 @@ execute()
 report()
 {
     echo
-    echo "$cntTestFiles $(makePlural $cntTestFiles 'file') with $cntTests $(makePlural $cntTests 'test'), $cntRun run: $cntOk OK, $cntFail $(makePlural $cntFail 'failure'), $cntError $(makePlural $cntError 'error')."
+    echo "$cntTestFiles $(makePlural $cntTestFiles 'file') with $cntTests $(makePlural $cntTests 'test'), $cntRun run: $cntOk OK, $cntSkip skipped, $cntFail $(makePlural $cntFail 'failure'), $cntError $(makePlural $cntError 'error')."
+    [ "$listSkipped" ] && echo "Skipped tests: ${listSkipped%, }"
     [ "$listFailed" ] && echo "Failed tests: ${listFailed%, }"
     [ "$listError" ] && echo "Tests with errors: ${listError%, }"
 
