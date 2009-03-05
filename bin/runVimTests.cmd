@@ -423,8 +423,8 @@ if %verboseLevel% GTR 0 (
 :: %1 status
 :: %2 method (or empty)
 :: %3 explanation (or empty)
-call :printTestHeader "%testFile%" "%testName%"
 if not defined isExecutionOutput (goto:EOF)
+call :printTestHeader "%testFile%" "%testName%"
 set status=%~1
 if not "%~2" == "" (
     set status=%status% ^(%~2^)
@@ -436,6 +436,8 @@ if "%~3" == "" (
 )
 (goto:EOF)
 :echoSkip
+if not defined isExecutionOutput (goto:EOF)
+if %verboseLevel% EQU 0 (goto:EOF)
 set skipMethod=%~1
 set skipMethod=%skipMethod:~5,-1%
 call :echoStatus "SKIP" "%skipMethod%" %2
