@@ -10,6 +10,8 @@
 " Maintainer:	Ingo Karkat <ingo@karkat.de>
 "
 " REVISION	DATE		REMARKS 
+"   1.10.007	05-Mar-2009	ENH: Added vimtest#BailOut(), vimtest#Error(),
+"				and vimtest#Skip...() functions. 
 "   1.00.006	02-Mar-2009	Adapted to VimTAP 0.3: Changed function name to
 "				vimtap#SetOutputFile() and added
 "				vimtap#FlushOutput(). 
@@ -41,17 +43,30 @@ function! vimtest#Quit()
 	quitall!
     endif
 endfunction
+
+function! s:SignalToDriver( signal, reason )
+    echo 'runVimTests: ' . a:signal .  (empty(a:reason) ? '' : ' ' . a:reason)
+endfunction
+function! vimtest#BailOut( reason )
+    call s:SignalToDriver('BAILOUT!', a:reason)
+    call vimtest#Quit()
+endfunction
 function! vimtest#Error( reason )
-    " TODO: Implement. 
+    call s:SignalToDriver('ERROR', a:reason)
+endfunction
+function! vimtest#SkipAndQuit( reason )
+    call s:SignalToDriver('SKIP', a:reason)
     call vimtest#Quit()
 endfunction
-function! vimtest#Skip( reason )
-    " TODO: Implement. 
-    call vimtest#Quit()
+function! vimtest#SkipOut( reason )
+    call s:SignalToDriver('SKIP(out)', a:reason)
 endfunction
-" function! vimtest#SkipOut( reason )
-" function! vimtest#SkipMsgout( reason )
-" function! vimtest#SkipTap( reason )
+function! vimtest#SkipMsgout( reason )
+    call s:SignalToDriver('SKIP(msgout)', a:reason)
+endfunction
+function! vimtest#SkipTap( reason )
+    call s:SignalToDriver('SKIP(tap)', a:reason)
+endfunction
 
 function! vimtest#System( shellcmd )
     let l:shellcmd = a:shellcmd
