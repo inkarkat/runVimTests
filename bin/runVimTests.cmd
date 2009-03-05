@@ -21,6 +21,9 @@
 ::
 ::* REVISION	DATE		REMARKS 
 ::  1.10.019	06-Mar-2009	ENH: Also counting test files. 
+::				ENH: Message output is now parsed for signals to
+::				this test driver. Implemented signals: BAILOUT!,
+::				ERROR, SKIP, SKIP(out), SKIP(msgout), SKIP(tap). 
 ::  1.00.018	02-Mar-2009	Reviewed for publication. 
 ::	017	28-Feb-2009	BF: FAIL (msgout) and FAIL (tap) didn't print
 ::				test header in non-verbose mode. 
@@ -158,6 +161,7 @@ if exist "%vimGlobalSetupScript%" set vimArguments=%vimArguments% -S "%vimGlobal
 set verboseLevel=0
 set isExecutionOutput=1
 set EXECUTIONOUTPUT=
+set isBailOut=
 
 :: Constants
 set PIPE=!PIPE!
@@ -269,8 +273,10 @@ set /A cntTestFiles=0
 set /A cntTests=0
 set /A cntRun=0
 set /A cntOk=0
+set /A cntSkip=0
 set /A cntFail=0
 set /A cntError=0
+set listSkipped=
 set listFailed=
 set listError=
 
@@ -283,30 +289,20 @@ if defined vimArguments (
 )
 
 :commandLineLoop
-set arg=%~1
-set argExt=%~x1
-set argAsDirspec=%~1
-if not "%argAsDirspec:~-1%" == "\" set argAsDirspec=%argAsDirspec%\
+call :processSuiteEntry "%~1"
 shift /1
-
-if exist "%argAsDirspec%" (
-    call :runDir "%argAsDirspec%"
-) else if "%argext%" == ".vim" (
-    call :runTest "%arg%"
-) else if exist "%arg%" (
-    call :runSuite "%arg%"
-) else (
-    set /A cntError+=1
-    (echo.ERROR: Suite file "%arg%" doesn't exist.)
-)
+if defined isBailOut (goto:commandLineLoopEnd)
 if not "%~1" == "" (goto:commandLineLoop)
 
+:commandLineLoopEnd
 if %cntTestFiles% NEQ 1 set pluralTestFiles=s
 if %cntTests% NEQ 1 set pluralTests=s
 if %cntFail% NEQ 1 set pluralFail=s
 if %cntError% NEQ 1 set pluralError=s
+if defined isBailOut set bailOutMessage= ^(aborted^)
 echo.
-echo.%cntTestFiles% file%pluralTestFiles% with %cntTests% test%pluralTests%, %cntRun% run: %cntOk% OK, %cntFail% failure%pluralFail%, %cntError% error%pluralError%.
+echo.%cntTestFiles% file%pluralTestFiles% with %cntTests% test%pluralTests%%bailOutMessage%; %cntSkip% skipped, %cntRun% run: %cntOk% OK, %cntFail% failure%pluralFail%, %cntError% error%pluralError%.
+if defined listSkipped (echo.Skipped tests: %listSkipped:~0,-2%)
 if defined listFailed (echo.Failed tests: %listFailed:~0,-2%)
 if defined listError (echo.Tests with errors: %listError:~0,-2%)
 
@@ -407,6 +403,9 @@ echo.
 sed -n -e "1s/^\d034 \(Test.*\)$/%headerMessage% \1/p" -e "tx" -e "1c%headerMessage%" -e ":x" -- %1 | sed "/^.\{80,\}/s/\(^.\{,76\}\).*$/\1.../"
 (goto:EOF)
 
+:addToListSkipped
+echo.%listSkipped% | findstr /C:%1 >NUL || set listSkipped=%listSkipped%%~1, 
+(goto:EOF)
 :addToListFailed
 echo.%listFailed% | findstr /C:%1 >NUL || set listFailed=%listFailed%%~1, 
 (goto:EOF)
@@ -421,24 +420,38 @@ if %verboseLevel% GTR 0 (
 )
 (goto:EOF)
 :echoStatus
+:: %1 status
+:: %2 method (or empty)
+:: %3 explanation (or empty)
 call :printTestHeader "%testFile%" "%testName%"
 if not defined isExecutionOutput (goto:EOF)
+set status=%~1
+if not "%~2" == "" (
+    set status=%status% ^(%~2^)
+)
 if "%~3" == "" (
-    echo.%~1: %~2|sed "s/%PIPE%/|/g"
+    echo.%status%
 ) else (
-    echo.%~1 ^(%~2^): %~3|sed "s/%PIPE%/|/g"
+    echo.%status%: %~3|sed "s/%PIPE%/|/g"
 )
 (goto:EOF)
+:echoSkip
+set skipMethod=%~1
+set skipMethod=%skipMethod:~5,-1%
+call :echoStatus "SKIP" "%skipMethod%" %2
+(goto:EOF)
 :echoError
-call :echoStatus "ERROR" %1 %2
+call :echoStatus "ERROR" %*
 (goto:EOF)
 :echoFail
-call :echoStatus "FAIL" %1 %2
+call :echoStatus "FAIL" %*
 (goto:EOF)
 
 ::------------------------------------------------------------------------------
 :runDir
-for %%f in (%~1*.vim) do call :runTest "%%f"
+for %%f in (%~1*.vim) do (
+    if not defined isBailOut call :runTest "%%f"
+)
 (goto:EOF)
 
 :processSuiteEntry
@@ -461,7 +474,9 @@ if exist "%argAsDirspec%" (
 :: Change to suite directory so that relative paths and filenames are resolved
 :: correctly. 
 pushd "%~dp1"
-for /F "eol=# delims=" %%f in (%~nx1) do call :processSuiteEntry "%%f"
+for /F "eol=# delims=" %%f in (%~nx1) do (
+    if not defined isBailOut call :processSuiteEntry "%%f"
+)
 popd
 (goto:EOF)
 
@@ -471,8 +486,6 @@ if not exist "%~1" (
     (echo.ERROR: Test file "%~1" doesn't exist.)
     (goto:EOF)
 )
-set /A cntTestFiles+=1
-
 set testFilespec=%~f1
 set testDirspec=%~dp1
 set testFile=%~nx1
@@ -490,6 +503,7 @@ set testTap=%testName%.tap
 set testMsgoutForSet=%testMsgout:\=/%
 set testMsgoutForSet=%testMsgout: =\ %
 
+set /A cntTestFiles+=1
 pushd "%testDirspec%"
 
 :: Remove old output files from the previous testrun. 
@@ -529,42 +543,67 @@ call %vimExecutable% -n -c "let %vimVariableTestName%='%testFilespec:'=''%'|set 
 set /A thisTests=0
 set /A thisRun=0
 set /A thisOk=0
+set /A thisSkip=0
 set /A thisFail=0
 set /A thisError=0
+
+set isSkipOut=
+set isSkipMsgout=
+set isSkipTap=
+call :parseMessageOutputForSignals
+:: In case of a bail out, do not run check the results of any method; just say
+:: that a test has run and go straight to the results evaluation. 
+if defined isBailOut (
+    set /A thisTests=1
+    (goto:resultsEvaluation)
+)
 
 :methodOutput
 if exist "%testOk%" (
     set /A thisTests+=1
-    if exist "%testOut%" (
-	set /A thisRun+=1
-	call :compareOutput "%testOk%" "%testOut%" "%testName%"
+    if defined isSkipOut (
+	set /A thisSkip+=1
     ) else (
-	set /A thisError+=1
-	call :echoError "out" "No test output."
+	if exist "%testOut%" (
+	    set /A thisRun+=1
+	    call :compareOutput "%testOk%" "%testOut%" "%testName%"
+	) else (
+	    set /A thisError+=1
+	    call :echoError "out" "No test output."
+	)
     )
 )
 
 :methodMessageOutput
 if exist "%testMsgok%" (
     set /A thisTests+=1
-    if exist "%testMsgout%" (
-	set /A thisRun+=1
-	call :compareMessages "%testMsgok%" "%testMsgout%" "%testName%"
+    if defined isSkipMsgout (
+	set /A thisSkip+=1
     ) else (
-	set /A thisError+=1
-	call :echoError "msgout" "No test messages."
+	if exist "%testMsgout%" (
+	    set /A thisRun+=1
+	    call :compareMessages "%testMsgok%" "%testMsgout%" "%testName%"
+	) else (
+	    set /A thisError+=1
+	    call :echoError "msgout" "No test messages."
+	)
     )
 )
 
 :methodTap
 if exist "%testTap%" (
-    call :parseTapOutput "%testTap%" "%testName%"
+    if defined isSkipTap (
+	set /A thisTests+=1
+	set /A thisSkip+=1
+    ) else (
+	call :parseTapOutput "%testTap%" "%testName%"
+    )
 )
 
 :resultsEvaluation
 if %thisTests% EQU 0 (
     set /A thisError+=1
-    call :echoError "No test results at all."
+    call :echoError "" "No test results at all."
 ) else (
     set /A cntTests+=%thisTests%
 )
@@ -573,6 +612,10 @@ if %thisRun% GEQ 1 (
 )
 if %thisOk% GEQ 1 (
     set /A cntOk+=%thisOk%
+)
+if %thisSkip% GEQ 1 (
+    set /A cntSkip+=%thisSkip%
+    call :addToListSkipped "%testName%"
 )
 if %thisFail% GEQ 1 (
     set /A cntFail+=%thisFail%
@@ -583,6 +626,43 @@ if %thisError% GEQ 1 (
     call :addToListError "%testName%"
 )
 popd
+(goto:EOF)
+
+:parseSignal
+if defined isBailOut (goto:EOF)
+if "%~1" == "BAILOUT!" (
+    set isBailOut=true
+    set /A thisError+=1
+    call :echoStatus "BAIL OUT" "" %2
+) else if "%~1" == "ERROR" (
+    set /A thisError+=1
+    call :echoError "" %2
+) else if "%~1" == "SKIP" (
+    set isSkipOut=true
+    set isSkipMsgout=true
+    set isSkipTap=true
+    call :echoSkip %1 %2
+) else if "%~1" == "SKIP(out)" (
+    set isSkipOut=true
+    call :echoSkip %1 %2
+) else if "%~1" == "SKIP(msgout)" (
+    call :echoSkip %1 %2
+    set isSkipMsgout=true
+) else if "%~1" == "SKIP(tap)" (
+    set isSkipTap=true
+    call :echoSkip %1 %2
+) else (
+    (echo.ASSERT: Received unknown signal "%~1" in message output.)
+    exit 1
+)
+(goto:EOF)
+:parseMessageOutputForSignals
+if not exist "%testMsgout%" (
+    set /A thisError+=1
+    call :echoError "" "Couldn't capture message output."
+    (goto:EOF)
+)
+for /F "tokens=2* delims= " %%s in ('grep -e "^runVimTests: " "%testMsgout%"') do call :parseSignal "%%~s" "%%~t"
 (goto:EOF)
 
 :compareOutput
@@ -607,6 +687,10 @@ if exist "%testMsgresult%" del "%testMsgresult%"
 :: the console. (Except when the entire test log is not printed to stdout but
 :: redirected.) 
 call vim %vimTerminalArguments% -N -u NONE -n -c "set nomore" -S "%runVimMsgFilterScript%" -c "RunVimMsgFilter" -c "quitall!" -- "%testMsgok%"
+:: vim.bat turns echo off. Redo here to allow debugging to continue. 
+@echo on
+@echo off %debug%
+
 if not exist "%testMsgresult%" (
     set /A thisError+=1
     call :echoError "msgout" "Evaluation of test messages failed."
