@@ -20,6 +20,7 @@
 ::   The VIM LICENSE applies to this script; see 'vim -c ":help copyright"'.  
 ::
 ::* REVISION	DATE		REMARKS 
+::  1.10.019	06-Mar-2009	ENH: Also counting test files. 
 ::  1.00.018	02-Mar-2009	Reviewed for publication. 
 ::	017	28-Feb-2009	BF: FAIL (msgout) and FAIL (tap) didn't print
 ::				test header in non-verbose mode. 
@@ -264,6 +265,7 @@ set vimVariableOptionsValue=%vimMode%,%vimVariableOptionsValue%
 set vimVariableOptionsValue=%vimVariableOptionsValue:~0,-1%
 set vimArguments=%vimArguments% --cmd "let %vimVariableOptionsName%='%vimVariableOptionsValue%'"
 
+set /A cntTestFiles=0
 set /A cntTests=0
 set /A cntRun=0
 set /A cntOk=0
@@ -299,11 +301,12 @@ if exist "%argAsDirspec%" (
 )
 if not "%~1" == "" (goto:commandLineLoop)
 
+if %cntTestFiles% NEQ 1 set pluralTestFiles=s
 if %cntTests% NEQ 1 set pluralTests=s
 if %cntFail% NEQ 1 set pluralFail=s
 if %cntError% NEQ 1 set pluralError=s
 echo.
-echo.%cntTests% test%pluralTests%, %cntRun% run: %cntOk% OK, %cntFail% failure%pluralFail%, %cntError% error%pluralError%.
+echo.%cntTestFiles% file%pluralTestFiles% with %cntTests% test%pluralTests%, %cntRun% run: %cntOk% OK, %cntFail% failure%pluralFail%, %cntError% error%pluralError%.
 if defined listFailed (echo.Failed tests: %listFailed:~0,-2%)
 if defined listError (echo.Tests with errors: %listError:~0,-2%)
 
@@ -468,6 +471,8 @@ if not exist "%~1" (
     (echo.ERROR: Test file "%~1" doesn't exist.)
     (goto:EOF)
 )
+set /A cntTestFiles+=1
+
 set testFilespec=%~f1
 set testDirspec=%~dp1
 set testFile=%~nx1
