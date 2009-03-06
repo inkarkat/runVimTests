@@ -1,0 +1,87 @@
+
+Starting test run with these VIM options:
+vim --cmd "set rtp=$VIM/vimfiles,$VIMRUNTIME,$VIM/vimfiles/after" -N -u NORC -c "set rtp&" -f -S "E:\public\tools\runVimTestsSetup.vim" -es --cmd "let g:runVimTests='default'"
+
+signalError001: Test error signal to test driver. 
+ERROR
+ERROR: This test doesn't test ABC.
+
+test002: Test failed saved buffer output. 
+FAIL (out): expected output           |   actual output
+Successful execution.		      |	Not what was expected.
+
+test003: Test no buffer output was saved. 
+ERROR (out): No test output.
+
+test012: Test failed message output. 
+FAIL (msgout): The message assertion was not satisfied by the output: 
+ --> Message assertion 1 from line 1 did not match in output lines 1-2
+     Successful execution.$
+
+test013: Test missing message output. 
+ERROR: Couldn't capture message output.
+ERROR (msgout): No test messages.
+
+test014: Test empty message output. 
+FAIL (msgout): The message assertion was not satisfied by the output: 
+ --> Message assertion 1 from line 1 did not match in output line 1
+     Successful execution.$
+
+test022: Test failed TAP output. 
+not ok 2 - 1 == 2
+# Test '1 == 2' failed:
+# expected: '2'
+# but got:  '1'
+not ok 3 - matches
+# Test 'matches' failed:
+# got: 'F00bAr 2000'
+# does not match: /fo\+.* \d\+/
+# Some diagnostic message.
+
+test023: Test TAP output with errors. 
+ERROR (tap): Not all 3 planned tests have been executed, 1 test missed.
+
+test024: Test TAP output with failures and too many tests. 
+not ok 1 - not right
+not ok 2 - 1 == 2
+# Test '1 == 2' failed:
+# expected: '2'
+# but got:  '1'
+not ok 4 - one too many, even wrong
+ERROR (tap): 2 more test executions than planned.
+
+test032: Test failed combination buffer + message + TAP output. 
+FAIL (out): expected output           |   actual output
+Successful execution.		      |	Not what was expected. 
+FAIL (msgout): The message assertion was not satisfied by the output: 
+ --> Message assertion 1 from line 1 did not match in output lines 1-5
+     Successful execution.$
+not ok 1 - not right
+not ok 2 - 1 == 2
+# Test '1 == 2' failed:
+# expected: '2'
+# but got:  '1'
+not ok 3 - matches
+# Test 'matches' failed:
+# got: 'F00bAr 2000'
+# does not match: /fo\+.* \d\+/
+# Some diagnostic message.
+
+test033: Test error combination buffer + message + TAP output. 
+ERROR: Couldn't capture message output.
+ERROR (out): No test output.
+ERROR (msgout): No test messages.
+not ok 2 - 1 == 2
+# Test '1 == 2' failed:
+# expected: '2'
+# but got:  '1'
+ERROR (tap): Not all 3 planned tests have been executed, 1 test missed.
+
+zzzSignalBailout001: Test bailout signal to test driver. 
+BAIL OUT: It's so f...ed up!
+
+28 files with 70 tests (aborted); 9 skipped, 54 run: 40 OK, 14 failures, 12 errors.
+Skipped tests: signalSkip001, signalSkip005
+Tests with skips: signalSkip002, signalSkip003, signalSkip004
+Failed tests: test002, test012, test014, test022, test024, test032, test033
+Tests with errors: signalError001, test003, test013, test023, test024, test033, zzzSignalBailout001
