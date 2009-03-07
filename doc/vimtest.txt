@@ -65,6 +65,25 @@ vimtest#RequestInput({input})			      *vimtest#RequestInput()*
 		call vimtest#RequestInput('Yes') 
 		MyCommandUnderTestThatRequiresUserConfirmation
 <
+vimtest#BailOut({reason})				   *vimtest#BailOut()*
+		Signals that things are going so badly that all testing should
+		terminate; no further test scripts should be run. Also quits
+		VIM. 
+
+vimtest#Error({reason})					     *vimtest#Error()*
+		Signals an error in the test execution. 
+
+vimtest#SkipAndQuit({reason})			       *vimtest#SkipAndQuit()*
+		Signals that this test should be skipped (e.g. due to missing
+		dependencies, unsupported platform, etc.) and all test output
+		should be disregarded. Also quits VIM. 
+
+vimtest#SkipOut({reason})				   *vimtest#SkipOut()*
+vimtest#SkipMsgout({reason})				*vimtest#SkipMsgout()*
+vimtest#SkipTap({reason})				   *vimtest#SkipTap()*
+		Signals that once particular test method (saved buffer output,
+		captured messages or TAP unit tests) should be disregarded. 
+
 ==============================================================================
 INSTALLATION					       *vimtest-installation*
 
