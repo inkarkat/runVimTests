@@ -211,8 +211,9 @@ test framework. For a simple sanity check, execute: >
     $ runVimTests test/runVimTests/successful.suite
 which should print something like:
     19 tests, 19 run: 19 OK, 0 failures, 0 errors. ~
-If this is the case, you can start exploring the example tests or just start
-writing your own|runVimTests-testscripts|! 
+If this is the case, you can start exploring the example tests (in the
+test/example/ subdirectory) or just start writing your own
+|runVimTests-testscripts|! 
 
 DEPENDENCIES					    *runVimTests-dependencies*
 
@@ -348,6 +349,9 @@ Finally, the test must|:quit|VIM (unless the --debug option was specified), so
 that the next test can be executed in a newly spawned VIM instance. The
 |vimtest#Quit()|function takes care of that. 
 
+Tip: If you are a hands-on person, there are simple annotated example scripts
+in the test/example/ subdirectory. 
+
 ==============================================================================
 LIMITATIONS					     runVimTests-limitations
 
@@ -372,6 +376,9 @@ IDEAS							   *runVimTests-ideas*
 
 ==============================================================================
 HISTORY							 *runVimTests-history*
+
+1.01	03-Mar-2009
+Added annotated example tests. 
 
 1.00	02-Mar-2009
 First published version. 
