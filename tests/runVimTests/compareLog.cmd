@@ -13,14 +13,19 @@
 ::  The command-line arguments to runVimTests and the test file are embedded in
 ::  the captured output filename and are extracted automatically: 
 ::  testrun.suite-1-v.log ->
-::	$ runVimTests -1 -v testrun.suite > /tmp/testrun.suite-1-v.log
+::	$ runVimTests -1 -v testrun.suite > /tmp/testrun.suite-1-v.log 2>&1
 ::  The special name "testdir" represents all tests in the directory (i.e. '.'): 
 ::  testdir-1-v.log ->
-::	$ runVimTests -1 -v . > /tmp/testdir-1-v.log
+::	$ runVimTests -1 -v . > /tmp/testdir-1-v.log 2>&1
 ::       	
 ::* REMARKS: 
 ::       	
+::* DEPENDENCIES:
+::  - GNU diff available through %PATH% or 'unix.cmd' script. 
+::
 ::* REVISION	DATE		REMARKS 
+::	004	12-Mar-2009	Also capturing stderr output, e.g. for "test not
+::				found" errors. 
 ::	003	07-Mar-2009	The test file (suite) is now also embedded in
 ::				the captured output name so that multiple test
 ::				files and suites can be captured. 
@@ -29,6 +34,9 @@
 ::				automatically. 
 ::	001	11-Feb-2009	file creation
 ::*******************************************************************************
+setlocal enableextensions
+
+call unix --quiet >NUL 2>&1
 
 if "%~1" == "" (set old=testdir.log) else (set old=%~1)
 if "%~1" == "" (set log=%TEMP%\testdir.log) else (set log=%TEMP%\%~nx1)
@@ -58,9 +66,11 @@ set options=%options:!=-%
 
 :run
 if "%tests%" == "testdir" set tests=.
-call runVimTests.cmd%options% "%tests%" > "%log%"
+call runVimTests.cmd%options% "%tests%" > "%log%" 2>&1
 
 echo.
 echo.DIFFERENCES:
 diff -u "%old%" "%log%"
 
+
+endlocal
