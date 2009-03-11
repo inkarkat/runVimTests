@@ -18,9 +18,17 @@
 # Copyright: (C) 2009 by Ingo Karkat
 #   The VIM LICENSE applies to this script; see 'vim -c ":help copyright"'.  
 #
-# FILE_SCCS = "@(#)runVimTests.sh	1.10.008	(06-Mar-2009)	runVimTests";
+# FILE_SCCS = "@(#)runVimTests.sh	1.11.009	(12-Mar-2009)	runVimTests";
 #
 # REVISION	DATE		REMARKS 
+#   1.11.009	12-Mar-2009	ENH: TODO tests are reported in test summary. 
+#				ENH: TAP output is also parsed for bail out
+#				message. 
+#			    	ENH: TAP output is now parsed for # SKIP and #
+#				TODO directives. The entire TAP test is skipped
+#				if a 1..0 plan is announced. Non-verbose TAP
+#				output now also includes succeeding TODO tests
+#				and any details in the lines following it. 
 #   1.10.008	06-Mar-2009	ENH: Also counting test files. 
 #				ENH: Message output is now parsed for signals to
 #				this test driver. Implemented signals: BAILOUT!,
@@ -268,6 +276,10 @@ addToListError()
 {
     echo "$listError" | grep -- "$1" >/dev/null || listError="${listError}${1}, "
 }
+addToListTodo()
+{
+    echo "$listTodo" | grep -- "$1" >/dev/null || listTodo="${listTodo}${1}, "
+}
 printTestHeader()
 {
     [ "$isPrintedHeader" ] && return
@@ -324,7 +336,7 @@ parseMessageOutputForSignals()
     local IFS=' '
     while read marker signal description
     do
-	if [ "$marker" == "runVimTests:" ]; then
+	if [ "$marker" = "runVimTests:" ]; then
 	    parseSignal "$signal" "$description"
 	fi
     done < "$testMsgout"
@@ -383,33 +395,79 @@ parseTapOutput()
 {
     local tapTestNum=
     local tapTestCnt=0
-    local tapTestIsFailures=
+    local tapTestIsPrintTapOutput=
 
     local tapLine
     local IFS=$'\n'
     while read tapLine
     do
 	case "$tapLine" in
-	    \#*|'')		continue;;
-	    ok*)		let thisOk+=1   thisRun+=1 tapTestCnt+=1;;
-	    not\ ok*)		let thisFail+=1 thisRun+=1 tapTestCnt+=1; tapTestIsFailures='true';;
-	    +([0-9])..+([0-9]))	local startNum=${tapLine%%.*}
-				local endNum=${tapLine##*.}
-				let tapTestNum=endNum-startNum+1
-				;;
+	    \#*|'')
+		continue
+		;;
+	    ok\ ?(+([0-9])\ )\#\ [sS][kK][iI][pP]*)
+		let thisSkip+=1 	   tapTestCnt+=1
+		;;
+	    ok\ ?(+([0-9])\ )\#\ [tT][oO][dD][oO]*)
+		let thisTodo+=1 thisRun+=1 tapTestCnt+=1; tapTestIsPrintTapOutput='true'
+		;;
+	    ok*)
+		let thisOk+=1   thisRun+=1 tapTestCnt+=1
+		;;
+	    not\ ok\ ?(+([0-9])\ )\#\ [sS][kK][iI][pP]*)
+		let thisSkip+=1 	   tapTestCnt+=1
+		;;
+	    not\ ok\ ?(+([0-9])\ )\#\ [tT][oO][dD][oO]*)
+		let thisTodo+=1 thisRun+=1 tapTestCnt+=1; tapTestIsPrintTapOutput='true'
+		;;
+	    not\ ok*)
+		let thisFail+=1 thisRun+=1 tapTestCnt+=1; tapTestIsPrintTapOutput='true'
+		;;
+	    Bail\ out!*)
+		isBailOut='true'
+		let thisError+=1
+		# Ignore all further TAP output after a bail out. 
+		break
+		;;
+	    1..0)
+		# No tests planned means the TAP test is skipped completely. 
+		let thisTests+=1
+		let thisSkip+=1
+		;;
+	    +([0-9])..+([0-9]))
+		local startNum=${tapLine%%.*}
+		local endNum=${tapLine##*.}
+		let tapTestNum=endNum-startNum+1
+		;;
 	esac
     done < "$1"
 
-    # Print the entire TAP output if in verbose mode, else only print the failed
-    # TAP test plus any failure details in the lines following it. 
+    # Print the entire TAP output if in verbose mode, else only print 
+    # - failed tests
+    # - successful TODO tests
+    # - bail out message
+    # plus any details in the lines following it. 
+    # (But truncate any additional TAP output after a bail out.)
     if [ "$isExecutionOutput" ]; then
 	if [ $verboseLevel -gt 0 ]; then
 	    # In verbose mode, the test header has already been printed. 
 	    cat -- "$1"
 	else
-	    [ "$tapTestIsFailures" ] && printTestHeader "$testFile" "$testName"
-	    cat -- "$1" | sed -n -e '${/^#/H;x;/^not ok/p}' -e '/^not ok/{x;/^not ok/p;b}' -e '/^#/{H;b}' -e 'x;/^not ok/p'
+	    [ "$tapTestIsPrintTapOutput" ] && printTestHeader "$testFile" "$testName"
+	    local -r tapPrintTapOutputSedPattern='^not ok\|^ok \([0-9]\+ \)\?# [tT][oO][dD][oO]\|^Bail out!'
+	    cat -- "$1" | sed -n -e "\${/^#/H;x;/${tapPrintTapOutputSedPattern}/p}" -e "/${tapPrintTapOutputSedPattern}/{x;/${tapPrintTapOutputSedPattern}/p;b}" -e "/^#/{H;b}" -e "x;/${tapPrintTapOutputSedPattern}/p" -e "/^Bail out!/q"
 	fi
+    fi
+
+    # If this TAP test has bailed out, return the number of tests run so far,
+    # but at least one (to avoid the "no test results" error). 
+    if [ "$isBailOut" ]; then
+	if [ $tapTestCnt -eq 0 ]; then
+	    let thisTests+=1
+	else
+	    let thisTests+=tapTestCnt
+	fi
+	return
     fi
 
     if [ ! "$tapTestNum" ]; then
@@ -446,7 +504,7 @@ runTest()
     typeset -r testName=${testFile%.*}
 
     # The setup script is not a test, silently skip it. 
-    [ "$testFile" == "$vimLocalSetupScript" ] && return
+    [ "$testFile" = "$vimLocalSetupScript" ] && return
 
     typeset -r testOk=${testName}.ok
     typeset -r testOut=${testName}.out
@@ -486,6 +544,7 @@ runTest()
     local thisSkip=0
     local thisFail=0
     local thisError=0
+    local thisTodo=0
 
     local isSkipOut=
     local isSkipMsgout=
@@ -568,6 +627,10 @@ runTest()
 	let cntError+=thisError
 	addToListError "$testName"
     fi
+    if [ $thisTodo -ge 1 ]; then
+	let cntTodo+=thisTodo
+	addToListTodo "$testName"
+    fi
 
     popd >/dev/null
 }
@@ -581,10 +644,12 @@ execute()
     cntSkip=0
     cntFail=0
     cntError=0
+    cntTodo=0
     listSkipped=
     listSkips=
     listFailed=
     listError=
+    listTodo=
 
     executionOutput
     if [ "$vimArguments" ]; then
@@ -602,13 +667,15 @@ execute()
 }
 report()
 {
+    [ $cntTodo -ge 1 ] && typeset -r todoNotification=", $cntTodo TODO" || typeset -r todoNotification=
     [ "$isBailOut" ] && typeset -r bailOutNotification=' (aborted)' || typeset -r bailOutNotification=
     echo
-    echo "$cntTestFiles $(makePlural $cntTestFiles 'file') with $cntTests $(makePlural $cntTests 'test')${bailOutNotification}; $cntSkip skipped, $cntRun run: $cntOk OK, $cntFail $(makePlural $cntFail 'failure'), $cntError $(makePlural $cntError 'error')."
+    echo "$cntTestFiles $(makePlural $cntTestFiles 'file') with $cntTests $(makePlural $cntTests 'test')${bailOutNotification}; $cntSkip skipped, $cntRun run: $cntOk OK, $cntFail $(makePlural $cntFail 'failure'), $cntError $(makePlural $cntError 'error')${todoNotification}."
     [ "$listSkipped" ] && echo "Skipped tests: ${listSkipped%, }"
     [ "$listSkips" ] && echo "Tests with skips: ${listSkips%, }"
     [ "$listFailed" ] && echo "Failed tests: ${listFailed%, }"
     [ "$listError" ] && echo "Tests with errors: ${listError%, }"
+    [ "$listTodo" ] && echo "TODO tests: ${listTodo%, }"
 
     let cntAllProblems=cntError+cntFail
     if [ $cntAllProblems -ne 0 ]; then
