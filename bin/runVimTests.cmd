@@ -20,6 +20,11 @@
 ::   The VIM LICENSE applies to this script; see 'vim -c ":help copyright"'.  
 ::
 ::* REVISION	DATE		REMARKS 
+::  1.11.020	12-Mar-2009	ENH: TAP output is now parsed for # SKIP and #
+::				TODO directives. The entire TAP test is skipped
+::				if a 1..0 plan is announced. Non-verbose TAP
+::				output now also includes succeeding TODO tests
+::				and any details in the lines following it. 
 ::  1.10.019	06-Mar-2009	ENH: Also counting test files. 
 ::				ENH: Message output is now parsed for signals to
 ::				this test driver. Implemented signals: BAILOUT!,
@@ -561,6 +566,7 @@ set /A thisOk=0
 set /A thisSkip=0
 set /A thisFail=0
 set /A thisError=0
+set /A thisTodo=0
 
 set isSkipOut=
 set isSkipMsgout=
@@ -735,36 +741,72 @@ call :printTestHeader "%testFile%" "%testName%"
 
 :parseTapLine
 if "%~1" == "ok" (
-    set /A thisOk+=1
-    set /A thisRun+=1
+    if /I "%~2 %~3" == "# SKIP" (
+	set /A thisSkip+=1
+    ) else if /I "%~3 %~4" == "# SKIP" (
+	set /A thisSkip+=1
+    ) else if /I "%~2 %~3" == "# TODO" (
+	set /A thisTodo+=1
+	set /A thisRun+=1
+	set tapTestIsPrintTapOutput=true
+    ) else if /I "%~3 %~4" == "# TODO" (
+	set /A thisTodo+=1
+	set /A thisRun+=1
+	set tapTestIsPrintTapOutput=true
+    ) else (
+	set /A thisOk+=1
+	set /A thisRun+=1
+    )
     set /A tapTestCnt+=1
     (goto:EOF)
 )
 if "%~1 %~2" == "not ok" (
-    set /A thisFail+=1
-    set /A thisRun+=1
+    if /I "%~3 %~4" == "# SKIP" (
+	set /A thisSkip+=1
+    ) else if /I "%~4 %~5" == "# SKIP" (
+	set /A thisSkip+=1
+    ) else if /I "%~3 %~4" == "# TODO" (
+	set /A thisTodo+=1
+	set /A thisRun+=1
+	set tapTestIsPrintTapOutput=true
+    ) else if /I "%~4 %~5" == "# TODO" (
+	set /A thisTodo+=1
+	set /A thisRun+=1
+	set tapTestIsPrintTapOutput=true
+    ) else (
+	set /A thisFail+=1
+	set /A thisRun+=1
+	set tapTestIsPrintTapOutput=true
+    )
     set /A tapTestCnt+=1
-    set tapTestIsFailures=true
     (goto:EOF)
 )
+:: Ignore all other TAP output unless it's a plan. 
 echo.%~1|grep -q -e "^[0-9][0-9]*\.\.[0-9][0-9]*$" || (goto:EOF)
+:: No tests planned means the TAP test is skipped completely. 
+if "%~1" == "1..0" (
+    set /A thisTests+=1
+    set /A thisSkip+=1
+    (goto:EOF)
+)
+:: Extract the number of planned tests. 
 for /F "tokens=1,2 delims=." %%a in ("%~1") do set /A tapTestNum=%%b - %%a + 1
 (goto:EOF)
 
 :parseTapOutput
 set tapTestNum=
 set /A tapTestCnt=0
-set tapTestIsFailures=
-for /F "eol=# tokens=1-3 delims= " %%i in (%~1) do call :parseTapLine "%%i" "%%j" "%%k" %2
+for /F "eol=# tokens=1-5* delims= " %%i in (%~1) do call :parseTapLine "%%i" "%%j" "%%k" "%%l" "%%m" "%%n"
 :: Print the entire TAP output if in verbose mode, else only print the failed
-:: TAP test plus any failure details in the lines following it. 
+:: or successful TODO TAP test plus any details in the lines following it. 
+set tapPrintTapOutputSedPattern=^^not ok\^|^^ok \([0-9]\+ \)\?# [tT][oO][dD][oO]
 if %verboseLevel% GTR 0 (
     %EXECUTIONOUTPUT% type "%~1"
 ) else (
-    if defined tapTestIsFailures (
+    if defined tapTestIsPrintTapOutput (
 	call :printTestHeader "%testFile%" "%testName%"
     )
-    %EXECUTIONOUTPUT% type "%~1" | sed -n -e "${/^#/H;x;/^not ok/p}" -e "/^not ok/{x;/^not ok/p;b}" -e "/^#/{H;b}" -e "x;/^not ok/p"
+    %EXECUTIONOUTPUT% type "%~1" | sed -n -e "${/^#/H;x;/%tapPrintTapOutputSedPattern%/p}" -e "/%tapPrintTapOutputSedPattern%/{x;/%tapPrintTapOutputSedPattern%/p;b}" -e "/^#/{H;b}" -e "x;/%tapPrintTapOutputSedPattern%/p"
 )
 
 if not defined tapTestNum (
