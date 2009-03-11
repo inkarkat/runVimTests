@@ -20,6 +20,7 @@
 ::   The VIM LICENSE applies to this script; see 'vim -c ":help copyright"'.  
 ::
 ::* REVISION	DATE		REMARKS 
+::  1.11.021	12-Mar-2009	ENH: TODO tests are reported in test summary. 
 ::  1.11.020	12-Mar-2009	ENH: TAP output is now parsed for # SKIP and #
 ::				TODO directives. The entire TAP test is skipped
 ::				if a 1..0 plan is announced. Non-verbose TAP
@@ -289,10 +290,12 @@ set /A cntOk=0
 set /A cntSkip=0
 set /A cntFail=0
 set /A cntError=0
+set /A cntTodo=0
 set listSkipped=
 set listSkips=
 set listFailed=
 set listError=
+set listTodo=
 
 %EXECUTIONOUTPUT% echo.
 if defined vimArguments (
@@ -309,17 +312,19 @@ if defined isBailOut (goto:commandLineLoopEnd)
 if not "%~1" == "" (goto:commandLineLoop)
 
 :commandLineLoopEnd
-if %cntTestFiles% NEQ 1 set pluralTestFiles=s
-if %cntTests% NEQ 1 set pluralTests=s
-if %cntFail% NEQ 1 set pluralFail=s
-if %cntError% NEQ 1 set pluralError=s
-if defined isBailOut set bailOutNotification= ^(aborted^)
+set pluralTestFiles=& if %cntTestFiles%	NEQ 1 set pluralTestFiles=s
+set pluralTests=&     if %cntTests%	NEQ 1 set pluralTests=s
+set pluralFail=&      if %cntFail%	NEQ 1 set pluralFail=s
+set pluralError=&     if %cntError%	NEQ 1 set pluralError=s
+set todoNotification=& if %cntTodo% GEQ 1 set todoNotification=, %cntTodo% TODO
+set bailOutNotification=& if defined isBailOut set bailOutNotification= ^(aborted^)
 echo.
-echo.%cntTestFiles% file%pluralTestFiles% with %cntTests% test%pluralTests%%bailOutNotification%; %cntSkip% skipped, %cntRun% run: %cntOk% OK, %cntFail% failure%pluralFail%, %cntError% error%pluralError%.
+echo.%cntTestFiles% file%pluralTestFiles% with %cntTests% test%pluralTests%%bailOutNotification%; %cntSkip% skipped, %cntRun% run: %cntOk% OK, %cntFail% failure%pluralFail%, %cntError% error%pluralError%%todoNotification%.
 if defined listSkipped (echo.Skipped tests: %listSkipped:~0,-2%)
 if defined listSkips (echo.Tests with skips: %listSkips:~0,-2%)
 if defined listFailed (echo.Failed tests: %listFailed:~0,-2%)
 if defined listError (echo.Tests with errors: %listError:~0,-2%)
+if defined listTodo (echo.TODO tests: %listTodo:~0,-2%)
 
 set /A cntAllProblems=%cntError% + %cntFail%
 if %cntAllProblems% NEQ 0 (exit /B 1)
@@ -429,6 +434,9 @@ echo.%listFailed% | findstr /C:%1 >NUL || set listFailed=%listFailed%%~1,
 (goto:EOF)
 :addToListError
 echo.%listError% | findstr /C:%1 >NUL || set listError=%listError%%~1, 
+(goto:EOF)
+:addToListTodo
+echo.%listTodo% | findstr /C:%1 >NUL || set listTodo=%listTodo%%~1, 
 (goto:EOF)
 
 :echoOk
@@ -649,6 +657,10 @@ if %thisFail% GEQ 1 (
 if %thisError% GEQ 1 (
     set /A cntError+=%thisError%
     call :addToListError "%testName%"
+)
+if %thisTodo% GEQ 1 (
+    set /A cntTodo+=%thisTodo%
+    call :addToListTodo "%testName%"
 )
 popd
 (goto:EOF)
