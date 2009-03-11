@@ -21,6 +21,8 @@
 ::
 ::* REVISION	DATE		REMARKS 
 ::  1.11.021	12-Mar-2009	ENH: TODO tests are reported in test summary. 
+::				ENH: TAP output is also parsed for bail out
+::				message. 
 ::  1.11.020	12-Mar-2009	ENH: TAP output is now parsed for # SKIP and #
 ::				TODO directives. The entire TAP test is skipped
 ::				if a 1..0 plan is announced. Non-verbose TAP
@@ -793,6 +795,14 @@ if "%~1 %~2" == "not ok" (
     set /A tapTestCnt+=1
     (goto:EOF)
 )
+
+:: Handle bail out. 
+if "%~1 %~2" == "Bail out!" (
+    set isBailOut=true
+    set /A thisError+=1
+    (goto:EOF)
+)
+
 :: Ignore all other TAP output unless it's a plan. 
 echo.%~1|grep -q -e "^[0-9][0-9]*\.\.[0-9][0-9]*$" || (goto:EOF)
 :: No tests planned means the TAP test is skipped completely. 
@@ -808,10 +818,14 @@ for /F "tokens=1,2 delims=." %%a in ("%~1") do set /A tapTestNum=%%b - %%a + 1
 :parseTapOutput
 set tapTestNum=
 set /A tapTestCnt=0
-for /F "eol=# tokens=1-5* delims= " %%i in (%~1) do call :parseTapLine "%%i" "%%j" "%%k" "%%l" "%%m" "%%n"
-:: Print the entire TAP output if in verbose mode, else only print the failed
-:: or successful TODO TAP test plus any details in the lines following it. 
-set tapPrintTapOutputSedPattern=^^not ok\^|^^ok \([0-9]\+ \)\?# [tT][oO][dD][oO]
+set tapTestIsPrintTapOutput=
+for /F "eol=# tokens=1-5 delims= " %%i in (%~1) do call :parseTapLine "%%i" "%%j" "%%k" "%%l" "%%m"
+:: Print the entire TAP output if in verbose mode, else only print 
+:: - failed tests
+:: - successful TODO tests
+:: - bail out message
+:: plus any details in the lines following it. 
+set tapPrintTapOutputSedPattern=^^not ok\^|^^ok \([0-9]\+ \)\?# [tT][oO][dD][oO]\^|^^Bail out!
 if %verboseLevel% GTR 0 (
     %EXECUTIONOUTPUT% type "%~1"
 ) else (
@@ -819,6 +833,17 @@ if %verboseLevel% GTR 0 (
 	call :printTestHeader "%testFile%" "%testName%"
     )
     %EXECUTIONOUTPUT% type "%~1" | sed -n -e "${/^#/H;x;/%tapPrintTapOutputSedPattern%/p}" -e "/%tapPrintTapOutputSedPattern%/{x;/%tapPrintTapOutputSedPattern%/p;b}" -e "/^#/{H;b}" -e "x;/%tapPrintTapOutputSedPattern%/p"
+)
+
+:: If this TAP test has bailed out, return the number of tests run so far, but
+:: at least one (to avoid the "no test results" error). 
+if defined isBailOut (
+    if %tapTestCnt% EQU 0 (
+	set /A thisTests+=1
+    ) else (
+	set /A thisTests+=%tapTestCnt%
+    )
+    (goto:EOF)
 )
 
 if not defined tapTestNum (
