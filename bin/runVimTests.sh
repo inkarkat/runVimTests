@@ -22,6 +22,12 @@
 #
 # REVISION	DATE		REMARKS 
 #   1.10.008	06-Mar-2009	ENH: Also counting test files. 
+#				ENH: Message output is now parsed for signals to
+#				this test driver. Implemented signals: BAILOUT!,
+#				ERROR, SKIP, SKIP(out), SKIP(msgout), SKIP(tap). 
+#				Summary reports skipped tests and tests with
+#				skips. 
+#				Changed API for echoStatus. 
 #   1.00.007	02-Mar-2009	Reviewed for publication. 
 #	006	28-Feb-2009	BF: FAIL (msgout) and FAIL (tap) didn't print
 #				test header in non-verbose mode. 
@@ -95,6 +101,7 @@ initialize()
 
     verboseLevel=0
     isExecutionOutput='true'
+    isBailOut=
 }
 verifyVimModeSetOnlyOnce()
 {
@@ -158,15 +165,19 @@ echoOk()
     [ "$isExecutionOutput" -a $verboseLevel -gt 0 ] && echo "OK ($1)"
 }
 echoStatus()
+# $1 status
+# $2 method (or empty)
+# $3 explanation (or empty)
 {
     printTestHeader "$testFile" "$testName"
     if [ "$isExecutionOutput" ]; then
-	if [ "$3" ]; then
-	    echo "$1 ($2): $3"
-	else
-	    echo "$1: $2"
-	fi
+	typeset -r status="${1}${2:+ (}${2}${2:+)}"
+	echo "${status}${3:+: }$3"
     fi
+}
+echoSkip()
+{
+    [ "$isExecutionOutput" -a $verboseLevel -gt 0 ] && echoStatus "SKIP" "${1:5:${#1}-6}" "$2"
 }
 echoError()
 {
@@ -225,6 +236,7 @@ runSuite()
 	case "$testEntry" in
 	    \#*|'') continue;;
 	esac
+	[ "$isBailOut" ] && break
 	processTestEntry "$testEntry"
     done
 
@@ -235,10 +247,19 @@ runDir()
     local testFilename
     for testFilename in "${1}/"*.vim
     do
+	[ "$isBailOut" ] && break
 	runTest "$testFilename"
     done
 }
 
+addToListSkipped()
+{
+    echo "$listSkipped" | grep -- "$1" >/dev/null || listSkipped="${listSkipped}${1}, "
+}
+addToListSkips()
+{
+    echo "$listSkips" | grep -- "$1" >/dev/null || listSkips="${listSkips}${1}, "
+}
 addToListFailed()
 {
     echo "$listFailed" | grep -- "$1" >/dev/null || listFailed="${listFailed}${1}, "
@@ -260,6 +281,53 @@ printTestHeader()
     # name. Limit the test header to one unwrapped output line, i.e. truncate to
     # 80 characters. 
     sed -n -e "1s/^\\d034 \\(Test.*\\)$/${headerMessage} \\1/p" -e 'tx' -e "1c${headerMessage}" -e ':x' -- "$1" | sed '/^.\{80,\}/s/\(^.\{,76\}\).*$/\1.../'
+}
+
+parseSignal()
+{
+    [ "$isBailOut" ] && return
+    case "$1" in
+	BAILOUT!)	isBailOut='true'
+			let thisError+=1
+			echoStatus 'BAIL OUT' '' "$2"
+			;;
+	ERROR)	    	let thisError+=1
+			echoError '' "$2"
+			;;
+	SKIP)		isSkipOut='true'
+			isSkipMsgout='true'
+			isSkipTap='true'
+			;;
+	SKIP\(out\))	isSkipOut='true';;
+	SKIP\(msgout\))	isSkipMsgout='true';;
+	SKIP\(tap\))	isSkipTap='true';;
+	*)		echo >&2 "ASSERT: Received unknown signal \"${1}\" in message output."; exit 1;;
+    esac
+    case "$1" in
+	SKIP*)		echoSkip "$1" "$2"
+    esac
+}
+parseMessageOutputForSignals()
+{
+    if [ ! -r "$testMsgout" ]; then
+	let thisError+=1
+	echoError '' "Couldn't capture message output."
+	return
+    fi
+
+    # VIM doesn't put a final newline at the end of the last written message.
+    # This incomplete last line is in turn not processed by 'read'. Fix this by
+    # appending a final newline. 
+    echo >> "$testMsgout"
+
+    local signalLine
+    local IFS=' '
+    while read marker signal description
+    do
+	if [ "$marker" == "runVimTests:" ]; then
+	    parseSignal "$signal" "$description"
+	fi
+    done < "$testMsgout"
 }
 
 compareOutput()
@@ -415,42 +483,66 @@ runTest()
     local thisTests=0
     local thisRun=0
     local thisOk=0
+    local thisSkip=0
     local thisFail=0
     local thisError=0
 
-    # Method output. 
-    if [ -r "$testOk" ]; then
-	let thisTests+=1
-	if [ -r "$testOut" ]; then
-	    let thisRun+=1
-	    compareOutput "$testOk" "$testOut" "$testName"
-	else
-	    let thisError+=1
-	    echoError 'out' 'No test output.'
+    local isSkipOut=
+    local isSkipMsgout=
+    local isSkipTap=
+    parseMessageOutputForSignals
+    if [ "$isBailOut" ]; then
+	# In case of a bail out, do not run check the results of any method;
+	# just say that a test has run and go straight to the results
+	# evaluation. 
+	thisTests=1
+    else
+	# Method output. 
+	if [ -r "$testOk" ]; then
+	    let thisTests+=1
+	    if [ "$isSkipOut" ]; then
+		let thisSkip+=1
+	    else
+		if [ -r "$testOut" ]; then
+		    let thisRun+=1
+		    compareOutput "$testOk" "$testOut" "$testName"
+		else
+		    let thisError+=1
+		    echoError 'out' 'No test output.'
+		fi
+	    fi
+	fi
+
+	# Method message output. 
+	if [ -r "$testMsgok" ]; then
+	    let thisTests+=1
+	    if [ "$isSkipMsgout" ]; then
+		let thisSkip+=1
+	    else
+		if [ -r "$testMsgout" ]; then
+		    let thisRun+=1
+		    compareMessages "$testMsgok" "$testMsgout" "$testName"
+		else
+		    let thisError+=1
+		    echoError 'msgout' 'No test messages.'
+		fi
+	    fi
+	fi
+
+	# Method TAP. 
+	if [ -r "$testTap" ]; then
+	    if [ "$isSkipTap" ]; then
+		let thisTests+=1	# Just assume there was only one TAP test. 
+		let thisSkip+=1
+	    else
+		parseTapOutput "$testTap" "$testName"
+	    fi
 	fi
     fi
-
-    # Method message output. 
-    if [ -r "$testMsgok" ]; then
-	let thisTests+=1
-	if [ -r "$testMsgout" ]; then
-	    let thisRun+=1
-	    compareMessages "$testMsgok" "$testMsgout" "$testName"
-	else
-	    let thisError+=1
-	    echoError 'msgout' 'No test messages.'
-	fi
-    fi
-
-    # Method TAP. 
-    if [ -r "$testTap" ]; then
-	parseTapOutput "$testTap" "$testName"
-    fi
-
     # Results evaluation. 
     if [ $thisTests -eq 0 ]; then
 	let thisError+=1
-	echoError 'No test results at all.'
+	echoError '' 'No test results at all.'
     else
 	let cntTests+=thisTests
     fi
@@ -459,6 +551,14 @@ runTest()
     fi
     if [ $thisOk -ge 1 ]; then
 	let cntOk+=thisOk
+    fi
+    if [ $thisSkip -ge 1 ]; then
+	let cntSkip+=thisSkip
+	if [ $thisSkip -eq $thisTests ]; then
+	    addToListSkipped "$testName"
+	else
+	    addToListSkips "$testName"
+	fi
     fi
     if [ $thisFail -ge 1 ]; then
 	let cntFail+=thisFail
@@ -482,6 +582,7 @@ execute()
     cntFail=0
     cntError=0
     listSkipped=
+    listSkips=
     listFailed=
     listError=
 
@@ -495,14 +596,17 @@ execute()
 
     for arg
     do
+	[ "$isBailOut" ] && break
 	processTestEntry "$arg"
     done
 }
 report()
 {
+    [ "$isBailOut" ] && typeset -r bailOutNotification=' (aborted)' || typeset -r bailOutNotification=
     echo
-    echo "$cntTestFiles $(makePlural $cntTestFiles 'file') with $cntTests $(makePlural $cntTests 'test'), $cntRun run: $cntOk OK, $cntSkip skipped, $cntFail $(makePlural $cntFail 'failure'), $cntError $(makePlural $cntError 'error')."
+    echo "$cntTestFiles $(makePlural $cntTestFiles 'file') with $cntTests $(makePlural $cntTests 'test')${bailOutNotification}; $cntSkip skipped, $cntRun run: $cntOk OK, $cntFail $(makePlural $cntFail 'failure'), $cntError $(makePlural $cntError 'error')."
     [ "$listSkipped" ] && echo "Skipped tests: ${listSkipped%, }"
+    [ "$listSkips" ] && echo "Tests with skips: ${listSkips%, }"
     [ "$listFailed" ] && echo "Failed tests: ${listFailed%, }"
     [ "$listError" ] && echo "Tests with errors: ${listError%, }"
 
