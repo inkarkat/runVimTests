@@ -754,6 +754,9 @@ call :printTestHeader "%testFile%" "%testName%"
 (goto:EOF)
 
 :parseTapLine
+:: Ignore all further TAP output after a bail out. 
+if defined isBailOut (goto:EOF)
+
 if "%~1" == "ok" (
     if /I "%~2 %~3" == "# SKIP" (
 	set /A thisSkip+=1
@@ -825,6 +828,7 @@ for /F "eol=# tokens=1-5 delims= " %%i in (%~1) do call :parseTapLine "%%i" "%%j
 :: - successful TODO tests
 :: - bail out message
 :: plus any details in the lines following it. 
+:: (But truncate any additional TAP output after a bail out.)
 set tapPrintTapOutputSedPattern=^^not ok\^|^^ok \([0-9]\+ \)\?# [tT][oO][dD][oO]\^|^^Bail out!
 if %verboseLevel% GTR 0 (
     %EXECUTIONOUTPUT% type "%~1"
@@ -832,7 +836,7 @@ if %verboseLevel% GTR 0 (
     if defined tapTestIsPrintTapOutput (
 	call :printTestHeader "%testFile%" "%testName%"
     )
-    %EXECUTIONOUTPUT% type "%~1" | sed -n -e "${/^#/H;x;/%tapPrintTapOutputSedPattern%/p}" -e "/%tapPrintTapOutputSedPattern%/{x;/%tapPrintTapOutputSedPattern%/p;b}" -e "/^#/{H;b}" -e "x;/%tapPrintTapOutputSedPattern%/p"
+    %EXECUTIONOUTPUT% type "%~1" | sed -n -e "${/^#/H;x;/%tapPrintTapOutputSedPattern%/p}" -e "/%tapPrintTapOutputSedPattern%/{x;/%tapPrintTapOutputSedPattern%/p;b}" -e "/^#/{H;b}" -e "x;/%tapPrintTapOutputSedPattern%/p" -e "/^Bail out!/q"
 )
 
 :: If this TAP test has bailed out, return the number of tests run so far, but
