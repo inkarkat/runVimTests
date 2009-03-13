@@ -125,7 +125,9 @@ The script returns 0 if all tests were successful, 1 if any errors or failures
 occurred. 
 
 After test execution, a summary is printed like this:
-    33 tests, 27 run: 16 OK, 11 failures, 6 errors. ~
+    20 files with 33 tests; 2 skipped, 27 run: 16 OK, 11 failures, 6 errors. ~
+    Tests with skips: test006 ~
+    Skipped tests: test007 ~
     Failed tests: test002, test012, test014, test022, test032, test033 ~
     Tests with errors: test003, test013, test023, test033 ~
 
@@ -134,6 +136,10 @@ the planned tests by a TAP test. Tests have "run" when corresponding output
 has been produced. If it hasn't, that's an ERROR, as well as when there were
 neither *.[msg]ok files nor any TAP output, or if the test result evaluation
 had a problem. The result of a correct test evaluation is either OK or FAIL. 
+Tests can also SKIP parts of the verification (the test is then listed under
+Tests with skips), or the entire test (this is a Skipped test), e.g. when
+there are missing dependencies or if certain checks aren't implemented for
+that particular platform. 
 
 ==============================================================================
 INVOKING						*runVimTests-invoking*
@@ -210,7 +216,7 @@ The test/ subdirectory contains example test suites and a self-test of the
 test framework. For a simple sanity check, execute: >
     $ runVimTests test/runVimTests/successful.suite
 which should print something like:
-    19 tests, 19 run: 19 OK, 0 failures, 0 errors. ~
+    9 files with 19 tests; 0 skipped, 19 run: 19 OK, 0 failures, 0 errors. ~
 If this is the case, you can start exploring the example tests (in the
 test/example/ subdirectory) or just start writing your own
 |runVimTests-testscripts|! 
@@ -261,6 +267,26 @@ The VIM mode is one of:
     user    (Default) test with user .vimrc and plugins. 
 In addition, these flags may be set: 
     debug   In test debugging mode (runVimTests --debug). 
+
+							 *runVimTests-signals*
+Tests can send signals back to the test framework by echoing a line in the
+following format: >
+    runVimTests: {signal} [{reason}]
+<				      *runVimTests-skip* *runVimTests-bailout*
+Signals are used to skip validations, announce errors or completely bail out
+of the test run. The test driver understands these signals; the optional
+{reason} is included in the test output and should explain why this signal was
+given. 
+    SKIP	    Skip the entire test; all test output should be disregarded. 
+    SKIP(out)	    Disregard the saved buffer output. 
+    SKIP(msgout)    Disregard the captured messages. 
+    SKIP(tap)	    Disregard the TAP tests. 
+    ERROR	    Signal an error in the test. 
+    BAILOUT!	    All testing should terminate; no further test scripts
+		    should be run. 
+Though you can simply use|:echo|to submit a signal, it is recommended to use
+the helper functions for|vimtest-signals|. Multiple signals can be given in no
+particular order. 
 
 							   *runVimTests-setup*
 Setup scripts can be sourced automatically by the framework before the
@@ -364,18 +390,29 @@ KNOWN PROBLEMS					  runVimTests-known-problems
 ==============================================================================
 TODO							    *runVimTests-todo*
 
-- Implemented skipping of tests (via special message in *.msgout and by
-  parsing TAP output). 
 - Store failed tests in lastfailed.suite and add option --lastfailed to
   re-run. 
-- Also count test files (*.vim). 
 
 IDEAS							   *runVimTests-ideas*
 - Replace the bash / Windows shell scripts with a cross-platform (Perl, Ruby?)
   script once it becomes too unwieldy. (Many will argue it already did.)
+- Do we also need a TODO signal (and vimtest#Todo...() functions)? 
 
 ==============================================================================
 HISTORY							 *runVimTests-history*
+
+1.11	12-Mar-2009
+- TAP output is now parsed for SKIP and TODO directives, and the "Bail out"
+  message. 
+- TODO TAP tests are included in the test output like failing tests. 
+
+1.10	10-Mar-2009
+- runVimTests drivers now also count test files (*.vim). 
+- Implemented skipping of tests via special message in *.msgout; not yet in
+  TAP output. 
+- ENH: Message output is now parsed for signals to the test driver.
+  Implemented signals: BAILOUT!, ERROR, SKIP, SKIP(out), SKIP(msgout),
+  SKIP(tap). 
 
 1.01	03-Mar-2009
 Added annotated example tests. 
