@@ -29,6 +29,8 @@
 #				if a 1..0 plan is announced. Non-verbose TAP
 #				output now also includes succeeding TODO tests
 #				and any details in the lines following it. 
+#				Factored out addToList(), which now only matches
+#				exact test names, not partial overlaps. 
 #   1.10.008	06-Mar-2009	ENH: Also counting test files. 
 #				ENH: Message output is now parsed for signals to
 #				this test driver. Implemented signals: BAILOUT!,
@@ -260,25 +262,32 @@ runDir()
     done
 }
 
+addToList()
+{
+    eval local listName=\$list$1
+    if [[ ! "$listName" =~ (^|,\ )${2}(,\ |$) ]]; then
+	eval list${1}=\"${listName}${2}, \"
+    fi
+}
 addToListSkipped()
 {
-    echo "$listSkipped" | grep -- "$1" >/dev/null || listSkipped="${listSkipped}${1}, "
+    addToList 'Skipped' "$1"
 }
 addToListSkips()
 {
-    echo "$listSkips" | grep -- "$1" >/dev/null || listSkips="${listSkips}${1}, "
+    addToList 'Skips' "$1"
 }
 addToListFailed()
 {
-    echo "$listFailed" | grep -- "$1" >/dev/null || listFailed="${listFailed}${1}, "
+    addToList 'Failed' "$1"
 }
 addToListError()
 {
-    echo "$listError" | grep -- "$1" >/dev/null || listError="${listError}${1}, "
+    addToList 'Error' "$1"
 }
 addToListTodo()
 {
-    echo "$listTodo" | grep -- "$1" >/dev/null || listTodo="${listTodo}${1}, "
+    addToList 'Todo' "$1"
 }
 printTestHeader()
 {
