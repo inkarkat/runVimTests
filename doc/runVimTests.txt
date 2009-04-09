@@ -122,7 +122,8 @@ The tests are specified through these three methods, which can be combined:
   (Commented lines start with #.) 
 
 The script returns 0 if all tests were successful, 1 if any errors or failures
-occurred. 
+occurred, 2 if it wasn't invoked correctly (i.e. bad or missing command-line
+arguments) or prerequisites weren't met, 3 in case of an internal error. 
 
 After test execution, a summary is printed like this:
     20 files with 33 tests; 2 skipped, 27 run: 16 OK, 11 failures, 6 errors. ~
@@ -199,7 +200,7 @@ The script executables are in the bin/ subdirectory: >
     bin/runVimTests.cmd
     bin/runVimTests.sh
     bin/runVimMsgFilter.vim
-They can be put anywhere (preferably somewhere in $PATH for easy invokation).
+They can be put anywhere (preferably somewhere in $PATH for easy invocation).
 runVimMsgFilter.vim must be in the same directory as the shell script. 
 
 The doc/ subdirectory contains the documentation. Put the files into
@@ -400,6 +401,14 @@ IDEAS							   *runVimTests-ideas*
 
 ==============================================================================
 HISTORY							 *runVimTests-history*
+
+1.12	14-Mar-2009
+- Added quoting of regexp in addToList(), which is needed in bash 3.0 and 3.1.
+  Thanks to Anders Thøgersen for the patch. 
+- Now checking bash version. 
+- Only exiting with exit code 1 in case of test failures; using code 2 for
+  invocation errors (i.e. wrong command-line arguments) and code 3 for
+  internal errors.  
 
 1.11	12-Mar-2009
 - TAP output is now parsed for SKIP and TODO directives, and the "Bail out"
