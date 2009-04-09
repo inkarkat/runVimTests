@@ -10,6 +10,7 @@
 " Maintainer:	Ingo Karkat <ingo@karkat.de>
 "
 " REVISION	DATE		REMARKS 
+"   1.00.004	02-Mar-2009	Reviewed for publication. 
 "	003	10-Feb-2009	Using fnameescape(). 
 "	002	28-Jan-2009	Now removing trailing empty line in result
 "				buffer, so that the test results dump to stdout
