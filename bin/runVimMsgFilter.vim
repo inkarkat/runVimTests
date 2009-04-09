@@ -2,7 +2,8 @@
 " file, writing results into *.msgresult. 
 "
 " DEPENDENCIES:
-"   - Requires VIM 7.2 or higher.  
+"   - Requires VIM 7.0 or higher.  
+"   - escapings.vim autoload script (for VIM 7.0/7.1). 
 "
 " Copyright: (C) 2009 by Ingo Karkat
 "   The VIM LICENSE applies to this script; see ':help copyright'. 
@@ -10,6 +11,8 @@
 " Maintainer:	Ingo Karkat <ingo@karkat.de>
 "
 " REVISION	DATE		REMARKS 
+"   1.13.005	10-Apr-2009	Now also supporting VIM 7.0/7.1 through
+"				escapings.vim autoload script. 
 "   1.00.004	02-Mar-2009	Reviewed for publication. 
 "	003	10-Feb-2009	Using fnameescape(). 
 "	002	28-Jan-2009	Now removing trailing empty line in result
@@ -20,7 +23,7 @@
 "	001	26-Jan-2009	file creation
 
 " Avoid installing twice or when in unsupported VIM version. 
-if exists('g:loaded_runVimMsgFilter') || (v:version < 702)
+if exists('g:loaded_runVimMsgFilter') || (v:version < 700)
     finish
 endif
 let g:loaded_runVimMsgFilter = 1
@@ -179,6 +182,13 @@ function! s:Run( msgokBufNr, msgoutBufNr, resultBufNr )
     write
 endfunction
 
+function! s:Fnameescape( filespec )
+    if exists('*fnameescape')
+	return fnameescape(a:filespec)
+    else
+	return escapings#fnameescape(a:filespec)
+    endif
+endfunction
 function! s:LoadAndRun()
     let l:baseFilespec = expand('%:p:r')
     if expand('%:e') !=# 'msgok'
@@ -189,11 +199,11 @@ function! s:LoadAndRun()
 	return
     endif
 
-    execute 'edit' fnameescape(l:baseFilespec . '.msgok')
+    execute 'edit' s:Fnameescape(l:baseFilespec . '.msgok')
     let l:msgokBufNr = bufnr('')
-    execute 'edit' fnameescape(l:baseFilespec . '.msgout')
+    execute 'edit' s:Fnameescape(l:baseFilespec . '.msgout')
     let l:msgoutBufNr = bufnr('')
-    execute 'edit' fnameescape(l:baseFilespec . '.msgresult')
+    execute 'edit' s:Fnameescape(l:baseFilespec . '.msgresult')
     let l:resultBufNr = bufnr('')
 
     call s:Run(l:msgokBufNr, l:msgoutBufNr, l:resultBufNr)
