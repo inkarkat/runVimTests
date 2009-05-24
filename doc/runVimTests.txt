@@ -210,8 +210,6 @@ The autoload/ subdirectory contains optional convenience and helper functions.
 (E.g.|vimtest#Quit()|, |vimtest#SaveOut()|, |vimtest#RequestInput()|, and
 more. See|vimtest-usage|for a full reference.) 
 Their use is not required, but they simplify the writing of tests. 
-You need to install autoload/escapings.vim if you do not have VIM 7.2 or
-later. 
 
 The VimTAP plugin (vimscript #2213) needs to be installed separately. 
 
@@ -226,13 +224,13 @@ test/example/ subdirectory) or just start writing your own
 
 DEPENDENCIES					    *runVimTests-dependencies*
 
-- Requires VIM 7.0 or higher as the default VIM found in $PATH (which is
+- Requires VIM 7.2 or higher as the default VIM found in $PATH (which is
   always used for the matching of VIM message output against the captured
-  messages). You can use a different VIM version to execute the test with, but
-  at least VIM 7.0 is required to use captured messages (as this depends on
-  the 'verbosefile' option) and TAP unit tests (vimtap.vim is an autoload
-  script). The saved buffer output method even works with VIM 6, but the
-  driver will generate errors in that case. 
+  messages). You can use a different VIM version to execute the tests, but at
+  least VIM 7.0 is required to use captured messages (as this depends on the
+  'verbosefile' option) and TAP unit tests (vimtap.vim is an autoload script).
+  The saved buffer output method even works with VIM 6, but the driver will
+  generate errors in that case. 
 
 The Windows version requires these ported Unix tools:
 - grep, sed, diff
@@ -405,10 +403,6 @@ IDEAS							   *runVimTests-ideas*
 
 ==============================================================================
 HISTORY							 *runVimTests-history*
-
-1.13	10-Apr-2009
-Now also supporting VIM 7.0/7.1 for message matching through escapings.vim
-autoload script. 
 
 1.12	14-Mar-2009
 - Added quoting of regexp in addToList(), which is needed in bash 3.0 and 3.1.
