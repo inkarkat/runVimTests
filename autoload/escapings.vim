@@ -1,5 +1,5 @@
-" escapings.vim: Common escapings of filenames and wrappers around new VIM
-" 7.2 fnameescape() and shellescape() functions. 
+" escapings.vim: Common escapings of filenames, and wrappers around new VIM 7.2
+" fnameescape() and shellescape() functions. 
 "
 " TODO:
 "   - Refine the VIM 7.0/7.1 emulation functions. 
@@ -7,6 +7,10 @@
 " Maintainer:	Ingo Karkat <ingo@karkat.de>
 "
 " REVISION	DATE		REMARKS 
+"	005	02-Mar-2009	Now explicitly checking for the new escape
+"				functions instead of assuming they're in VIM 7.2
+"				so that users of a patched VIM 7.1 also get the
+"				benefit of them. 
 "	004	25-Feb-2009	Now using character list from ':help
 "				fnameescape()' (plus converting \ to /). 
 "	003	17-Feb-2009	Added optional a:isFullMatch argument to
@@ -80,7 +84,7 @@ function! escapings#exescape( command )
 "* RETURN VALUES: 
 "   Escaped shell command to be passed to the !{cmd} or :r !{cmd} commands. 
 "*******************************************************************************
-if v:version >= 702
+if exists('*fnameescape')
     return join(map(split(a:command, ' '), 'fnameescape(v:val)'), ' ')
 else
     return escape(a:command, '\%#|' )
@@ -100,7 +104,7 @@ function! escapings#fnameescape( filespec )
 "* RETURN VALUES: 
 "   Escaped filespec to be passed as a {file} argument to an ex command. 
 "*******************************************************************************
-if v:version >= 702
+if exists('*fnameescape')
     return fnameescape(a:filespec)
 else
     return escape(tr( a:filespec, '\', '/' ), " \t\n*?[{`$\\%#'\"|!<")
@@ -128,7 +132,7 @@ function! escapings#shellescape( filespec, ... )
 "   Escaped filespec to be used in a :! command or inside a system() call. 
 "*******************************************************************************
     let l:isSpecial = (a:0 > 0 ? a:1 : 0)
-if v:version >= 702
+if exists('*shellescape')
     return shellescape(a:filespec, l:isSpecial)
 else
     let l:escapedFilespec = (l:isSpecial ? escapings#fnameescape(a:filespec) : a:filespec)
