@@ -1,15 +1,22 @@
-" escapings.vim: Common escapings of filenames, and wrappers around new VIM 7.2
+" escapings.vim: Common escapings of filenames, and wrappers around new Vim 7.2
 " fnameescape() and shellescape() functions. 
 "
 " TODO:
-"   - Refine the VIM 7.0/7.1 emulation functions. 
+"   - Refine the Vim 7.0/7.1 emulation functions. 
 "
 " Maintainer:	Ingo Karkat <ingo@karkat.de>
 "
 " REVISION	DATE		REMARKS 
+"	006	26-May-2009	escapings#fnameescape() emulation part now works
+"				like fnameescape() on Windows: Instead of
+"				converting backslashes to forward slashes, they
+"				are not escaped. (But on non-Windows systems,
+"				they are.) 
+"				Added and refined escapings#fnameunescape() from
+"				dropquery.vim. 
 "	005	02-Mar-2009	Now explicitly checking for the new escape
-"				functions instead of assuming they're in VIM 7.2
-"				so that users of a patched VIM 7.1 also get the
+"				functions instead of assuming they're in Vim 7.2
+"				so that users of a patched Vim 7.1 also get the
 "				benefit of them. 
 "	004	25-Feb-2009	Now using character list from ':help
 "				fnameescape()' (plus converting \ to /). 
@@ -20,6 +27,10 @@
 "				that relies on fnameescape() to properly escape
 "				all special Ex characters. 
 "	001	05-Jan-2009	file creation
+
+function! s:IsWindowsLike()
+    return has('dos16') || has('dos32') || has('win95') || has('win32') || has('win64')
+endfunction
 
 function! escapings#bufnameescape( filespec, ... )
 "*******************************************************************************
@@ -107,8 +118,35 @@ function! escapings#fnameescape( filespec )
 if exists('*fnameescape')
     return fnameescape(a:filespec)
 else
-    return escape(tr( a:filespec, '\', '/' ), " \t\n*?[{`$\\%#'\"|!<")
+    " Note: On Windows, backslash path separators mustn't be escaped. 
+    return escape(a:filespec, " \t\n*?[{`$%#'\"|!<" . (s:IsWindowsLike() ? '' : '\'))
 endif
+endfunction
+
+function! escapings#fnameunescape( exfilespec, ... )
+"*******************************************************************************
+"* PURPOSE:
+"   Converts the passed a:exfilespec to the normal filespec syntax (i.e. no
+"   escaping of ex special chars like [%#]). The normal syntax is required by
+"   Vim functions such as filereadable(), because they do not understand the
+"   escaping for ex commands. 
+"   Note: On Windows, fnamemodify() doesn't convert path separators to
+"   backslashes. We don't force that neither, as forward slashes work just as
+"   well and there is even less potential for problems. 
+"* ASSUMPTIONS / PRECONDITIONS:
+"	? List of any external variable, control, or other element whose state affects this procedure.
+"* EFFECTS / POSTCONDITIONS:
+"	? List of the procedure's effect on each external variable, control, or other element.
+"* INPUTS:
+"   a:exfilespec    Escaped filespec to be passed as a {file} argument to an ex
+"		    command.
+"   a:isMakeFullPath	Flag whether the filespec should also be expanded to a
+"			full path, or kept in whatever form it currently is. 
+"* RETURN VALUES: 
+"   Unescaped, normal filespec. 
+"*******************************************************************************
+    let l:isMakeFullPath = (a:0 > 0 ? a:1 : 0)
+    return fnamemodify( a:exfilespec, ':gs+\\\([ \t\n*?[{`$%#''"|!<' . (s:IsWindowsLike() ? '' : '\') . ']\)+\1+' . (l:isMakeFullPath ? ':p' : ''))
 endfunction
 
 function! escapings#shellescape( filespec, ... )
@@ -137,7 +175,7 @@ if exists('*shellescape')
 else
     let l:escapedFilespec = (l:isSpecial ? escapings#fnameescape(a:filespec) : a:filespec)
 
-    if has('dos16') || has('dos32') || has('win95') || has('win32') || has('win64')
+    if s:IsWindowsLike()
 	return '"' . l:escapedFilespec . '"'
     else
 	return "'" . l:escapedFilespec . "'"
