@@ -13,14 +13,18 @@
 #  The command-line arguments to runVimTests and the test file are embedded in
 #  the captured output filename and are extracted automatically: 
 #  testrun.suite-1-v.log ->
-#	$ runVimTests -1 -v testrun.suite > /tmp/testrun.suite-1-v.log
+#	$ runVimTests -1 -v testrun.suite > /tmp/testrun.suite-1-v.log 2>&1
 #  The special name "testdir" represents all tests in the directory (i.e. '.'): 
 #  testdir-1-v.log ->
-#	$ runVimTests -1 -v . > /tmp/testdir-1-v.log
+#	$ runVimTests -1 -v . > /tmp/testdir-1-v.log 2>&1
 #   
 # REMARKS: 
 #   
 # REVISION	DATE		REMARKS 
+#	004	12-Mar-2009	Also capturing stderr output, e.g. for "test not
+#				found" errors. 
+#				BF: Didn't handle captured output filename
+#				without any -options. 
 #	003	07-Mar-2009	The test file (suite) is now also embedded in
 #				the captured output name so that multiple test
 #				files and suites can be captured. 
@@ -51,19 +55,21 @@ if [ $# -gt 0 ]; then
     argname=${argname%.log}
 
     tests=${argname%%-*}
-    options=-${argname#*-}
-    options=${options//--/ !!}
-    options=${options//-/ !}
-    options=${options//!/-}
+    if [[ "$argname" == *-* ]]; then
+	options=-${argname#*-}
+	options=${options//--/ !!}
+	options=${options//-/ !}
+	options=${options//!/-}
+    fi
 fi
 
 if [ "$tests" == "testdir" ]; then
     tests='.'
 fi
 if [ "$isTrackProgress" ]; then
-    runVimTests.sh $options "$tests" | tee "$log"
+    runVimTests.sh $options "$tests" 2>&1 | tee "$log"
 else
-    runVimTests.sh $options "$tests" > "$log"
+    runVimTests.sh $options "$tests" > "$log" 2>&1
 fi
 
 echo
