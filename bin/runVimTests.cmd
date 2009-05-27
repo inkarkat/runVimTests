@@ -14,12 +14,18 @@
 ::       	
 ::* DEPENDENCIES:
 ::  - GNU grep, sed, diff available through %PATH% or 'unix.cmd' script. 
+::  - Optionally for SKIP summary: GNU sort, uniq available through %PATH% or
+::    'unix.cmd' script. 
 ::  - runVimMsgFilter.vim, located in this script's directory. 
 ::
 ::* Copyright: (C) 2009 by Ingo Karkat
 ::   The VIM LICENSE applies to this script; see 'vim -c ":help copyright"'.  
 ::
 ::* REVISION	DATE		REMARKS 
+::  1.13.023	28-May-2009	ENH: Now including SKIP reasons in the summary
+::				(identical reasons are condensed and counted)
+::				when not running with verbose output. I always
+::				wanted to know why certain tests were skipped. 
 ::  1.12.022	14-Mar-2009	Only exiting with exit code 1 in case of test
 ::				failures; using code 2 for invocation errors
 ::				(i.e. wrong command-line arguments) and code 3
@@ -142,6 +148,10 @@
 ::*******************************************************************************
 setlocal enableextensions
 
+set skipsRecord=%TEMP%\skipsRecord.txt
+if exist "%skipsRecord%" del "%skipsRecord%"
+if exist "%skipsRecord%" set skipsRecord=
+
 call :checkUnixTools || call unix --quiet || goto:prerequisiteError
 call :checkUnixTools || goto:prerequisiteError
 
@@ -261,6 +271,7 @@ if not "%arg%" == "" (
 	shift /1
     ) else if /I "%arg%" == "--verbose" (
 	set /A verboseLevel+=1
+	set skipsRecord=
 	shift /1
     ) else if /I "%arg%" == "--debug" (
 	set vimVariableOptionsValue=%vimVariableOptionsValue%debug,
@@ -328,6 +339,7 @@ echo.
 echo.%cntTestFiles% file%pluralTestFiles% with %cntTests% test%pluralTests%%bailOutNotification%; %cntSkip% skipped, %cntRun% run: %cntOk% OK, %cntFail% failure%pluralFail%, %cntError% error%pluralError%%todoNotification%.
 if defined listSkipped (echo.Skipped tests: %listSkipped:~0,-2%)
 if defined listSkips (echo.Tests with skips: %listSkips:~0,-2%)
+call :listSkipReasons
 if defined listFailed (echo.Failed tests: %listFailed:~0,-2%)
 if defined listError (echo.Tests with errors: %listError:~0,-2%)
 if defined listTodo (echo.TODO tests: %listTodo:~0,-2%)
@@ -378,6 +390,7 @@ exit /B 0
 
 :checkUnixTools
 for %%F in (grep.exe sed.exe diff.exe) do if "%%~$PATH:F" == "" exit /B 2
+for %%F in (sort.exe uniq.exe) do if "%%~$PATH:F" == "" set skipsRecord=
 exit /B 0
 (goto:EOF)
 
@@ -458,6 +471,7 @@ if %verboseLevel% GTR 0 (
 :: %3 explanation (or empty)
 if not defined isExecutionOutput (goto:EOF)
 call :printTestHeader "%testFile%" "%testName%"
+:echoStatusForced
 set status=%~1
 if not "%~2" == "" (
     set status=%status% ^(%~2^)
@@ -469,10 +483,13 @@ if "%~3" == "" (
 )
 (goto:EOF)
 :echoSkip
-if not defined isExecutionOutput (goto:EOF)
-if %verboseLevel% EQU 0 (goto:EOF)
 set skipMethod=%~1
 set skipMethod=%skipMethod:~5,-1%
+if defined skipsRecord (
+    call :echoStatusForced "SKIP" "%skipMethod%" %2 >> "%skipsRecord%"
+)
+if not defined isExecutionOutput (goto:EOF)
+if %verboseLevel% EQU 0 (goto:EOF)
 call :echoStatus "SKIP" "%skipMethod%" %2
 (goto:EOF)
 :echoError
@@ -480,6 +497,16 @@ call :echoStatus "ERROR" %*
 (goto:EOF)
 :echoFail
 call :echoStatus "FAIL" %*
+(goto:EOF)
+
+:listSkipReasons
+if not defined skipsRecord (goto:EOF)
+if not defined listSkipped (
+    if not defined listSkips (goto:EOF)
+)
+if not exist "%skipsRecord%" (goto:EOF)
+sort --ignore-case -- "%skipsRecord%" | uniq --ignore-case --count
+del "%skipsRecord%"
 (goto:EOF)
 
 ::------------------------------------------------------------------------------
@@ -762,11 +789,14 @@ call :printTestHeader "%testFile%" "%testName%"
 :: Ignore all further TAP output after a bail out. 
 if defined isBailOut (goto:EOF)
 
+set tapTestIsSkip=
 if "%~1" == "ok" (
     if /I "%~2 %~3" == "# SKIP" (
 	set /A thisSkip+=1
+	set tapTestIsSkip=true
     ) else if /I "%~3 %~4" == "# SKIP" (
 	set /A thisSkip+=1
+	set tapTestIsSkip=true
     ) else if /I "%~2 %~3" == "# TODO" (
 	set /A thisTodo+=1
 	set /A thisRun+=1
@@ -780,13 +810,15 @@ if "%~1" == "ok" (
 	set /A thisRun+=1
     )
     set /A tapTestCnt+=1
-    (goto:EOF)
+    (goto:parseTapLineEnd)
 )
 if "%~1 %~2" == "not ok" (
     if /I "%~3 %~4" == "# SKIP" (
 	set /A thisSkip+=1
+	set tapTestIsSkip=true
     ) else if /I "%~4 %~5" == "# SKIP" (
 	set /A thisSkip+=1
+	set tapTestIsSkip=true
     ) else if /I "%~3 %~4" == "# TODO" (
 	set /A thisTodo+=1
 	set /A thisRun+=1
@@ -801,33 +833,42 @@ if "%~1 %~2" == "not ok" (
 	set tapTestIsPrintTapOutput=true
     )
     set /A tapTestCnt+=1
-    (goto:EOF)
+    (goto:parseTapLineEnd)
 )
 
 :: Handle bail out. 
 if "%~1 %~2" == "Bail out!" (
     set isBailOut=true
     set /A thisError+=1
-    (goto:EOF)
+    (goto:parseTapLineEnd)
 )
 
 :: Ignore all other TAP output unless it's a plan. 
-echo.%~1|grep -q -e "^[0-9][0-9]*\.\.[0-9][0-9]*$" || (goto:EOF)
+echo.%~1|grep -q -e "^[0-9][0-9]*\.\.[0-9][0-9]*$" || (goto:parseTapLineEnd)
 :: No tests planned means the TAP test is skipped completely. 
 if "%~1" == "1..0" (
     set /A thisTests+=1
     set /A thisSkip+=1
-    (goto:EOF)
+    set tapTestIsSkip=true
+    (goto:parseTapLineEnd)
 )
 :: Extract the number of planned tests. 
 for /F "tokens=1,2 delims=." %%a in ("%~1") do set /A tapTestNum=%%b - %%a + 1
+
+:parseTapLineEnd
+if defined skipsRecord (
+    if defined tapTestIsSkip (
+	echo.SKIP ^(tap^): %~6 >> "%skipsRecord%"
+	set tapTestIsSkip=
+    )
+)
 (goto:EOF)
 
 :parseTapOutput
 set tapTestNum=
 set /A tapTestCnt=0
 set tapTestIsPrintTapOutput=
-for /F "eol=# tokens=1-5 delims= " %%i in (%~1) do call :parseTapLine "%%i" "%%j" "%%k" "%%l" "%%m"
+for /F "eol=# tokens=1-5* delims= " %%i in (%~1) do call :parseTapLine "%%i" "%%j" "%%k" "%%l" "%%m" "%%n"
 :: Print the entire TAP output if in verbose mode, else only print 
 :: - failed tests
 :: - successful TODO tests
