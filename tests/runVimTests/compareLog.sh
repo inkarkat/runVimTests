@@ -21,6 +21,7 @@
 # REMARKS: 
 #   
 # REVISION	DATE		REMARKS 
+#	005	28-May-2009	Pin down locale to get reproducible sorting order. 
 #	004	12-Mar-2009	Also capturing stderr output, e.g. for "test not
 #				found" errors. 
 #				BF: Didn't handle captured output filename
@@ -35,6 +36,9 @@
 #				automatically. 
 #	001	11-Feb-2009	file creation
 ###############################################################################
+
+# Pin down locale to get reproducible sorting order. 
+export LC_ALL=C
 
 isTrackProgress='true'
 if [ "$1" == "--onlyresults" ]; then
