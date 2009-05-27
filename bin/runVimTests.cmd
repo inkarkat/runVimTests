@@ -20,6 +20,10 @@
 ::   The VIM LICENSE applies to this script; see 'vim -c ":help copyright"'.  
 ::
 ::* REVISION	DATE		REMARKS 
+::  1.12.022	14-Mar-2009	Only exiting with exit code 1 in case of test
+::				failures; using code 2 for invocation errors
+::				(i.e. wrong command-line arguments) and code 3
+::				for internal errors. 
 ::  1.11.021	12-Mar-2009	ENH: TODO tests are reported in test summary. 
 ::				ENH: TAP output is also parsed for bail out
 ::				message. 
@@ -148,7 +152,7 @@ call :determineUserVimFilesDirspec
 set runVimMsgFilterScript=%~dp0runVimMsgFilter.vim
 if not exist "%runVimMsgFilterScript%" (
     echo.ERROR: Script prerequisite "%runVimMsgFilterScript%" does not exist!
-    exit /B 1
+    exit /B 2
 )
 
 :: VIM variables set by the test framework. 
@@ -278,7 +282,7 @@ if not "%arg%" == "" (
 if "%~1" == "" (goto:printUsage)
 
 call :determineTerminalAndValidVimExecutable
-if not defined vimExecutable (exit /B 1)
+if not defined vimExecutable (exit /B 2)
 
 if not defined vimMode (set vimMode=user)
 set vimVariableOptionsValue=%vimMode%,%vimVariableOptionsValue%
@@ -329,50 +333,51 @@ if defined listError (echo.Tests with errors: %listError:~0,-2%)
 if defined listTodo (echo.TODO tests: %listTodo:~0,-2%)
 
 set /A cntAllProblems=%cntError% + %cntFail%
-if %cntAllProblems% NEQ 0 (exit /B 1)
+if %cntAllProblems% NEQ 0 (exit /B 1) else (exit /B 0)
 (goto:EOF)
 
 ::------------------------------------------------------------------------------
 :prerequisiteError
 echo.ERROR: Script prerequisites aren't met!
-exit /B 1
+exit /B 2
 (goto:EOF)
 
 :printShortUsage
-(echo.Usage: "%~nx0" [-0^|--pure^|-1^|--default^|-2^|--user] [--source filespec [--source filespec [...]]] [--runtime plugin/file.vim [--runtime autoload/file.vim [...]]] [--vimexecutable path\to\vim.exe^|--vimversion NN] [-g^|--graphical] [--summaryonly^|-v^|--verbose] [-d^|--debug] [-?^|-h^|--help] test001.vim^|testsuite.txt^|path\to\testdir\ [...])
-(goto:EOF)
+echo.Usage: "%~nx0" [-0^|--pure^|-1^|--default^|-2^|--user] [--source filespec [--source filespec [...]]] [--runtime plugin/file.vim [--runtime autoload/file.vim [...]]] [--vimexecutable path\to\vim.exe^|--vimversion NN] [-g^|--graphical] [--summaryonly^|-v^|--verbose] [-d^|--debug] [-?^|-h^|--help] test001.vim^|testsuite.txt^|path\to\testdir\ [...]
+exit /B 2
 :printUsage
 call :printShortUsage
-(echo.Try "%~nx0" --help for more information.)
-(goto:EOF)
+echo.Try "%~nx0" --help for more information.
+exit /B 2
 :printLongUsage
-(echo.A testing framework for VIM.)
-(echo.)
+echo.A testing framework for VIM.
+echo.
 call :printShortUsage
-(echo.    -0^|--pure		Start VIM without loading any .vimrc and plugins,)
-(echo.    			but in nocompatible mode. Adds 'pure' to %vimVariableOptionsName%.)
-(echo.    -1^|--default	Start VIM only with default settings and plugins,)
-(echo.    			without loading user .vimrc and plugins.)
-(echo.    			Adds 'default' to %vimVariableOptionsName%.)
-(echo.    -2^|--user		^(Default:^) Start VIM with user .vimrc and plugins.)
-(echo.    --source filespec	Source filespec before test execution.)
-(echo.    --runtime filespec	Source filespec relative to ~/.vim. Can be used to)
-(echo.    			load the script-under-test when using --pure.)
-(echo.    --vimexecutable	Use passed VIM executable instead)
-(echo.        path\to\vim.exe	of the one found in %%PATH%%.)
-(echo.    --vimversion NN	Use VIM version N.N. ^(Must be in standard installation)
-(echo.    			directory %ProgramFiles%\vim\vimNN\.^))
-(echo.    -g^|--graphical	Use GVIM.)
-(echo.    --summaryonly	Do not show detailed transcript and differences,)
-(echo.    			during test run, only summary.)
-(echo.    -v^|--verbose	Show passed tests and more details during test execution.)
-(echo.    -d^|--debug		Test debugging mode: Adds 'debug' to %vimVariableOptionsName%)
-(echo.    			variable inside VIM ^(so that tests do not exit or can)
-(echo.    			produce additional debug info^).)
-(goto:EOF)
+echo.    -0^|--pure		Start VIM without loading any .vimrc and plugins,
+echo.    			but in nocompatible mode. Adds 'pure' to %vimVariableOptionsName%.
+echo.    -1^|--default	Start VIM only with default settings and plugins,
+echo.    			without loading user .vimrc and plugins.
+echo.    			Adds 'default' to %vimVariableOptionsName%.
+echo.    -2^|--user		^(Default:^) Start VIM with user .vimrc and plugins.
+echo.    --source filespec	Source filespec before test execution.
+echo.    --runtime filespec	Source filespec relative to ~/.vim. Can be used to
+echo.    			load the script-under-test when using --pure.
+echo.    --vimexecutable	Use passed VIM executable instead
+echo.        path\to\vim.exe	of the one found in %%PATH%%.
+echo.    --vimversion NN	Use VIM version N.N. ^(Must be in standard installation
+echo.    			directory %ProgramFiles%\vim\vimNN\.^)
+echo.    -g^|--graphical	Use GVIM.
+echo.    --summaryonly	Do not show detailed transcript and differences,
+echo.    			during test run, only summary.
+echo.    -v^|--verbose	Show passed tests and more details during test
+echo.    			execution.
+echo.    -d^|--debug		Test debugging mode: Adds 'debug' to %vimVariableOptionsName%
+echo.    			variable inside VIM ^(so that tests do not exit or can
+echo.    			produce additional debug info^).
+exit /B 0
 
 :checkUnixTools
-for %%F in (grep.exe sed.exe diff.exe) do if "%%~$PATH:F" == "" exit /B 1
+for %%F in (grep.exe sed.exe diff.exe) do if "%%~$PATH:F" == "" exit /B 2
 exit /B 0
 (goto:EOF)
 
@@ -692,7 +697,7 @@ if "%~1" == "BAILOUT!" (
     call :echoSkip %1 %2
 ) else (
     (echo.ASSERT: Received unknown signal "%~1" in message output.)
-    exit 1
+    exit 3
 )
 (goto:EOF)
 :parseMessageOutputForSignals
@@ -744,7 +749,7 @@ if "%result%" == "OK" (
     set /A thisError+=1
 ) else (
     (echo.ASSERT: Received unknown result "%result%" from RunVimMsgFilter.)
-    exit 1
+    exit 3
 )
 if "%result%" == "OK" (
     if %verboseLevel% EQU 0 (goto:EOF)
