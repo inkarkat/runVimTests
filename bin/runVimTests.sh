@@ -13,14 +13,23 @@
 # REMARKS: 
 #   
 # DEPENDENCIES:
+#   - Requires bash 3.0 or higher. 
 #   - runVimMsgFilter.vim, located in this script's directory. 
 #
 # Copyright: (C) 2009 by Ingo Karkat
 #   The VIM LICENSE applies to this script; see 'vim -c ":help copyright"'.  
 #
-# FILE_SCCS = "@(#)runVimTests.sh	1.11.009	(12-Mar-2009)	runVimTests";
+# FILE_SCCS = "@(#)runVimTests.sh	1.12.010	(14-Mar-2009)	runVimTests";
 #
 # REVISION	DATE		REMARKS 
+#   1.12.010	14-Mar-2009	Added quoting of regexp in addToList(), which is
+#				needed in bash 3.0 and 3.1. 
+#				Now checking bash version. 
+#				Only exiting with exit code 1 in case of test
+#				failures; using code 2 for invocation errors
+#				(i.e. wrong command-line arguments) or
+#				missing prerequisites and code 3 for internal
+#				errors. 
 #   1.11.009	12-Mar-2009	ENH: TODO tests are reported in test summary. 
 #				ENH: TAP output is also parsed for bail out
 #				message. 
@@ -68,15 +77,17 @@ shopt -qs extglob
 
 initialize()
 {
-    readonly scriptDir=$(readonly scriptFile="$(type -P -- "$0")" && dirname -- "$scriptFile" || exit 1)
-    [ -d "$scriptDir" ] || { echo >&2 "ERROR: cannot determine script directory!"; exit 1; } 
+    [ ${BASH_VERSINFO[0]} -ge 3 ] || { echo >&2 "ERROR: This script requires bash 3.0 or higher!"; exit 2; }
+
+    readonly scriptDir=$(readonly scriptFile="$(type -P -- "$0")" && dirname -- "$scriptFile" || exit 3)
+    [ -d "$scriptDir" ] || { echo >&2 "ERROR: Cannot determine script directory!"; exit 3; } 
 
     # Prerequisite VIM script to match the message assumptions against the actual
     # message output. 
     readonly runVimMsgFilterScript=${scriptDir}/runVimMsgFilter.vim
     if [ ! -r "$runVimMsgFilterScript" ]; then
 	echo >&2 "ERROR: Script prerequisite \"${runVimMsgFilterScript}\" does not exist!"
-	exit 1
+	exit 2
     fi
 
     # VIM variables set by the test framework. 
@@ -116,7 +127,7 @@ initialize()
 verifyVimModeSetOnlyOnce()
 {
     if [ "$vimMode" ]; then
-	{ echo "ERROR: \"${1}\": Mode already set!"; echo; printShortUsage; } >&2; exit 1
+	{ echo "ERROR: \"${1}\": Mode already set!"; echo; printShortUsage; } >&2; exit 2
     fi
 }
 
@@ -159,7 +170,8 @@ HELPDESCRIPTION
     -g|--graphical	Use GUI version of VIM.
     --summaryonly	Do not show detailed transcript and differences, during
 			test run, only summary. 
-    -v^|--verbose	Show passed tests and more details during test execution.
+    -v^|--verbose	Show passed tests and more details during test
+			execution.
     -d|--debug		Test debugging mode: Adds 'debug' to ${vimVariableOptionsName}
 			variable inside VIM (so that tests do not exit or can
 			produce additional debug info).
@@ -265,7 +277,7 @@ runDir()
 addToList()
 {
     eval local listName=\$list$1
-    if [[ ! "$listName" =~ (^|,\ )${2}(,\ |$) ]]; then
+    if [[ ! "$listName" =~ "(^|,\ )${2}(,\ |$)" ]]; then
 	eval list${1}=\"${listName}${2}, \"
     fi
 }
@@ -322,7 +334,7 @@ parseSignal()
 	SKIP\(out\))	isSkipOut='true';;
 	SKIP\(msgout\))	isSkipMsgout='true';;
 	SKIP\(tap\))	isSkipTap='true';;
-	*)		echo >&2 "ASSERT: Received unknown signal \"${1}\" in message output."; exit 1;;
+	*)		echo >&2 "ASSERT: Received unknown signal \"${1}\" in message output."; exit 3;;
     esac
     case "$1" in
 	SKIP*)		echoSkip "$1" "$2"
@@ -393,7 +405,7 @@ compareMessages()
 		;;
 	FAIL)	let thisFail+=1;;
 	ERROR)	let thisError+=1;;
-	*)	echo >&2 "ASSERT: Received unknown result \"${evaluationResult}\" from RunVimMsgFilter."; exit 1;;
+	*)	echo >&2 "ASSERT: Received unknown result \"${evaluationResult}\" from RunVimMsgFilter."; exit 3;;
     esac
     if [ "$isExecutionOutput" -a "$isPrintEvaluation" ]; then
 	printTestHeader "$testFile" "$testName"
@@ -509,7 +521,7 @@ runTest()
     fi
     typeset -r testDirspec=$(dirname -- "$1")
     typeset -r testFile=$(basename -- "$1")
-    typeset -r testFilespec=$(cd "$testDirspec" && echo "${PWD}/${testFile}") || { echo >&2 "ERROR: Cannot determine absolute filespec!"; exit 1; }
+    typeset -r testFilespec=$(cd "$testDirspec" && echo "${PWD}/${testFile}") || { echo >&2 "ERROR: Cannot determine absolute filespec!"; exit 3; }
     typeset -r testName=${testFile%.*}
 
     # The setup script is not a test, silently skip it. 
@@ -689,6 +701,8 @@ report()
     let cntAllProblems=cntError+cntFail
     if [ $cntAllProblems -ne 0 ]; then
 	exit 1
+    else
+	exit 0
     fi
 }
 
@@ -697,12 +711,12 @@ initialize
 
 if [ $# -eq 0 ]; then
     printUsage
-    exit 1
+    exit 2
 fi
 while [ $# -ne 0 ]
 do
     case "$1" in
-	--help|-h|-\?)	    shift; printLongUsage; exit 1;;
+	--help|-h|-\?)	    shift; printLongUsage; exit 0;;
 	--pure|-0)	    verifyVimModeSetOnlyOnce "$1"
 			    shift
 			    vimArguments="-N -u NONE $vimArguments"
@@ -724,7 +738,7 @@ do
 			    shift
 			    if ! type -P -- "$vimExecutable" >/dev/null; then
 				echo >&2 "ERROR: \"${vimExecutable}\" is not a VIM executable!"
-				exit 1
+				exit 2
 			    fi
 			    ;;
 	--graphical|-g)	    shift
@@ -739,11 +753,11 @@ do
 	--verbose|-v)	    shift; let verboseLevel+=1;;
 	-d|--debug)	    shift; vimVariableOptionsValue="${vimVariableOptionsValue}debug,";;
 	--)		    shift; break;;
-	-*)		    { echo "ERROR: Unknown option \"${1}\"!"; echo; printShortUsage; } >&2; exit 1;;
+	-*)		    { echo "ERROR: Unknown option \"${1}\"!"; echo; printShortUsage; } >&2; exit 2;;
 	*)		    break;;
     esac
 done
-[ $# -eq 0 ] && { printUsage; exit 1; }
+[ $# -eq 0 ] && { printUsage; exit 2; }
 [ "$vimMode" ] || vimMode='user'
 vimVariableOptionsValue="${vimMode},${vimVariableOptionsValue}"
 vimVariableOptionsValue="${vimVariableOptionsValue%,}"
