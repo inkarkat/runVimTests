@@ -21,11 +21,14 @@
 ::* REMARKS: 
 ::       	
 ::* DEPENDENCIES:
-::  - GNU diff available through %PATH% or 'unix.cmd' script. 
+::  - GNU sed, diff available through %PATH% or 'unix.cmd' script. 
 ::
 ::* REVISION	DATE		REMARKS 
 ::	004	12-Mar-2009	Also capturing stderr output, e.g. for "test not
 ::				found" errors. 
+::				ENH: Fixing Windows differences in the VIM
+::				invocation by making substitutions in the
+::				captured log. 
 ::	003	07-Mar-2009	The test file (suite) is now also embedded in
 ::				the captured output name so that multiple test
 ::				files and suites can be captured. 
@@ -68,9 +71,22 @@ set options=%options:!=-%
 if "%tests%" == "testdir" set tests=.
 call runVimTests.cmd%options% "%tests%" > "%log%" 2>&1
 
+:fixWindowsDifferencesInLog
+:: There are a couple of differences in the VIM invocation between Windows and
+:: Linux. To avoid that these always show up in the diff, we perform some
+:: substitutions in the line that logs the VIM invocation to make the captured
+:: Windows log look like the old log.(Which I always create on Unix, because the
+:: Windows diff is able to handle files with different line endings
+:: transparently.) 
+:: - On Windows, I use a custom 'runVimTestsSetup.vim' global setup script, but
+::   on Unix, I don't. (This is just for me.)
+:: - In the Windows shell, all VIM arguments must be enclosed in double quotes,
+::   but the Unix shell script uses single quotes where possible. 
+sed -i -e "/^Starting test run/{n;s/ -S \d034[^\d034]*runVimTestsSetup.vim\d034//;s/ \d034\([^'\d034]*\)\d034/ '\1'/g}" "%log%"
+
+:showDifferences
 echo.
 echo.DIFFERENCES:
 diff -u "%old%" "%log%"
-
 
 endlocal
