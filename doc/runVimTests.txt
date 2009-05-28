@@ -184,16 +184,16 @@ the test execution, not in the individual test results, use --summaryonly.
 
 To debug problematic tests, you normally can only inspect the message output
 after the fact. By specifying --debug, this option is accessible to the test
-via the|g:runVimTests|variable and can be used to add additional debug
+via the |g:runVimTests| variable and can be used to add additional debug
 information or to leave the VIM instance running after the test has finished,
-so that you can inspect things in the live environment. The|vimtest#Quit()|
+so that you can inspect things in the live environment. The |vimtest#Quit()|
 function behaves in exactly this way. 
 
 ==============================================================================
 INSTALLATION					    *runVimTests-installation*
 
 This framework is packaged as a ZIP archive. You can unpack it directly into
-|your-runtime-dir|(~/.vim), but you can also install the script executables
+|your-runtime-dir| (~/.vim), but you can also install the script executables
 somewhere else. 
 
 The script executables are in the bin/ subdirectory: >
@@ -204,11 +204,11 @@ They can be put anywhere (preferably somewhere in $PATH for easy invocation).
 runVimMsgFilter.vim must be in the same directory as the shell script. 
 
 The doc/ subdirectory contains the documentation. Put the files into
-~/.vim/doc and execute|:helptags|~/.vim/doc to re-generate the help tags. 
+~/.vim/doc and execute |:helptags|~/.vim/doc to re-generate the help tags. 
 
 The autoload/ subdirectory contains optional convenience and helper functions.
-(E.g.|vimtest#Quit()|, |vimtest#SaveOut()|, |vimtest#RequestInput()|, and
-more. See|vimtest-usage|for a full reference.) 
+(E.g. |vimtest#Quit()|, |vimtest#SaveOut()|, |vimtest#RequestInput()|, and
+more. See |vimtest-usage| for a full reference.) 
 Their use is not required, but they simplify the writing of tests. 
 
 The VimTAP plugin (vimscript #2213) needs to be installed separately. 
@@ -287,9 +287,9 @@ given.
     ERROR	    Signal an error in the test. 
     BAILOUT!	    All testing should terminate; no further test scripts
 		    should be run. 
-Though you can simply use|:echo|to submit a signal, it is recommended to use
-the helper functions for|vimtest-signals|. Multiple signals can be given in no
-particular order. 
+Though you can simply use |:echo| to submit a signal, it is recommended to use
+the helper functions for |vimtest-signals|. Multiple signals can be given in
+no particular order. 
 
 							   *runVimTests-setup*
 Setup scripts can be sourced automatically by the framework before the
@@ -308,7 +308,7 @@ code (e.g. if you have set a non-default 'runtimepath' in your .vimrc and you
 also want this set when run in pure mode, as your .vimrc isn't sourced then). 
 
 A local setup script "_setup.vim" is sourced if it is found in the
-testXXX.vim's directory. You can use this to|:source|the script under test
+testXXX.vim's directory. You can use this to |:source| the script under test
 and/or source some general helper scripts that all tests in this directory are
 using. 
 
@@ -329,7 +329,7 @@ SAVED BUFFER OUTPUT
 Load a predefined test input (e.g. testXXX.in), or start from scratch in the
 empty buffer, and make modifications to it. Finally, save the result in
 testXXX.out (in the same directory as the test itself). You can do this via
-:saveas testXXX.out, but the|vimtest#SaveOut()|function is more comfortable
+:saveas testXXX.out, but the |vimtest#SaveOut()| function is more comfortable
 and avoids hard-coding of the test name. >
     " Test successful saved buffer output. 
     normal! iSuccessful execution.
@@ -340,13 +340,13 @@ compared against: >
     Successful execution. 
 <
 CAPTURED MESSAGES
-Issue|:echo| or|:echomsg|, or execute commands that will cause messages. The
-messages are automatically captured in testXXX.msgout. >
+Issue |:echo|  or |:echomsg|, or execute commands that will cause messages.
+The messages are automatically captured in testXXX.msgout. >
     " Test successful message output. 
     echomsg 'Successful execution.'
     call vimtest#Quit()
 In addition, you need to provide a testXXX.msgok file to which the captured
-messages are compared against; the|runVimMsgFilter|also allows to match
+messages are compared against; the |runVimMsgFilter| also allows to match
 against patterns: >
     /Successful \([rR]un\|[eE]xecution\)./
 <
@@ -374,9 +374,9 @@ is taken as the test synopsis and included in the test header that is printed
 before each test is executed. Example: >
     " Test mutation that adds lines after the current line. 
 
-Finally, the test must|:quit|VIM (unless the --debug option was specified), so
+Finally, the test must |:quit| VIM (unless the --debug option was specified), so
 that the next test can be executed in a newly spawned VIM instance. The
-|vimtest#Quit()|function takes care of that. 
+|vimtest#Quit()| function takes care of that. 
 
 Tip: If you are a hands-on person, there are simple annotated example scripts
 in the test/example/ subdirectory. 
@@ -440,7 +440,7 @@ Started development.
 
 ==============================================================================
 Copyright: (C) 2009 by Ingo Karkat
-The VIM LICENSE applies to this script; see|copyright|. 
+The VIM LICENSE applies to this script; see |copyright|. 
 
 Maintainer:	Ingo Karkat <ingo@karkat.de>
 ==============================================================================
