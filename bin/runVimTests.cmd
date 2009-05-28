@@ -800,10 +800,10 @@ set tapTestSkipReason=
 if "%~1" == "ok" (
     if /I "%~2 %~3" == "# SKIP" (
 	set /A thisSkip+=1
-	set tapTestSkipReason=%~4 %~5 %~6
+	set tapTestSkipReason="%~4 %~5 %~6"
     ) else if /I "%~3 %~4" == "# SKIP" (
 	set /A thisSkip+=1
-	set tapTestSkipReason=%~5 %~6
+	set tapTestSkipReason="%~5 %~6"
     ) else if /I "%~2 %~3" == "# TODO" (
 	set /A thisTodo+=1
 	set /A thisRun+=1
@@ -822,10 +822,10 @@ if "%~1" == "ok" (
 if "%~1 %~2" == "not ok" (
     if /I "%~3 %~4" == "# SKIP" (
 	set /A thisSkip+=1
-	set tapTestSkipReason=%~5 %~6
+	set tapTestSkipReason="%~5 %~6"
     ) else if /I "%~4 %~5" == "# SKIP" (
 	set /A thisSkip+=1
-	set tapTestSkipReason=%~6
+	set tapTestSkipReason="%~6"
     ) else if /I "%~3 %~4" == "# TODO" (
 	set /A thisTodo+=1
 	set /A thisRun+=1
@@ -856,7 +856,7 @@ echo.%~1|grep -q -e "^[0-9][0-9]*\.\.[0-9][0-9]*$" || (goto:parseTapLineEnd)
 if "%~1" == "1..0" (
     set /A thisTests+=1
     set /A thisSkip+=1
-    set tapTestSkipReason=%~4 %~5 %~6
+    set tapTestSkipReason="%~4 %~5 %~6"
     (goto:parseTapLineEnd)
 )
 :: Extract the number of planned tests. 
@@ -865,7 +865,7 @@ for /F "tokens=1,2 delims=." %%a in ("%~1") do set /A tapTestNum=%%b - %%a + 1
 :parseTapLineEnd
 if defined skipsRecord (
     if defined tapTestSkipReason (
-	echo.SKIP ^(tap^): %tapTestSkipReason% | sed -e "s/ *$//" >> "%skipsRecord%"
+	echo."SKIP (tap): %tapTestSkipReason:~1,-1%" | sed -e "s/^\d034\(.*\)\d034 *$/\1/" >> "%skipsRecord%"
 	set tapTestSkipReason=
     )
 )
