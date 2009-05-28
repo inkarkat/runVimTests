@@ -13,15 +13,21 @@
 # REMARKS: 
 #   
 # DEPENDENCIES:
-#   - Requires bash 3.0 or higher. 
+#   - Requires Bash 3.0 or higher. 
+#   - GNU grep, sed, diff. 
+#   - Optionally for SKIP summary: GNU sort, uniq. 
 #   - runVimMsgFilter.vim, located in this script's directory. 
 #
 # Copyright: (C) 2009 by Ingo Karkat
 #   The VIM LICENSE applies to this script; see 'vim -c ":help copyright"'.  
 #
-# FILE_SCCS = "@(#)runVimTests.sh	1.12.010	(14-Mar-2009)	runVimTests";
+# FILE_SCCS = "@(#)runVimTests.sh	1.13.011	(28-May-2009)	runVimTests";
 #
 # REVISION	DATE		REMARKS 
+#   1.13.011	28-May-2009	ENH: Now including SKIP reasons in the summary
+#				(identical reasons are condensed and counted)
+#				when not running with verbose output. I always
+#				wanted to know why certain tests were skipped. 
 #   1.12.010	14-Mar-2009	Added quoting of regexp in addToList(), which is
 #				needed in bash 3.0 and 3.1. 
 #				Now checking bash version. 
@@ -77,10 +83,13 @@ shopt -qs extglob
 
 initialize()
 {
-    [ ${BASH_VERSINFO[0]} -ge 3 ] || { echo >&2 "ERROR: This script requires bash 3.0 or higher!"; exit 2; }
+    [ ${BASH_VERSINFO[0]} -ge 3 ] || { echo >&2 "ERROR: This script requires Bash 3.0 or higher!"; exit 2; }
 
     readonly scriptDir=$(readonly scriptFile="$(type -P -- "$0")" && dirname -- "$scriptFile" || exit 3)
     [ -d "$scriptDir" ] || { echo >&2 "ERROR: Cannot determine script directory!"; exit 3; } 
+
+    skipsRecord=${TEMP:-/tmp}/skipsRecord.txt.$$
+    [ -f "$skipsRecord" ] && { rm -- "$skipsRecord" || skipsRecord=; }
 
     # Prerequisite VIM script to match the message assumptions against the actual
     # message output. 
@@ -186,6 +195,11 @@ echoOk()
 {
     [ "$isExecutionOutput" -a $verboseLevel -gt 0 ] && echo "OK ($1)"
 }
+echoStatusForced()
+{
+    local -r status="${1}${2:+ (}${2}${2:+)}"
+    echo "${status}${3:+: }$3"
+}
 echoStatus()
 # $1 status
 # $2 method (or empty)
@@ -193,13 +207,14 @@ echoStatus()
 {
     printTestHeader "$testFile" "$testName"
     if [ "$isExecutionOutput" ]; then
-	typeset -r status="${1}${2:+ (}${2}${2:+)}"
-	echo "${status}${3:+: }$3"
+	echoStatusForced "$@"
     fi
 }
 echoSkip()
 {
-    [ "$isExecutionOutput" -a $verboseLevel -gt 0 ] && echoStatus "SKIP" "${1:5:${#1}-6}" "$2"
+    local -r skipMethod=${1:5:${#1}-6}
+    [ "$skipsRecord" ] && echoStatusForced "SKIP" "$skipMethod" "$2" >> "$skipsRecord"
+    [ "$isExecutionOutput" -a $verboseLevel -gt 0 ] && echoStatus "SKIP" "$skipMethod" "$2"
 }
 echoError()
 {
@@ -209,6 +224,13 @@ echoFail()
 {
     echoStatus 'FAIL' "$@"
 }
+listSkipReasons()
+{
+    [ ! "$skipsRecord" -o $cntSkip -eq 0 -o ! -f "$skipsRecord" ] && return
+    sort '--ignore-case' -- "$skipsRecord" | uniq '--ignore-case' --count
+    case "$DEBUG" in *skipsRecord*) ;; *) rm -- "$skipsRecord";; esac
+}
+
 makePlural()
 {
     if [ $1 -eq 1 ]; then
@@ -244,8 +266,8 @@ processTestEntry()
 
 runSuite()
 {
-    typeset -r suiteDir=$(dirname -- "$1")
-    typeset -r suiteFilename=$(basename -- "$1")
+    local -r suiteDir=$(dirname -- "$1")
+    local -r suiteFilename=$(basename -- "$1")
 
     # Change to suite directory so that relative paths and filenames are
     # resolved correctly. 
@@ -383,7 +405,7 @@ compareOutput()
 }
 compareMessages()
 {
-    typeset -r testMsgresult="${3}.msgresult"
+    local -r testMsgresult="${3}.msgresult"
     [ -f "$testMsgresult" ] && rm "$testMsgresult"
 
     # Use silent-batch mode (-es) to match the message assumptions against the
@@ -395,7 +417,7 @@ compareMessages()
 	echoError 'msgout' 'Evaluation of test messages failed.'
 	return
     fi
-    typeset -r evaluationResult=$(sed -n '1s/^\([A-Z][A-Z]*\).*/\1/p' -- "$testMsgresult")
+    local -r evaluationResult=$(sed -n '1s/^\([A-Z][A-Z]*\).*/\1/p' -- "$testMsgresult")
     local isPrintEvaluation='true'
     case "$evaluationResult" in
 	OK)	let thisOk+=1
@@ -411,6 +433,11 @@ compareMessages()
 	printTestHeader "$testFile" "$testName"
 	cat -- "$testMsgresult"
     fi
+}
+recordTapSkip()
+{
+    local -r skipReason=${1#*[sS][kK][iI][pP]}
+    [ "$skipsRecord" ] && echo "SKIP (tap): ${skipReason##+( )}" >> "$skipsRecord"
 }
 parseTapOutput()
 {
@@ -428,6 +455,7 @@ parseTapOutput()
 		;;
 	    ok\ ?(+([0-9])\ )\#\ [sS][kK][iI][pP]*)
 		let thisSkip+=1 	   tapTestCnt+=1
+		recordTapSkip "$tapLine"
 		;;
 	    ok\ ?(+([0-9])\ )\#\ [tT][oO][dD][oO]*)
 		let thisTodo+=1 thisRun+=1 tapTestCnt+=1; tapTestIsPrintTapOutput='true'
@@ -437,6 +465,7 @@ parseTapOutput()
 		;;
 	    not\ ok\ ?(+([0-9])\ )\#\ [sS][kK][iI][pP]*)
 		let thisSkip+=1 	   tapTestCnt+=1
+		recordTapSkip "$tapLine"
 		;;
 	    not\ ok\ ?(+([0-9])\ )\#\ [tT][oO][dD][oO]*)
 		let thisTodo+=1 thisRun+=1 tapTestCnt+=1; tapTestIsPrintTapOutput='true'
@@ -454,6 +483,7 @@ parseTapOutput()
 		# No tests planned means the TAP test is skipped completely. 
 		let thisTests+=1
 		let thisSkip+=1
+		recordTapSkip "${tapLine#1..0}"
 		;;
 	    +([0-9])..+([0-9]))
 		local startNum=${tapLine%%.*}
@@ -519,19 +549,19 @@ runTest()
 	echo >&2 "ERROR: Test file \"$1\" doesn't exist."
 	return
     fi
-    typeset -r testDirspec=$(dirname -- "$1")
-    typeset -r testFile=$(basename -- "$1")
-    typeset -r testFilespec=$(cd "$testDirspec" && echo "${PWD}/${testFile}") || { echo >&2 "ERROR: Cannot determine absolute filespec!"; exit 3; }
-    typeset -r testName=${testFile%.*}
+    local -r testDirspec=$(dirname -- "$1")
+    local -r testFile=$(basename -- "$1")
+    local -r testFilespec=$(cd "$testDirspec" && echo "${PWD}/${testFile}") || { echo >&2 "ERROR: Cannot determine absolute filespec!"; exit 3; }
+    local -r testName=${testFile%.*}
 
     # The setup script is not a test, silently skip it. 
     [ "$testFile" = "$vimLocalSetupScript" ] && return
 
-    typeset -r testOk=${testName}.ok
-    typeset -r testOut=${testName}.out
-    typeset -r testMsgok=${testName}.msgok
-    typeset -r testMsgout=${testName}.msgout
-    typeset -r testTap=${testName}.tap
+    local -r testOk=${testName}.ok
+    local -r testOut=${testName}.out
+    local -r testMsgok=${testName}.msgok
+    local -r testMsgout=${testName}.msgout
+    local -r testTap=${testName}.tap
 
     let cntTestFiles+=1
     pushd "$testDirspec" >/dev/null
@@ -688,12 +718,13 @@ execute()
 }
 report()
 {
-    [ $cntTodo -ge 1 ] && typeset -r todoNotification=", $cntTodo TODO" || typeset -r todoNotification=
-    [ "$isBailOut" ] && typeset -r bailOutNotification=' (aborted)' || typeset -r bailOutNotification=
+    [ $cntTodo -ge 1 ] && local -r todoNotification=", $cntTodo TODO" || local -r todoNotification=
+    [ "$isBailOut" ] && local -r bailOutNotification=' (aborted)' || local -r bailOutNotification=
     echo
     echo "$cntTestFiles $(makePlural $cntTestFiles 'file') with $cntTests $(makePlural $cntTests 'test')${bailOutNotification}; $cntSkip skipped, $cntRun run: $cntOk OK, $cntFail $(makePlural $cntFail 'failure'), $cntError $(makePlural $cntError 'error')${todoNotification}."
     [ "$listSkipped" ] && echo "Skipped tests: ${listSkipped%, }"
     [ "$listSkips" ] && echo "Tests with skips: ${listSkips%, }"
+    listSkipReasons
     [ "$listFailed" ] && echo "Failed tests: ${listFailed%, }"
     [ "$listError" ] && echo "Tests with errors: ${listError%, }"
     [ "$listTodo" ] && echo "TODO tests: ${listTodo%, }"
@@ -750,7 +781,7 @@ do
 			    fi
 			    ;;
 	--summaryonly)	    shift; isExecutionOutput='true';;
-	--verbose|-v)	    shift; let verboseLevel+=1;;
+	--verbose|-v)	    shift; let verboseLevel+=1; skipsRecord=;;
 	-d|--debug)	    shift; vimVariableOptionsValue="${vimVariableOptionsValue}debug,";;
 	--)		    shift; break;;
 	-*)		    { echo "ERROR: Unknown option \"${1}\"!"; echo; printShortUsage; } >&2; exit 2;;
