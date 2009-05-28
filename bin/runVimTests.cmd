@@ -26,6 +26,7 @@
 ::				(identical reasons are condensed and counted)
 ::				when not running with verbose output. I always
 ::				wanted to know why certain tests were skipped. 
+::				Not removing temporary files if %debug%. 
 ::  1.12.022	14-Mar-2009	Only exiting with exit code 1 in case of test
 ::				failures; using code 2 for invocation errors
 ::				(i.e. wrong command-line arguments) and code 3
@@ -426,7 +427,7 @@ if %ERRORLEVEL% NEQ 0 (
     findstr /C:"Output is not to a terminal" "%capturedVimErrorOutput%" >NUL && set vimTerminalArguments= -es
 )
 set vimArguments=%vimArguments%%vimTerminalArguments%
-del "%capturedVimErrorOutput%" >NUL 2>&1
+if not defined debug del "%capturedVimErrorOutput%" >NUL 2>&1
 (goto:EOF)
 
 :printTestHeader
@@ -501,12 +502,10 @@ call :echoStatus "FAIL" %*
 
 :listSkipReasons
 if not defined skipsRecord (goto:EOF)
-if not defined listSkipped (
-    if not defined listSkips (goto:EOF)
-)
+if %cntSkip% EQU 0 (goto:EOF)
 if not exist "%skipsRecord%" (goto:EOF)
 sort --ignore-case -- "%skipsRecord%" | uniq --ignore-case --count
-del "%skipsRecord%"
+if not defined debug del "%skipsRecord%"
 (goto:EOF)
 
 ::------------------------------------------------------------------------------
@@ -789,14 +788,14 @@ call :printTestHeader "%testFile%" "%testName%"
 :: Ignore all further TAP output after a bail out. 
 if defined isBailOut (goto:EOF)
 
-set tapTestIsSkip=
+set tapTestSkipReason=
 if "%~1" == "ok" (
     if /I "%~2 %~3" == "# SKIP" (
 	set /A thisSkip+=1
-	set tapTestIsSkip=true
+	set tapTestSkipReason=%~4 %~5 %~6
     ) else if /I "%~3 %~4" == "# SKIP" (
 	set /A thisSkip+=1
-	set tapTestIsSkip=true
+	set tapTestSkipReason=%~5 %~6
     ) else if /I "%~2 %~3" == "# TODO" (
 	set /A thisTodo+=1
 	set /A thisRun+=1
@@ -815,10 +814,10 @@ if "%~1" == "ok" (
 if "%~1 %~2" == "not ok" (
     if /I "%~3 %~4" == "# SKIP" (
 	set /A thisSkip+=1
-	set tapTestIsSkip=true
+	set tapTestSkipReason=%~5 %~6
     ) else if /I "%~4 %~5" == "# SKIP" (
 	set /A thisSkip+=1
-	set tapTestIsSkip=true
+	set tapTestSkipReason=%~6
     ) else if /I "%~3 %~4" == "# TODO" (
 	set /A thisTodo+=1
 	set /A thisRun+=1
@@ -849,7 +848,7 @@ echo.%~1|grep -q -e "^[0-9][0-9]*\.\.[0-9][0-9]*$" || (goto:parseTapLineEnd)
 if "%~1" == "1..0" (
     set /A thisTests+=1
     set /A thisSkip+=1
-    set tapTestIsSkip=true
+    set tapTestSkipReason=%~4 %~5 %~6
     (goto:parseTapLineEnd)
 )
 :: Extract the number of planned tests. 
@@ -857,9 +856,9 @@ for /F "tokens=1,2 delims=." %%a in ("%~1") do set /A tapTestNum=%%b - %%a + 1
 
 :parseTapLineEnd
 if defined skipsRecord (
-    if defined tapTestIsSkip (
-	echo.SKIP ^(tap^): %~6 >> "%skipsRecord%"
-	set tapTestIsSkip=
+    if defined tapTestSkipReason (
+	echo.SKIP ^(tap^): %tapTestSkipReason% | sed -e "s/ *$//" >> "%skipsRecord%"
+	set tapTestSkipReason=
     )
 )
 (goto:EOF)
