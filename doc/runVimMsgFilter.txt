@@ -3,7 +3,7 @@
 		       RUN VIM TESTS    by Ingo Karkat
 
 Matching of *.msgok message assumptions against *.msgout file, writing results
-into *.msgresult. Used by the|runVimTests|testing framework. 
+into *.msgresult. Used by the |runVimTests| testing framework. 
 
 							 *runVimMsgFilter.vim*
 description			|runVimMsgFilter-description|
@@ -20,7 +20,7 @@ history				|runVimMsgFilter-history|
 ==============================================================================
 DESCRIPTION					 *runVimMsgFilter-description*
 
-This script is employed by the|runVimTests|testing framework to process and
+This script is employed by the |runVimTests| testing framework to process and
 match the captured message output from a single test execution
 (testXXX.out) against a provided list of message assertions, which are
 essentially literal text fragments or regular expressions that must match
@@ -124,7 +124,7 @@ Started development.
 
 ==============================================================================
 Copyright: (C) 2009 by Ingo Karkat
-The VIM LICENSE applies to this script; see|copyright|. 
+The VIM LICENSE applies to this script; see |copyright|. 
 
 Maintainer:	Ingo Karkat <ingo@karkat.de>
 ==============================================================================
