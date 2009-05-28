@@ -1,0 +1,5 @@
+
+Starting test run with these Vim options:
+vim -N -u NONE -f -es --cmd "let g:runVimTests='pure'"
+
+9 files with 19 tests; 0 skipped, 19 run: 19 OK, 0 failures, 0 errors.
