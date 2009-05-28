@@ -17,7 +17,7 @@ history				|vimtest-history|
 DESCRIPTION						*vimtest-description*
 
 This autoload script provides convenience and helper functions that simplify
-the writing of tests for the|runVimTests|testing framework; i.e. you have to
+the writing of tests for the |runVimTests| testing framework; i.e. you have to
 type less, your test scripts contain less boilerplate code, and the
 abstraction layer avoids having to modify all test scripts in case of a future
 incompatible change to the testing framework. 
@@ -29,20 +29,20 @@ vimtest#Quit()						      *vimtest#Quit()*
 		Quits VIM at the end of the test execution (so that the next
 		test can be executed in a fresh VIM instance) unless debugging
 		has been enabled. 
-		If you've started TAP testing with|vimtest#StartTap()|, the
-		TAP output is flushed automatically (via|vimtap#FlushOutput|)
+		If you've started TAP testing with |vimtest#StartTap()|, the
+		TAP output is flushed automatically (via |vimtap#FlushOutput|)
 		for you. 
 
 vimtest#System({shellcmd})				    *vimtest#System()*
 		Executes {shellcmd} (which must already be properly escaped,
-		cp.|shellescape()|) and aborts test execution if {shellcmd}
+		cp. |shellescape()|) and aborts test execution if {shellcmd}
 		fails. This is useful if you need to run external commands in
 		order to setup the test harness or to verify the test results. 
 
 vimtest#StartTap([{testfilespec}])			  *vimtest#StartTap()*
-		Sets the output file for the|VimTAP|test. {testfilespec} can
+		Sets the output file for the |VimTAP| test. {testfilespec} can
 		be omitted, as the test framework sets the test name.
-		If you stop testing via|vimtest#Quit()|, the TAP output is
+		If you stop testing via |vimtest#Quit()|, the TAP output is
 		flushed automatically. 
 		So this function saves you a little bit of typing in
 		comparison to using|vimtap#SetOutputFile|/ |vimtap#FlushOutput|
@@ -59,7 +59,7 @@ vimtest#RequestInput({input})			      *vimtest#RequestInput()*
 		Prompts the user to enter the key(s) described by {input}.
 		Useful if the object-under-test requires a user confirmation
 		(e.g. a prompt "Overwrite yes/no?") to continue. 
-		This is basically just an|:echomsg|with flashy highlighting
+		This is basically just an |:echomsg| with flashy highlighting
 		so that the message is noticed by the user. 
 		Example: >
 		call vimtest#RequestInput('Yes') 
@@ -135,7 +135,7 @@ Started development.
 
 ==============================================================================
 Copyright: (C) 2009 by Ingo Karkat
-The VIM LICENSE applies to this script; see|copyright|. 
+The VIM LICENSE applies to this script; see |copyright|. 
 
 Maintainer:	Ingo Karkat <ingo@karkat.de>
 ==============================================================================
