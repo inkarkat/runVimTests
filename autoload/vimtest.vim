@@ -10,6 +10,10 @@
 " Maintainer:	Ingo Karkat <ingo@karkat.de>
 "
 " REVISION	DATE		REMARKS 
+"   1.10.008	08-Mar-2009	Split vimtest#SkipAndQuit() into vimtest#Skip(),
+"				a general, single-purpose function, and
+"				vimtest#SkipAndQuitIf(), a special (but
+"				often-used) convenience function. 
 "   1.10.007	05-Mar-2009	ENH: Added vimtest#BailOut(), vimtest#Error(),
 "				and vimtest#Skip...() functions. 
 "   1.00.006	02-Mar-2009	Adapted to VimTAP 0.3: Changed function name to
@@ -54,9 +58,8 @@ endfunction
 function! vimtest#Error( reason )
     call s:SignalToDriver('ERROR', a:reason)
 endfunction
-function! vimtest#SkipAndQuit( reason )
+function! vimtest#Skip( reason )
     call s:SignalToDriver('SKIP', a:reason)
-    call vimtest#Quit()
 endfunction
 function! vimtest#SkipOut( reason )
     call s:SignalToDriver('SKIP(out)', a:reason)
@@ -66,6 +69,12 @@ function! vimtest#SkipMsgout( reason )
 endfunction
 function! vimtest#SkipTap( reason )
     call s:SignalToDriver('SKIP(tap)', a:reason)
+endfunction
+function! vimtest#SkipAndQuitIf( condition, reason )
+    if a:condition
+	call vimtest#Skip(a:reason)
+	call vimtest#Quit()
+    endif
 endfunction
 
 function! vimtest#System( shellcmd )
