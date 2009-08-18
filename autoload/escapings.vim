@@ -1,12 +1,19 @@
 " escapings.vim: Common escapings of filenames, and wrappers around new Vim 7.2
 " fnameescape() and shellescape() functions. 
 "
-" TODO:
-"   - Refine the Vim 7.0/7.1 emulation functions. 
+" Copyright: (C) 2009 by Ingo Karkat
+"   The VIM LICENSE applies to this script; see ':help copyright'. 
 "
 " Maintainer:	Ingo Karkat <ingo@karkat.de>
 "
 " REVISION	DATE		REMARKS 
+"	007	27-May-2009	escapings#bufnameescape() now automatically
+"				expands a:filespec to the required full absolute
+"				filespec in the (default) full match mode. 
+"				BF: ',' must not be escaped in
+"				escapings#bufnameescape(); it only has special
+"				meaning inside { }, which never occurs in the
+"				escaped pattern. 
 "	006	26-May-2009	escapings#fnameescape() emulation part now works
 "				like fnameescape() on Windows: Instead of
 "				converting backslashes to forward slashes, they
@@ -54,16 +61,21 @@ function! escapings#bufnameescape( filespec, ... )
 "*******************************************************************************
     let l:isFullMatch = (a:0 ? a:1 : 1)
 
+    " For a full match, the passed a:filespec must be converted to a full
+    " absolute path (with symlinks resolved, just like Vim does on opening a
+    " file) in order to match. 
+    let l:escapedFilespec = (l:isFullMatch ? resolve(fnamemodify(a:filespec, ':p')) : a:filespec)
+
     " Backslashes are converted to forward slashes, as the comparison is done with
     " these on all platforms, anyway (cp. :help file-pattern). 
-    let l:escapedFilespec = tr(a:filespec, '\', '/')
+    let l:escapedFilespec = tr(l:escapedFilespec, '\', '/')
 
     " Special file-pattern characters must be escaped: [ escapes to [[], not \[.
     let l:escapedFilespec = substitute(l:escapedFilespec, '[\[\]]', '[\0]', 'g')
 
     " The special filenames '#' and '%' need not be escaped when they are anchored
     " or occur within a longer filespec. 
-    let l:escapedFilespec = escape(l:escapedFilespec, '*?,')
+    let l:escapedFilespec = escape(l:escapedFilespec, '?*')
 
     " I didn't find any working escaping for {, so it is replaced with the ?
     " wildcard. 
