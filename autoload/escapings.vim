@@ -7,6 +7,14 @@
 " Maintainer:	Ingo Karkat <ingo@karkat.de>
 "
 " REVISION	DATE		REMARKS 
+"	008	19-Aug-2009	BF: escapings#shellescape() caused E118 on Vim
+"				7.1. The shellescape({string}) function exists
+"				since Vim 7.0.111, but shellescape({string},
+"				{special}) was only introduced with Vim 7.2. 
+"				Now calling the one-argument function if no
+"				{special} argument, and (crudely) emulating the
+"				two-argument function for Vim versions that only
+"				have the one-argument function. 
 "	007	27-May-2009	escapings#bufnameescape() now automatically
 "				expands a:filespec to the required full absolute
 "				filespec in the (default) full match mode. 
@@ -107,11 +115,11 @@ function! escapings#exescape( command )
 "* RETURN VALUES: 
 "   Escaped shell command to be passed to the !{cmd} or :r !{cmd} commands. 
 "*******************************************************************************
-if exists('*fnameescape')
-    return join(map(split(a:command, ' '), 'fnameescape(v:val)'), ' ')
-else
-    return escape(a:command, '\%#|' )
-endif
+    if exists('*fnameescape')
+	return join(map(split(a:command, ' '), 'fnameescape(v:val)'), ' ')
+    else
+	return escape(a:command, '\%#|' )
+    endif
 endfunction
 
 function! escapings#fnameescape( filespec )
@@ -127,12 +135,12 @@ function! escapings#fnameescape( filespec )
 "* RETURN VALUES: 
 "   Escaped filespec to be passed as a {file} argument to an ex command. 
 "*******************************************************************************
-if exists('*fnameescape')
-    return fnameescape(a:filespec)
-else
-    " Note: On Windows, backslash path separators mustn't be escaped. 
-    return escape(a:filespec, " \t\n*?[{`$%#'\"|!<" . (s:IsWindowsLike() ? '' : '\'))
-endif
+    if exists('*fnameescape')
+	return fnameescape(a:filespec)
+    else
+	" Note: On Windows, backslash path separators mustn't be escaped. 
+	return escape(a:filespec, " \t\n*?[{`$%#'\"|!<" . (s:IsWindowsLike() ? '' : '\'))
+    endif
 endfunction
 
 function! escapings#fnameunescape( exfilespec, ... )
@@ -157,7 +165,7 @@ function! escapings#fnameunescape( exfilespec, ... )
 "* RETURN VALUES: 
 "   Unescaped, normal filespec. 
 "*******************************************************************************
-    let l:isMakeFullPath = (a:0 > 0 ? a:1 : 0)
+    let l:isMakeFullPath = (a:0 ? a:1 : 0)
     return fnamemodify( a:exfilespec, ':gs+\\\([ \t\n*?[{`$%#''"|!<' . (s:IsWindowsLike() ? '' : '\') . ']\)+\1+' . (l:isMakeFullPath ? ':p' : ''))
 endfunction
 
@@ -181,18 +189,30 @@ function! escapings#shellescape( filespec, ... )
 "* RETURN VALUES: 
 "   Escaped filespec to be used in a :! command or inside a system() call. 
 "*******************************************************************************
-    let l:isSpecial = (a:0 > 0 ? a:1 : 0)
-if exists('*shellescape')
-    return shellescape(a:filespec, l:isSpecial)
-else
-    let l:escapedFilespec = (l:isSpecial ? escapings#fnameescape(a:filespec) : a:filespec)
-
-    if s:IsWindowsLike()
-	return '"' . l:escapedFilespec . '"'
+    let l:isSpecial = (a:0 ? a:1 : 0)
+    if exists('*shellescape')
+	if a:0
+	    if v:version < 702
+		" The shellescape({string}) function exists since Vim 7.0.111,
+		" but shellescape({string}, {special}) was only introduced with
+		" Vim 7.2. Emulate the two-argument function by (crudely)
+		" escaping special characters for the :! command. 
+		return shellescape((l:isSpecial ? escape(a:filespec, '!%#<') : a:filespec))
+	    else
+		return shellescape(a:filespec, l:isSpecial)
+	    endif
+	else
+	    return shellescape(a:filespec)
+	endif
     else
-	return "'" . l:escapedFilespec . "'"
+	let l:escapedFilespec = (l:isSpecial ? escapings#fnameescape(a:filespec) : a:filespec)
+
+	if s:IsWindowsLike()
+	    return '"' . l:escapedFilespec . '"'
+	else
+	    return "'" . l:escapedFilespec . "'"
+	endif
     endif
-endif
 endfunction
 
 " vim: set sts=4 sw=4 noexpandtab ff=unix fdm=syntax :
