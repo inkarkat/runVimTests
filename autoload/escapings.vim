@@ -7,6 +7,12 @@
 " Maintainer:	Ingo Karkat <ingo@karkat.de>
 "
 " REVISION	DATE		REMARKS 
+"	009	27-Aug-2009	BF: Characters '[{$' must not be escaped on
+"				Windows. Adapted pattern in
+"				escapings#fnameescape() and
+"				escapings#fnameunescape(). (This caused
+"				ingobuffer#MakeScratchBuffer() to create an "foo
+"				\[Scratch]" buffer on an unpatched Vim 7.1.) 
 "	008	19-Aug-2009	BF: escapings#shellescape() caused E118 on Vim
 "				7.1. The shellescape({string}) function exists
 "				since Vim 7.0.111, but shellescape({string},
@@ -138,8 +144,9 @@ function! escapings#fnameescape( filespec )
     if exists('*fnameescape')
 	return fnameescape(a:filespec)
     else
-	" Note: On Windows, backslash path separators mustn't be escaped. 
-	return escape(a:filespec, " \t\n*?[{`$%#'\"|!<" . (s:IsWindowsLike() ? '' : '\'))
+	" Note: On Windows, backslash path separators and some other Unix
+	" shell-specific characters mustn't be escaped. 
+	return escape(a:filespec, " \t\n*?`%#'\"|!<" . (s:IsWindowsLike() ? '' : '[{$\'))
     endif
 endfunction
 
@@ -166,7 +173,7 @@ function! escapings#fnameunescape( exfilespec, ... )
 "   Unescaped, normal filespec. 
 "*******************************************************************************
     let l:isMakeFullPath = (a:0 ? a:1 : 0)
-    return fnamemodify( a:exfilespec, ':gs+\\\([ \t\n*?[{`$%#''"|!<' . (s:IsWindowsLike() ? '' : '\') . ']\)+\1+' . (l:isMakeFullPath ? ':p' : ''))
+    return fnamemodify( a:exfilespec, ':gs+\\\([ \t\n*?`%#''"|!<' . (s:IsWindowsLike() ? '' : '[{$\') . ']\)+\1+' . (l:isMakeFullPath ? ':p' : ''))
 endfunction
 
 function! escapings#shellescape( filespec, ... )
