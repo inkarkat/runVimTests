@@ -1,12 +1,18 @@
 " escapings.vim: Common escapings of filenames, and wrappers around new Vim 7.2
 " fnameescape() and shellescape() functions. 
 "
-" Copyright: (C) 2009 by Ingo Karkat
+" Copyright: (C) 2009-2010 by Ingo Karkat
 "   The VIM LICENSE applies to this script; see ':help copyright'. 
 "
 " Maintainer:	Ingo Karkat <ingo@karkat.de>
 "
 " REVISION	DATE		REMARKS 
+"	010	12-Feb-2010	BUG: Emulation of shellescape(..., {special})
+"				escaped wrong characters (e.g. ' \<[') via
+"				fnameescape() and the escaping was done
+"				inconsistently though only 9 lines apart.
+"				Corrected and factored out the characters into
+"				l:specialShellescapeCharacters. 
 "	009	27-Aug-2009	BF: Characters '[{$' must not be escaped on
 "				Windows. Adapted pattern in
 "				escapings#fnameescape() and
@@ -197,6 +203,7 @@ function! escapings#shellescape( filespec, ... )
 "   Escaped filespec to be used in a :! command or inside a system() call. 
 "*******************************************************************************
     let l:isSpecial = (a:0 ? a:1 : 0)
+    let l:specialShellescapeCharacters = "\n%#'!"
     if exists('*shellescape')
 	if a:0
 	    if v:version < 702
@@ -204,7 +211,7 @@ function! escapings#shellescape( filespec, ... )
 		" but shellescape({string}, {special}) was only introduced with
 		" Vim 7.2. Emulate the two-argument function by (crudely)
 		" escaping special characters for the :! command. 
-		return shellescape((l:isSpecial ? escape(a:filespec, '!%#<') : a:filespec))
+		return shellescape((l:isSpecial ? escape(a:filespec, l:specialShellescapeCharacters) : a:filespec))
 	    else
 		return shellescape(a:filespec, l:isSpecial)
 	    endif
@@ -212,7 +219,7 @@ function! escapings#shellescape( filespec, ... )
 	    return shellescape(a:filespec)
 	endif
     else
-	let l:escapedFilespec = (l:isSpecial ? escapings#fnameescape(a:filespec) : a:filespec)
+	let l:escapedFilespec = (l:isSpecial ? escape(a:filespec, l:specialShellescapeCharacters) : a:filespec)
 
 	if s:IsWindowsLike()
 	    return '"' . l:escapedFilespec . '"'
