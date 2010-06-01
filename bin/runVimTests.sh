@@ -226,7 +226,7 @@ echoFail()
 listSkipReasons()
 {
     [ ! "$skipsRecord" -o $cntSkip -eq 0 -o ! -f "$skipsRecord" ] && return
-    sort '--ignore-case' -- "$skipsRecord" | uniq '--ignore-case' --count
+    sort --ignore-case -- "$skipsRecord" | uniq --ignore-case --count
     case "$DEBUG" in *skipsRecord*) ;; *) rm -- "$skipsRecord";; esac
 }
 
