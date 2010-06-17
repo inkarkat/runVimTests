@@ -14,15 +14,17 @@
 #   
 # DEPENDENCIES:
 #   - Requires Bash 3.0 or higher. 
-#   - GNU diff, grep, sed, sort, uniq. 
+#   - GNU diff, grep, sed, sort, tr, uniq. 
 #   - runVimMsgFilter.vim, located in this script's directory. 
 #
-# Copyright: (C) 2009 by Ingo Karkat
+# Copyright: (C) 2009-2010 Ingo Karkat
 #   The VIM LICENSE applies to this script; see 'vim -c ":help copyright"'.  
 #
-# FILE_SCCS = "@(#)runVimTests.sh	1.13.011	(28-May-2009)	runVimTests";
+# FILE_SCCS = "@(#)runVimTests.sh	1.14.012	(02-Jun-2010)	runVimTests";
 #
 # REVISION	DATE		REMARKS 
+#   1.14.012	02-Jun-2010	Now also handling *.suite files with Windows
+#				(CR-LF) line endings. 
 #   1.13.011	28-May-2009	ENH: Now including SKIP reasons in the summary
 #				(identical reasons are condensed and counted)
 #				when not running with verbose output. I always
@@ -274,7 +276,7 @@ runSuite()
 
     local testEntry
     local IFS=$'\n'
-    for testEntry in $(cat -- "$suiteFilename")
+    for testEntry in $(cat -- "$suiteFilename" | tr -d '\015')
     do
 	case "$testEntry" in
 	    \#*|'') continue;;
