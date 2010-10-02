@@ -1,8 +1,8 @@
 " vimtest.vim: General utility functions for the runVimTests testing framework. 
 "
 " DEPENDENCIES:
-"   - Requires VIM 7.0 or higher.  
-"   - escapings.vim autoload script (for VIM 7.0/7.1). 
+"   - Requires Vim 7.0 or higher.  
+"   - escapings.vim autoload script (for Vim 7.0/7.1). 
 "
 " Copyright: (C) 2009 by Ingo Karkat
 "   The VIM LICENSE applies to this script; see ':help copyright'. 
@@ -10,6 +10,10 @@
 " Maintainer:	Ingo Karkat <ingo@karkat.de>
 "
 " REVISION	DATE		REMARKS 
+"   1.14.009	10-Jul-2009	BF: vimtest#System() didn't abort via
+"				vimtest#Quit() on shell errors. 
+"				Added optional isIgnoreErrors argument to
+"				vimtest#System(). 
 "   1.10.008	08-Mar-2009	Split vimtest#SkipAndQuit() into vimtest#Skip(),
 "				a general, single-purpose function, and
 "				vimtest#SkipAndQuitIf(), a special (but
@@ -77,8 +81,9 @@ function! vimtest#SkipAndQuitIf( condition, reason )
     endif
 endfunction
 
-function! vimtest#System( shellcmd )
+function! vimtest#System( shellcmd, ... )
     let l:shellcmd = a:shellcmd
+    let l:isIgnoreErrors = (a:0 && a:1)
     if &shell =~? 'cmd\.exe$'
 	" In case the shellcmd is a batch file, the invocation via 'cmd.exe /c ...'
 	" doesn't return the batch file's exit status. Since it's safe to invoke
@@ -95,10 +100,12 @@ function! vimtest#System( shellcmd )
     let l:shelloutput = system(l:shellcmd)
     echo 'Executing shell command: ' . a:shellcmd
     echo l:shelloutput
-    if v:shell_error
+    if v:shell_error && ! l:isIgnoreErrors
 	echo printf('Execution failed with exit status %d, aborting test.', v:shell_error)
 	call vimtest#Error(printf("Execution of '%s' failed with exit status %d.", a:shellcmd, v:shell_error))
+	call vimtest#Quit()
     endif
+    return (! v:shell_error)
 endfunction
 
 function! s:MakeFilename( arguments, extension )
