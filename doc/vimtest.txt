@@ -5,10 +5,7 @@
 description			|vimtest-description|
 usage	    			|vimtest-usage|
 installation   			|vimtest-installation|
-configuration  			|vimtest-configuration|
-integration			|vimtest-integration|
 limitations			|vimtest-limitations|
-assumptions			|vimtest-assumptions|
 known problems			|vimtest-known-problems|
 todo				|vimtest-todo|
 history				|vimtest-history|
@@ -26,19 +23,28 @@ incompatible change to the testing framework.
 USAGE							      *vimtest-usage*
 
 vimtest#Quit()						      *vimtest#Quit()*
-		Quits VIM at the end of the test execution (so that the next
-		test can be executed in a fresh VIM instance) unless debugging
+		Quits Vim at the end of the test execution (so that the next
+		test can be executed in a fresh Vim instance) unless debugging
 		has been enabled. 
 		If you've started TAP testing with |vimtest#StartTap()|, the
 		TAP output is flushed automatically (via |vimtap#FlushOutput|)
 		for you. 
 
-vimtest#System({shellcmd})				    *vimtest#System()*
+vimtest#System({shellcmd} [, {ignore-errors}])				    *vimtest#System()*
 		Executes {shellcmd} (which must already be properly escaped,
 		cp. |shellescape()|) and aborts test execution if {shellcmd}
-		fails. This is useful if you need to run external commands in
-		order to setup the test harness or to verify the test results. 
-
+		fails; otherwise returns 1. This is useful if you need to run
+		external commands in order to setup the test harness or to
+		verify the test results. 
+		When the {ignore-errors} argument is present and is non-zero,
+		shell errors are ignored; the function then returns 0 and test
+		execution continues. This can be used to completely bail out
+		in _setup.vim, to avoid running into the same setup error on
+		each individual test: >
+		    if ! vimtest#System('setup', 1)
+			call vimtest#BailOut('setup failed with status ' . v:shell_error)
+		    endif
+<
 vimtest#StartTap([{testfilespec}])			  *vimtest#StartTap()*
 		Sets the output file for the |VimTAP| test. {testfilespec} can
 		be omitted, as the test framework sets the test name.
@@ -69,7 +75,7 @@ vimtest#RequestInput({input})			      *vimtest#RequestInput()*
 vimtest#BailOut({reason})				   *vimtest#BailOut()*
 		Signals that things are going so badly that all testing should
 		terminate; no further test scripts should be run. Also quits
-		VIM. 
+		Vim. 
 
 vimtest#Error({reason})					     *vimtest#Error()*
 		Signals an error in the test execution. 
@@ -87,41 +93,34 @@ vimtest#SkipTap({reason})				   *vimtest#SkipTap()*
 vimtest#SkipAndQuitIf({condition}, {reason})	     *vimtest#SkipAndQuitIf()*
 		Signals that this test should be skipped (e.g. due to missing
 		dependencies, unsupported platform, etc.) if {condition} is
-		true. Also quits VIM. 
+		true. Also quits Vim. 
 		This is a convenience method that combines the check for
 		skipping with the skip signal and quitting. 
 
 ==============================================================================
 INSTALLATION					       *vimtest-installation*
 
-Put the script into your user or system VIM autoload directory
+Put the script into your user or system Vim autoload directory
 (e.g. ~/.vim/autoload). 
 
 DEPENDENCIES					       *vimtest-dependencies*
 
-- Requires VIM 7.0 or higher. 
-- Requires escapings.vim autoload script (for VIM 7.0/7.1). 
+- Requires Vim 7.0 or higher. 
+- Requires escapings.vim autoload script (for Vim 7.0/7.1). 
 
 ==============================================================================
-CONFIGURATION					      vimtest-configuration
+LIMITATIONS						*vimtest-limitations*
 
-==============================================================================
-INTEGRATION						vimtest-integration
+KNOWN PROBLEMS					     *vimtest-known-problems*
 
-==============================================================================
-LIMITATIONS						vimtest-limitations
-
-==============================================================================
-ASSUMPTIONS						vimtest-assumptions
-
-==============================================================================
-KNOWN PROBLEMS					     vimtest-known-problems
-
-==============================================================================
-TODO							       vimtest-todo
+TODO							       *vimtest-todo*
 
 ==============================================================================
 HISTORY							    *vimtest-history*
+
+1.14	10-Jul-2009
+- BF: vimtest#System() didn't abort via vimtest#Quit() on shell errors. 
+- Added optional isIgnoreErrors argument to vimtest#System().
 
 1.10	08-Mar-2009
 ENH: Added vimtest#BailOut(), vimtest#Error(), and vimtest#Skip...()
