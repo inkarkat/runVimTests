@@ -1,16 +1,17 @@
 " Test example demonstrating out and msgout. 
 
 " Load the test data. 
-" Note: This is the hard-coded hacker's version. 
-edit test003.in
-" To avoid hard-coding:
-"   execute 'edit' fnameescape(expand('<sfile>:r') . '.in')
+edit testdata.in
 
-" This is the command-under-test: 
-normal! gg3guu
+" For simplicity, VIM's "lowercase" (gu) is the command-under-test. 
+" We test lowercasing all lines, and also verify that the "n lines changed"
+" message is printed. 
+" For demonstration purposes, let's make this fail by using the wrong visual
+" mode ('v' vs. 'V'). 
+normal! ggvGgu
 
 " Save the processed buffer contents. 
-" Note: This is the hard-coded hacker's version. 
+" Note: This is the simple hard-coded version. 
 write test003.out
 " To avoid hard-coding:
 "   execute 'write' fnameescape(expand('<sfile>:p:r') . '.out')
