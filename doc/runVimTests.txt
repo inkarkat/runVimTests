@@ -399,6 +399,9 @@ IDEAS							   *runVimTests-ideas*
 ==============================================================================
 HISTORY							 *runVimTests-history*
 
+1.14	10-Jul-2009
+Only bugfix and enhancement to the vimtest#System() function. 
+
 1.13	29-May-2009
 ENH: Now including SKIP reasons in the summary (identical reasons are
 condensed and counted) when not running with verbose output. I always wanted
@@ -440,7 +443,7 @@ runVimTests.sh.
 Started development. 
 
 ==============================================================================
-Copyright: (C) 2009 by Ingo Karkat
+Copyright: (C) 2009 Ingo Karkat
 The VIM LICENSE applies to this script; see |copyright|. 
 
 Maintainer:	Ingo Karkat <ingo@karkat.de>
