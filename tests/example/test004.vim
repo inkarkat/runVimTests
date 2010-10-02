@@ -20,7 +20,7 @@ call vimtap#Like('foobar 2000', 'fo\+.* \d\+', 'matches')
 call vimtap#FlushOutput()
 " Note: You don't need to flush explicitly if you use the vimtest#... helpers. 
 
-" Exit VIM so that the test result is evaluated. 
+" Exit Vim so that the test result is evaluated. 
 quit!
 " Again, there's a helper function that has some nifty extras: 
 "   call vimtest#Quit()
