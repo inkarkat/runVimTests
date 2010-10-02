@@ -3,7 +3,7 @@
 " Load the test data. 
 edit testdata.in
 
-" For simplicity, VIM's "lowercase" (gu) is the command-under-test. 
+" For simplicity, Vim's "lowercase" (gu) is the command-under-test. 
 " We test lowercasing one complete line here. 
 normal! gggugu
 
@@ -11,6 +11,6 @@ normal! gggugu
 " The test framework compares this with the provided test001.ok. 
 write test001.out
 
-" Exit VIM so that the test result is evaluated. 
+" Exit Vim so that the test result is evaluated. 
 quit!
 
