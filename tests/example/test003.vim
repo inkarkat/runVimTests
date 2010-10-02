@@ -3,7 +3,7 @@
 " Load the test data. 
 edit testdata.in
 
-" For simplicity, VIM's "lowercase" (gu) is the command-under-test. 
+" For simplicity, Vim's "lowercase" (gu) is the command-under-test. 
 " We test lowercasing all lines, and also verify that the "n lines changed"
 " message is printed. 
 " For demonstration purposes, let's make this fail by using the wrong visual
@@ -18,7 +18,7 @@ write test003.out
 " Or just use the friendly helper function: 
 "   call vimtest#SaveOut()
 
-" Exit VIM so that the test result is evaluated. 
+" Exit Vim so that the test result is evaluated. 
 quit!
 " Again, there's a helper function that has some nifty extras: 
 "   call vimtest#Quit()
