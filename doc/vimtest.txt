@@ -80,6 +80,11 @@ vimtest#BailOut({reason})				   *vimtest#BailOut()*
 vimtest#Error({reason})					     *vimtest#Error()*
 		Signals an error in the test execution. 
 
+vimtest#ErrorAndQuit({reason})			      *vimtest#ErrorAndQuit()*
+		Signals an error in the test execution and quits this test. 
+		An often used combination of |vimtest#Error()| and
+		|vimtest#Quit()|. 
+
 vimtest#Skip({reason})					      *vimtest#Skip()*
 		Signals that this test should be skipped and all test output
 		should be disregarded. 
@@ -118,6 +123,9 @@ TODO							       *vimtest-todo*
 ==============================================================================
 HISTORY							    *vimtest-history*
 
+1.15	03-Oct-2010
+- ENH: Added vimtest#ErrorAndQuit() for convenience. 
+
 1.14	10-Jul-2009
 - BF: vimtest#System() didn't abort via vimtest#Quit() on shell errors. 
 - Added optional isIgnoreErrors argument to vimtest#System().
@@ -133,7 +141,7 @@ First published version.
 Started development. 
 
 ==============================================================================
-Copyright: (C) 2009 by Ingo Karkat
+Copyright: (C) 2009-2010 Ingo Karkat
 The VIM LICENSE applies to this script; see |copyright|. 
 
 Maintainer:	Ingo Karkat <ingo@karkat.de>
