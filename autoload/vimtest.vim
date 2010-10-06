@@ -4,12 +4,14 @@
 "   - Requires Vim 7.0 or higher.  
 "   - escapings.vim autoload script (for Vim 7.0/7.1). 
 "
-" Copyright: (C) 2009 by Ingo Karkat
+" Copyright: (C) 2009-2010 by Ingo Karkat
 "   The VIM LICENSE applies to this script; see ':help copyright'. 
 "
 " Maintainer:	Ingo Karkat <ingo@karkat.de>
 "
 " REVISION	DATE		REMARKS 
+"   1.15.010	03-Oct-2010	ENH: Added vimtest#ErrorAndQuit(), because it's
+"				a common use case. 
 "   1.14.009	10-Jul-2009	BF: vimtest#System() didn't abort via
 "				vimtest#Quit() on shell errors. 
 "				Added optional isIgnoreErrors argument to
@@ -61,6 +63,10 @@ function! vimtest#BailOut( reason )
 endfunction
 function! vimtest#Error( reason )
     call s:SignalToDriver('ERROR', a:reason)
+endfunction
+function! vimtest#ErrorAndQuit( reason )
+    call vimtest#Error(a:reason)
+    call vimtest#Quit()
 endfunction
 function! vimtest#Skip( reason )
     call s:SignalToDriver('SKIP', a:reason)
