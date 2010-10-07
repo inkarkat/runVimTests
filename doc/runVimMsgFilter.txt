@@ -7,12 +7,9 @@ into *.msgresult. Used by the |runVimTests| testing framework.
 
 							 *runVimMsgFilter.vim*
 description			|runVimMsgFilter-description|
-usage	    			|runVimMsgFilter-usage|
-installation   			|runVimMsgFilter-installation|
-configuration  			|runVimMsgFilter-configuration|
-integration			|runVimMsgFilter-integration|
+usage				|runVimMsgFilter-usage|
+installation			|runVimMsgFilter-installation|
 limitations			|runVimMsgFilter-limitations|
-assumptions			|runVimMsgFilter-assumptions|
 known problems			|runVimMsgFilter-known-problems|
 todo				|runVimMsgFilter-todo|
 history				|runVimMsgFilter-history|
@@ -29,7 +26,7 @@ sequentially in the captured message output.
 ==============================================================================
 USAGE						       *runVimMsgFilter-usage*
 
-Invoke VIM via >
+Invoke Vim via >
     $ vim -S runVimMsgFilter.vim -c "RunVimMsgFilter" -c "quitall!" testXXX.msgok
 The filter run will save the results in testXXX.msgresult in the same
 directory as the *.msgok file; it will override a previous result. 
@@ -42,7 +39,7 @@ assertion and the affected lines will be appended.
 MSGOK						       *runVimMsgFilter-msgok*
 The testXXX.msgok file contains multiple message assertions, which are
 separated by empty (i.e. containing only optional whitespace) lines. 
-Each message assertion is compiled into a VIM regexp, e.g.
+Each message assertion is compiled into a Vim regexp, e.g.
     foo ~
     bar ~
     baz ~
@@ -87,24 +84,13 @@ script. You do not need to install this script into ~/.vim/plugin!
 
 DEPENDENCIES					*runVimMsgFilter-dependencies*
 
-- Requires VIM 7.2 or higher. 
+- Requires Vim 7.2 or higher. 
 
 ==============================================================================
-CONFIGURATION				       runVimMsgFilter-configuration
+LIMITATIONS					 *runVimMsgFilter-limitations*
 
-==============================================================================
-INTEGRATION					 runVimMsgFilter-integration
+KNOWN PROBLEMS				      *runVimMsgFilter-known-problems*
 
-==============================================================================
-LIMITATIONS					 runVimMsgFilter-limitations
-
-==============================================================================
-ASSUMPTIONS					 runVimMsgFilter-assumptions
-
-==============================================================================
-KNOWN PROBLEMS				      runVimMsgFilter-known-problems
-
-==============================================================================
 TODO							*runVimMsgFilter-todo*
 
 - Allow comments?
@@ -123,7 +109,7 @@ First published version.
 Started development. 
 
 ==============================================================================
-Copyright: (C) 2009 by Ingo Karkat
+Copyright: (C) 2009 Ingo Karkat
 The VIM LICENSE applies to this script; see |copyright|. 
 
 Maintainer:	Ingo Karkat <ingo@karkat.de>
