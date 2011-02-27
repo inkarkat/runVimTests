@@ -2,7 +2,8 @@
 Starting test run with these Vim options:
 vim -N -u NONE -f -es --cmd "let g:runVimTests='pure'"
 ERROR: Test file "doesnotexist.vim" doesn't exist.
-ERROR: Suite file "another.suite" doesn't exist. 
-ERROR: Suite file "C:/WINDOWS/Temp" doesn't exist. 
+ERROR: Suite file "another.suite" doesn't exist.
+ERROR: Suite file "nosuchdirectory/nosuchsubdir" doesn't exist.
+ERROR: Test file "emptydir/*.vim" doesn't exist.
 
-0 files with 0 tests; 0 skipped, 0 run: 0 OK, 0 failures, 3 errors.
+0 files with 0 tests; 0 skipped, 0 run: 0 OK, 0 failures, 4 errors.
