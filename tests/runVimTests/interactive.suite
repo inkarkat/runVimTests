@@ -1,0 +1,5 @@
+# Note: This suite cannot be run through compareLog; the capturing of the test
+# output interferes with the Vim interaction! 
+# This test must be run manually: 
+#   runVimTests -0 interactive.suite
+interactive
