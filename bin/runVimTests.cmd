@@ -13,7 +13,7 @@
 ::* REMARKS: 
 ::       	
 ::* DEPENDENCIES:
-::  - GNU grep, sed, diff available through %PATH% or 'unix.cmd' script. 
+::  - GNU diff, grep, sed available through %PATH% or 'unix.cmd' script. 
 ::  - Optionally for SKIP summary: GNU sort, uniq available through %PATH% or
 ::    'unix.cmd' script. 
 ::  - runVimMsgFilter.vim, located in this script's directory. 
@@ -22,6 +22,10 @@
 ::   The VIM LICENSE applies to this script; see 'vim -c ":help copyright"'.  
 ::
 ::* REVISION	DATE		REMARKS 
+::  1.13.024	29-May-2009	BF: Also sourcing 'unix.cmd' if only optional
+::				tools are not in %PATH%. 
+::				BF: Now handling (most?) special characters
+::				([<>|]) in SKIP reasons. 
 ::  1.13.023	28-May-2009	ENH: Now including SKIP reasons in the summary
 ::				(identical reasons are condensed and counted)
 ::				when not running with verbose output. I always
@@ -865,7 +869,7 @@ for /F "tokens=1,2 delims=." %%a in ("%~1") do set /A tapTestNum=%%b - %%a + 1
 :parseTapLineEnd
 if defined skipsRecord (
     if defined tapTestSkipReason (
-	echo."SKIP (tap): %tapTestSkipReason:~1,-1%" | sed -e "s/^\d034\(.*\)\d034 *$/\1/" >> "%skipsRecord%"
+	echo."SKIP (tap): %tapTestSkipReason:~1,-1%"|sed -e "s/^\d034\(SKIP (tap): \) *\d034$/\1/" -e "s/^\d034\(SKIP (tap): .*[^ ]\) *\d034$/\1/" >> "%skipsRecord%"
 	set tapTestSkipReason=
     )
 )
