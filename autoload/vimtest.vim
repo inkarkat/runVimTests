@@ -10,6 +10,8 @@
 " Maintainer:	Ingo Karkat <ingo@karkat.de>
 "
 " REVISION	DATE		REMARKS 
+"   1.15.011	07-Oct-2010	ENH: Added vimtest#ErrorAndQuitIf(), because
+"				it's a common use case, too. 
 "   1.15.010	03-Oct-2010	ENH: Added vimtest#ErrorAndQuit(), because it's
 "				a common use case. 
 "   1.14.009	10-Jul-2009	BF: vimtest#System() didn't abort via
@@ -67,6 +69,11 @@ endfunction
 function! vimtest#ErrorAndQuit( reason )
     call vimtest#Error(a:reason)
     call vimtest#Quit()
+endfunction
+function! vimtest#ErrorAndQuitIf( condition, reason )
+    if a:condition
+	call vimtest#ErrorAndQuit(a:reason)
+    endif
 endfunction
 function! vimtest#Skip( reason )
     call s:SignalToDriver('SKIP', a:reason)
