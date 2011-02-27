@@ -24,6 +24,7 @@
 ::  - GNU sed, diff available through %PATH% or 'unix.cmd' script. 
 ::
 ::* REVISION	DATE		REMARKS 
+::	005	28-May-2009	Pin down locale to get reproducible sorting order. 
 ::	004	12-Mar-2009	Also capturing stderr output, e.g. for "test not
 ::				found" errors. 
 ::				ENH: Fixing Windows differences in the VIM
@@ -38,6 +39,9 @@
 ::	001	11-Feb-2009	file creation
 ::*******************************************************************************
 setlocal enableextensions
+
+:: Pin down locale to get reproducible sorting order. 
+set LC_ALL=C
 
 call unix --quiet >NUL 2>&1
 
