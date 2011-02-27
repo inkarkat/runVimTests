@@ -3,8 +3,8 @@
 		       RUN VIM TESTS    by Ingo Karkat
 								*vimtest.vim*
 description			|vimtest-description|
-usage	    			|vimtest-usage|
-installation   			|vimtest-installation|
+usage				|vimtest-usage|
+installation			|vimtest-installation|
 limitations			|vimtest-limitations|
 known problems			|vimtest-known-problems|
 todo				|vimtest-todo|
@@ -30,7 +30,7 @@ vimtest#Quit()						      *vimtest#Quit()*
 		TAP output is flushed automatically (via |vimtap#FlushOutput|)
 		for you. 
 
-vimtest#System({shellcmd} [, {ignore-errors}])				    *vimtest#System()*
+vimtest#System({shellcmd} [, {ignore-errors}])		    *vimtest#System()*
 		Executes {shellcmd} (which must already be properly escaped,
 		cp. |shellescape()|) and aborts test execution if {shellcmd}
 		fails; otherwise returns 1. This is useful if you need to run
@@ -81,7 +81,9 @@ vimtest#Error({reason})					     *vimtest#Error()*
 		Signals an error in the test execution. 
 
 vimtest#ErrorAndQuit({reason})			      *vimtest#ErrorAndQuit()*
-		Signals an error in the test execution and quits this test. 
+vimtest#ErrorAndQuitIf({condition}, {reason})	    *vimtest#ErrorAndQuitIf()*
+		Signals an error in the test execution and quits this test (if
+		{condition} is true). 
 		An often used combination of |vimtest#Error()| and
 		|vimtest#Quit()|. 
 
@@ -123,10 +125,11 @@ TODO							       *vimtest-todo*
 ==============================================================================
 HISTORY							    *vimtest-history*
 
-1.15	03-Oct-2010
-- ENH: Added vimtest#ErrorAndQuit() for convenience. 
+1.15	07-Oct-2010 (unreleased)
+- ENH: Added vimtest#ErrorAndQuit() and vimtest#ErrorAndQuitIf() for
+  convenience. 
 
-1.14	10-Jul-2009
+1.14	10-Jul-2009 (unreleased)
 - BF: vimtest#System() didn't abort via vimtest#Quit() on shell errors. 
 - Added optional isIgnoreErrors argument to vimtest#System().
 
