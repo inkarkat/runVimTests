@@ -741,10 +741,6 @@ report()
 #- main -----------------------------------------------------------------------
 initialize
 
-if [ $# -eq 0 ]; then
-    printUsage
-    exit 2
-fi
 while [ $# -ne 0 ]
 do
     case "$1" in
