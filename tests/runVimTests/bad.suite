@@ -1,4 +1,4 @@
 doesnotexist.vim
 another.suite
-# No test in that dir: 
-C:/WINDOWS/Temp
+nosuchdirectory/nosuchsubdir
+emptydir
