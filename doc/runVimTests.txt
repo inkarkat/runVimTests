@@ -4,10 +4,10 @@
 								 *runVimTests*
 motivation			|runVimTests-motivation|
 description			|runVimTests-description|
-usage	    			|runVimTests-usage|
-invoking    			|runVimTests-invoking|
-installation   			|runVimTests-installation|
-configuration  			|runVimTests-configuration|
+usage				|runVimTests-usage|
+invoking			|runVimTests-invoking|
+installation			|runVimTests-installation|
+configuration			|runVimTests-configuration|
 integration			|runVimTests-integration|
 framework			|runVimTests-framework|
 test scripts			|runVimTests-testscripts|
@@ -50,6 +50,12 @@ approaches with great success.
 - tAssert (by Tom Link), vimscript #1730
 - VimTAP (by Meikel Brandmeyer), vimscript #2213
 - UT (by Luc Hermitte), http://code.google.com/p/lh-vim/wiki/UT
+
+RELATED WORKS								     *
+
+- robot-vim by Matt Margolis, https://github.com/mrmargolis/robot-vim, allows
+  to TDD Vim scripts using Ruby scripts that launch Vim instances, pass text,
+  execute commands and then run assertions against the buffer text in Ruby. 
 
 
 DESCRIPTION					     *runVimTests-description*
@@ -213,13 +219,13 @@ Their use is not required, but they simplify the writing of tests.
 
 The VimTAP plugin (vimscript #2213) needs to be installed separately. 
 
-The test/ subdirectory contains example test suites and a self-test of the
+The tests/ subdirectory contains example test suites and a self-test of the
 test framework. For a simple sanity check, execute: >
-    $ runVimTests test/runVimTests/successful.suite
+    $ runVimTests tests/runVimTests/successful.suite
 which should print something like:
     9 files with 19 tests; 0 skipped, 19 run: 19 OK, 0 failures, 0 errors. ~
 If this is the case, you can start exploring the example tests (in the
-test/example/ subdirectory) or just start writing your own
+tests/example/ subdirectory) or just start writing your own
 |runVimTests-testscripts|! 
 
 DEPENDENCIES					    *runVimTests-dependencies*
@@ -379,7 +385,7 @@ that the next test can be executed in a newly spawned Vim instance. The
 |vimtest#Quit()| function takes care of that. 
 
 Tip: If you are a hands-on person, there are simple annotated example scripts
-in the test/example/ subdirectory. 
+in the tests/example/ subdirectory. 
 
 ==============================================================================
 LIMITATIONS					     *runVimTests-limitations*
@@ -392,6 +398,7 @@ TODO							    *runVimTests-todo*
   re-run. 
 
 IDEAS							   *runVimTests-ideas*
+
 - Replace the bash / Windows shell scripts with a cross-platform (Perl, Ruby?)
   script once it becomes too unwieldy. (Many will argue it already did.)
 - Do we also need a TODO signal (and vimtest#Todo...() functions)? 
@@ -399,7 +406,16 @@ IDEAS							   *runVimTests-ideas*
 ==============================================================================
 HISTORY							 *runVimTests-history*
 
-1.14	10-Jul-2009
+1.16	28-Feb-2011
+- Minor bugfixes and tweaks to the self-test. 
+
+1.15	03-Oct-2010 (unreleased)
+- Renamed directory that the tests reside in from "test/" to "tests/". This is
+  just a personal preference, you can still put the tests into whatever
+  directory structure. 
+- ENH: Added vimtest#ErrorAndQuit() for convenience. 
+
+1.14	10-Jul-2009 (unreleased)
 Only bugfix and enhancement to the vimtest#System() function. 
 
 1.13	29-May-2009
@@ -443,7 +459,7 @@ runVimTests.sh.
 Started development. 
 
 ==============================================================================
-Copyright: (C) 2009 Ingo Karkat
+Copyright: (C) 2009-2010 Ingo Karkat
 The VIM LICENSE applies to this script; see |copyright|. 
 
 Maintainer:	Ingo Karkat <ingo@karkat.de>
