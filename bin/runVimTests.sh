@@ -261,7 +261,7 @@ processTestEntry()
 	runSuite "$1"
     else
 	let cntError+=1
-	echo >&2 "ERROR: Suite file \"${1}\" doesn't exist. "
+	echo >&2 "ERROR: Suite file \"${1}\" doesn't exist."
     fi
 }
 
