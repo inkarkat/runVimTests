@@ -56,7 +56,8 @@ RELATED WORKS								     *
 - robot-vim by Matt Margolis, https://github.com/mrmargolis/robot-vim, allows
   to TDD Vim scripts using Ruby scripts that launch Vim instances, pass text,
   execute commands and then run assertions against the buffer text in Ruby. 
-
+- vspec by Kana Natsuno, vimscript #3012, allows to write tests BDD-style with
+  custom matchers, and is driven by a small Bash script. 
 
 DESCRIPTION					     *runVimTests-description*
 
