@@ -14,15 +14,26 @@
 #   
 # DEPENDENCIES:
 #   - Requires Bash 3.0 or higher. 
-#   - GNU diff, grep, sed, sort, tr, uniq. 
+#   - GNU diff, grep, readlink, sed, sort, tr, uniq. 
 #   - runVimMsgFilter.vim, located in this script's directory. 
 #
-# Copyright: (C) 2009-2010 Ingo Karkat
+# Copyright: (C) 2009-2011 Ingo Karkat
 #   The VIM LICENSE applies to this script; see 'vim -c ":help copyright"'.  
 #
-# FILE_SCCS = "@(#)runVimTests.sh	1.14.012	(02-Jun-2010)	runVimTests";
+# FILE_SCCS = "@(#)runVimTests.sh	1.17.013	(04-Sep-2011)	runVimTests";
 #
 # REVISION	DATE		REMARKS 
+#   1.17.013	04-Sep-2011	BUG: When runVimTests.sh is invoked via a
+#				relative filespec, $scriptDir is relative and
+#				this makes the message output comparison
+#				(but not the prerequisite check) fail with
+#				"ERROR (msgout): Evaluation of test messages
+#				failed." when CWD has changed into $testDirspec. 
+#				Thanks to Javier Rojas for sending a patch. 
+#				Use "readlink -f" to resolve symlinks and into
+#				absolute dirspec. This also handles the case
+#				when runVimTests.sh, but not runVimMsgFilter.vim
+#				is symlinked into another bin directory. 
 #   1.14.012	02-Jun-2010	Now also handling *.suite files with Windows
 #				(CR-LF) line endings. 
 #   1.13.011	28-May-2009	ENH: Now including SKIP reasons in the summary
@@ -86,7 +97,7 @@ initialize()
 {
     [ ${BASH_VERSINFO[0]} -ge 3 ] || { echo >&2 "ERROR: This script requires Bash 3.0 or higher!"; exit 2; }
 
-    readonly scriptDir=$(readonly scriptFile="$(type -P -- "$0")" && dirname -- "$scriptFile" || exit 3)
+    readonly scriptDir=$(readonly scriptFile="$(type -P -- "$0")" && dirname -- "$(readlink -nf -- "$scriptFile")" || exit 3)
     [ -d "$scriptDir" ] || { echo >&2 "ERROR: Cannot determine script directory!"; exit 3; } 
 
     skipsRecord=${TEMP:-/tmp}/skipsRecord.txt.$$
