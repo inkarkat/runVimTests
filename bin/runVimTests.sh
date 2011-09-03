@@ -97,7 +97,7 @@ initialize()
 {
     [ ${BASH_VERSINFO[0]} -ge 3 ] || { echo >&2 "ERROR: This script requires Bash 3.0 or higher!"; exit 2; }
 
-    readonly scriptDir=$(readonly scriptFile="$(type -P -- "$0")" && dirname -- "$(readlink -nf -- "$scriptFile")" || exit 3)
+    readonly scriptDir=$(scriptFile="$(type -P -- "$0")" && absoluteScriptFile="$(readlink -nf -- "$scriptFile")" && dirname -- "$absoluteScriptFile" || exit 3)
     [ -d "$scriptDir" ] || { echo >&2 "ERROR: Cannot determine script directory!"; exit 3; } 
 
     skipsRecord=${TEMP:-/tmp}/skipsRecord.txt.$$
