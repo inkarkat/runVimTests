@@ -407,6 +407,10 @@ IDEAS							   *runVimTests-ideas*
 ==============================================================================
 HISTORY							 *runVimTests-history*
 
+1.18	19-Oct-2011
+- BUG: When everything is skipped and no TAP tests have been run, this would
+  be reported as a "No test results at all" error. 
+
 1.17	04-Sep-2011
 - BUG: When runVimTests.sh is invoked via a relative filespec, $scriptDir is
   relative and this makes the message output comparison (but not the
