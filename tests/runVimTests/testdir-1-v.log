@@ -1,5 +1,5 @@
 
-Starting test run with these VIM options:
+Starting test run with these Vim options:
 vim --cmd 'set rtp=$VIM/vimfiles,$VIMRUNTIME,$VIM/vimfiles/after' -N -u NORC -c 'set rtp&' -f -es --cmd "let g:runVimTests='default'"
 
 cwd001: Test that CWD is set to the test file's directory. 
@@ -46,6 +46,16 @@ This should be in here!			This should be in here!
 1..1
 ok 1 - all right
 
+tapParsing001: Test parsing corner cases of TAP tests. 
+1..7
+ok 1 - |all| -> right <-
+ok 2 # SKIP all -> right <-
+ok 3 # SKIP need (different) "arithmetics"
+ok 4 # SKIP need (different) "arithmetics"
+ok 5 - 1 == 1
+ok 6 # SKIP need a (('nice' ^)) miracle&&hope||luck
+ok 7 - matches
+
 tapSkip001: Test skipping of some TAP tests. 
 1..6
 ok 1 - all right
@@ -56,6 +66,16 @@ ok 5 # SKIP need a miracle
 ok 6 - matches
 
 tapSkip002: Test skipping all TAP tests by announcing this in the plan. 
+1..0
+
+tapSkip003: Test different skipping methods. 
+ok 0 # SKIP foo
+ok 1 # SKIP foo
+ok 2 # SKIP fOO
+not ok 3 - # SKIP foo
+# Test '# SKIP foo' failed:
+# expected: '0'
+# but got:  '1'
 1..0
 
 tapTodo001: Test Todo of some TAP tests. 
@@ -209,9 +229,9 @@ OK (msgout)
 zzzSignalBailout001: Test bailout signal to test driver. 
 BAIL OUT: It's so f...ed up!
 
-33 files with 89 tests (aborted); 16 skipped, 66 run: 47 OK, 15 failures, 12 errors, 4 TODO.
+35 files with 101 tests (aborted); 24 skipped, 70 run: 50 OK, 16 failures, 12 errors, 4 TODO.
 Skipped tests: signalSkip001, signalSkip005, signalSkip006, tapSkip002
-Tests with skips: signalSkip002, signalSkip003, signalSkip004, tapSkip001
-Failed tests: signalSkip007, test002, test012, test014, test022, test024, test032, test033
+Tests with skips: signalSkip002, signalSkip003, signalSkip004, tapParsing001, tapSkip001, tapSkip003
+Failed tests: signalSkip007, tapSkip003, test002, test012, test014, test022, test024, test032, test033
 Tests with errors: signalError001, test003, test013, test023, test024, test033, zzzSignalBailout001
 TODO tests: tapTodo001
