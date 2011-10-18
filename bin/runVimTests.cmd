@@ -22,6 +22,9 @@
 ::   The VIM LICENSE applies to this script; see 'vim -c ":help copyright"'.  
 ::
 ::* REVISION	DATE		REMARKS 
+::  1.18.026	19-Oct-2011	BUG: When everything is skipped and no TAP tests
+::				have been run, this would be reported as a "No
+::				test results at all" error. 
 ::  1.16.025	28-Feb-2011	Minor: Need to un-double ^ character in
 ::				parseTapLineEnd; this failed the testdir-v.log
 ::				self-test. 
@@ -684,6 +687,19 @@ if exist "%testTap%" (
 	set /A thisSkip+=1
     ) else (
 	call :parseTapOutput "%testTap%" "%testName%"
+    )
+)
+
+:: When everything is skipped and no TAP tests have been run, this would be
+:: reported as a "No test results at all" error. 
+if %thisTests% EQU 0 (
+    if defined isSkipOut (
+	if defined isSkipMsgout (
+	    if defined isSkipTap (
+		set /A thisTests=1
+		set /A thisSkip=1
+	    )
+	)
     )
 )
 
