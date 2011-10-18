@@ -20,9 +20,12 @@
 # Copyright: (C) 2009-2011 Ingo Karkat
 #   The VIM LICENSE applies to this script; see 'vim -c ":help copyright"'.  
 #
-# FILE_SCCS = "@(#)runVimTests.sh	1.17.013	(04-Sep-2011)	runVimTests";
+# FILE_SCCS = "@(#)runVimTests.sh	1.18.014	(19-Oct-2011)	runVimTests";
 #
 # REVISION	DATE		REMARKS 
+#   1.18.014	19-Oct-2011	BUG: When everything is skipped and no TAP tests
+#				have been run, this would be reported as a "No
+#				test results at all" error. 
 #   1.17.013	04-Sep-2011	BUG: When runVimTests.sh is invoked via a
 #				relative filespec, $scriptDir is relative and
 #				this makes the message output comparison
@@ -617,7 +620,7 @@ runTest()
 	# In case of a bail out, do not run check the results of any method;
 	# just say that a test has run and go straight to the results
 	# evaluation. 
-	thisTests=1
+	let thisTests=1
     else
 	# Method output. 
 	if [ -r "$testOk" ]; then
@@ -659,6 +662,13 @@ runTest()
 	    else
 		parseTapOutput "$testTap" "$testName"
 	    fi
+	fi
+
+	# When everything is skipped and no TAP tests have been run, this would
+	# be reported as a "No test results at all" error. 
+	if [ $thisTests -eq 0 -a "$isSkipOut" -a "$isSkipMsgout" -a "$isSkipTap" ]; then
+	    let thisTests=1
+	    let thisSkip=1
 	fi
     fi
     # Results evaluation. 
