@@ -1,5 +1,5 @@
 
-Starting test run with these VIM options:
+Starting test run with these Vim options:
 vim --cmd 'set rtp=$VIM/vimfiles,$VIMRUNTIME,$VIM/vimfiles/after' -N -u NORC -c 'set rtp&' -f -es --cmd "let g:runVimTests='default'"
 
 signalError001: Test error signal to test driver. 
@@ -10,6 +10,12 @@ signalSkip007: Test inactive convenience function vimtest#SkipAndQuitIf().
 FAIL (out): expected output           |   actual output
 This is the expected result. 	      |	Can write what I want, does not matte
 This should be in here!			This should be in here!
+
+tapSkip003: Test different skipping methods. 
+not ok 3 - # SKIP foo
+# Test '# SKIP foo' failed:
+# expected: '0'
+# but got:  '1'
 
 tapTodo001: Test Todo of some TAP tests. 
 not ok 2 # TODO 1 == 2
@@ -95,9 +101,21 @@ ERROR (tap): Not all 3 planned tests have been executed, 1 test missed.
 zzzSignalBailout001: Test bailout signal to test driver. 
 BAIL OUT: It's so f...ed up!
 
-33 files with 89 tests (aborted); 16 skipped, 66 run: 47 OK, 15 failures, 12 errors, 4 TODO.
+35 files with 101 tests (aborted); 24 skipped, 70 run: 50 OK, 16 failures, 12 errors, 4 TODO.
 Skipped tests: signalSkip001, signalSkip005, signalSkip006, tapSkip002
-Tests with skips: signalSkip002, signalSkip003, signalSkip004, tapSkip001
-Failed tests: signalSkip007, test002, test012, test014, test022, test024, test032, test033
+Tests with skips: signalSkip002, signalSkip003, signalSkip004, tapParsing001, tapSkip001, tapSkip003
+      2 SKIP (msgout): Let's just forget about the captured messages.
+      1 SKIP (out): Let's just forget about the saved buffer contents.
+      1 SKIP (out): Lets just forget about the saved buffer contents.
+      2 SKIP (tap): 
+      1 SKIP (tap): all -> right <-
+      3 SKIP (tap): fOO
+      2 SKIP (tap): Let's just forget about the TAP unit tests.
+      2 SKIP (tap): need (different) "arithmetics"
+      1 SKIP (tap): need a (('nice' ^)) miracle&&hope||luck
+      1 SKIP (tap): need a miracle
+      2 SKIP (tap): need different arithmetics
+      2 SKIP: Let's just forget about this one.
+Failed tests: signalSkip007, tapSkip003, test002, test012, test014, test022, test024, test032, test033
 Tests with errors: signalError001, test003, test013, test023, test024, test033, zzzSignalBailout001
 TODO tests: tapTodo001
