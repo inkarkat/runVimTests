@@ -407,6 +407,13 @@ IDEAS							   *runVimTests-ideas*
 ==============================================================================
 HISTORY							 *runVimTests-history*
 
+1.17	04-Sep-2011
+- BUG: When runVimTests.sh is invoked via a relative filespec, $scriptDir is
+  relative and this makes the message output comparison (but not the
+  prerequisite check) fail with "ERROR (msgout): Evaluation of test messages
+  failed." when CWD has changed into $testDirspec. Thanks to Javier Rojas for
+  sending a patch. 
+
 1.16	28-Feb-2011
 - Minor bugfixes and tweaks to the self-test. 
 
