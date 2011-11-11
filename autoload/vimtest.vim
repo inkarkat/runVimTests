@@ -4,7 +4,7 @@
 "   - Requires Vim 7.0 or higher.  
 "   - escapings.vim autoload script (for Vim 7.0/7.1). 
 "
-" Copyright: (C) 2009-2010 by Ingo Karkat
+" Copyright: (C) 2009-2010 Ingo Karkat
 "   The VIM LICENSE applies to this script; see ':help copyright'. 
 "
 " Maintainer:	Ingo Karkat <ingo@karkat.de>
