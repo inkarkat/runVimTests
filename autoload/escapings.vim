@@ -7,6 +7,7 @@
 " Maintainer:	Ingo Karkat <ingo@karkat.de>
 "
 " REVISION	DATE		REMARKS 
+"	011	05-Apr-2010	Added escapings#shellcmdescape(). 
 "	010	12-Feb-2010	BUG: Emulation of shellescape(..., {special})
 "				escaped wrong characters (e.g. ' \<[') via
 "				fnameescape() and the escaping was done
@@ -227,6 +228,32 @@ function! escapings#shellescape( filespec, ... )
 	    return "'" . l:escapedFilespec . "'"
 	endif
     endif
+endfunction
+
+function! escapings#shellcmdescape( command )
+"******************************************************************************
+"* PURPOSE:
+"   Wrap the entire a:command in double quotes on Windows. 
+"   This is necessary when passing a command to cmd.exe which has arguments that
+"   are enclosed in double quotes, e.g. 
+"	""%SystemRoot%\system32\dir.exe" /B "%ProgramFiles%"". 
+"
+"* EXAMPLE:
+"   execute '!' escapings#shellcmdescape(escapings#shellescape($ProgramFiles .
+"   '/foobar/foo.exe', 1) . ' ' . escapings#shellescape(args, 1))
+"
+"* ASSUMPTIONS / PRECONDITIONS:
+"	? List of any external variable, control, or other element whose state affects this procedure.
+"* EFFECTS / POSTCONDITIONS:
+"	? List of the procedure's effect on each external variable, control, or other element.
+"* INPUTS:
+"   a:command	    Single shell command, with optional arguments. 
+"		    The shell command should already have been escaped via
+"		    shellescape(). 
+"* RETURN VALUES: 
+"   Escaped command to be used in a :! command or inside a system() call. 
+"******************************************************************************
+    return (s:IsWindowsLike() ? '"' . a:command . '"' : a:command)
 endfunction
 
 " vim: set sts=4 sw=4 noexpandtab ff=unix fdm=syntax :
