@@ -26,6 +26,12 @@
 #   1.18.014	19-Oct-2011	BUG: When everything is skipped and no TAP tests
 #				have been run, this would be reported as a "No
 #				test results at all" error. 
+#				CHG: Bail out only aborts from the current
+#				recursion level, i.e. it skips further tests in
+#				the same directory, suite, or passed arguments,
+#				but not testing entirely. Otherwise, a
+#				super-suite that includes individual suites
+#				would be aborted by a single bail out. 
 #   1.17.013	04-Sep-2011	BUG: When runVimTests.sh is invoked via a
 #				relative filespec, $scriptDir is relative and
 #				this makes the message output comparison
@@ -269,10 +275,12 @@ processTestEntry()
 {
     if [ -d "$1" ]; then
 	runDir "$1"
+	isBailOut=
     elif [ "${1##*.}" = "vim" ]; then
 	runTest "$1"
     elif [ -r "$1" ]; then
 	runSuite "$1"
+	isBailOut=
     else
 	let cntError+=1
 	echo >&2 "ERROR: Suite file \"${1}\" doesn't exist."
