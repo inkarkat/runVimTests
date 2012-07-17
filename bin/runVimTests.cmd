@@ -1,4 +1,4 @@
-@echo off %debug%
+@echo off %DEBUG%
 ::/*************************************************************************/^--*
 ::**
 ::* FILE: 	runVimTests.cmd
@@ -22,9 +22,16 @@
 ::   The VIM LICENSE applies to this script; see 'vim -c ":help copyright"'.  
 ::
 ::* REVISION	DATE		REMARKS 
+::  1.19.027	13-Dec-2011	Cosmetics: Made debug flag uppercase. 
 ::  1.18.026	19-Oct-2011	BUG: When everything is skipped and no TAP tests
 ::				have been run, this would be reported as a "No
 ::				test results at all" error. 
+::				CHG: Bail out only aborts from the current
+::				recursion level, i.e. it skips further tests in
+::				the same directory, suite, or passed arguments,
+::				but not testing entirely. Otherwise, a
+::				super-suite that includes individual suites
+::				would be aborted by a single bail out. 
 ::  1.16.025	28-Feb-2011	Minor: Need to un-double ^ character in
 ::				parseTapLineEnd; this failed the testdir-v.log
 ::				self-test. 
@@ -39,7 +46,7 @@
 ::				(identical reasons are condensed and counted)
 ::				when not running with verbose output. I always
 ::				wanted to know why certain tests were skipped. 
-::				Not removing temporary files if %debug%. 
+::				Not removing temporary files if %DEBUG%. 
 ::  1.12.022	14-Mar-2009	Only exiting with exit code 1 in case of test
 ::				failures; using code 2 for invocation errors
 ::				(i.e. wrong command-line arguments) and code 3
@@ -448,7 +455,7 @@ if %ERRORLEVEL% NEQ 0 (
     findstr /C:"Output is not to a terminal" "%capturedVimErrorOutput%" >NUL && set vimTerminalArguments= -es
 )
 set vimArguments=%vimArguments%%vimTerminalArguments%
-if not defined debug del "%capturedVimErrorOutput%" >NUL 2>&1
+if not defined DEBUG del "%capturedVimErrorOutput%" >NUL 2>&1
 (goto:EOF)
 
 :printTestHeader
@@ -526,7 +533,7 @@ if not defined skipsRecord (goto:EOF)
 if %cntSkip% EQU 0 (goto:EOF)
 if not exist "%skipsRecord%" (goto:EOF)
 sort --ignore-case -- "%skipsRecord%" | uniq --ignore-case --count
-if not defined debug del "%skipsRecord%"
+if not defined DEBUG del "%skipsRecord%"
 (goto:EOF)
 
 ::------------------------------------------------------------------------------
@@ -550,10 +557,12 @@ set argAsDirspec=%~1
 if not "%argAsDirspec:~-1%" == "\" set argAsDirspec=%argAsDirspec%\
 if exist "%argAsDirspec%" (
     call :runDir "%argAsDirspec%"
+    set isBailOut=
 ) else if "%argext%" == ".vim" (
     call :runTest "%arg%"
 ) else if exist "%arg%" (
     call :runSuite "%arg%"
+    set isBailOut=
 ) else (
     set /A cntError+=1
     (echo.ERROR: Suite file "%arg%" doesn't exist.)
@@ -627,7 +636,7 @@ if %verboseLevel% GTR 0 call :printTestHeader "%testFile%" "%testName%"
 call %vimExecutable% -n -c "let %vimVariableTestName%='%testFilespec:'=''%'|set nomore verbosefile=%testMsgoutForSet%" %vimArguments%%vimLocalSetup% -S "%testFile: =\ %"
 :: vim.bat turns echo off. Redo here to allow debugging to continue. 
 @echo on
-@echo off %debug%
+@echo off %DEBUG%
 
 set /A thisTests=0
 set /A thisRun=0
@@ -800,7 +809,7 @@ if exist "%testMsgresult%" del "%testMsgresult%"
 call vim %vimTerminalArguments% -N -u NONE -n -c "set nomore" -S "%runVimMsgFilterScript%" -c "RunVimMsgFilter" -c "quitall!" -- "%testMsgok%"
 :: vim.bat turns echo off. Redo here to allow debugging to continue. 
 @echo on
-@echo off %debug%
+@echo off %DEBUG%
 
 if not exist "%testMsgresult%" (
     set /A thisError+=1
