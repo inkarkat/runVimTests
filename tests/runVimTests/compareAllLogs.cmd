@@ -7,12 +7,12 @@
 ::* DATE CREATED:   07-Mar-2009
 ::*
 ::*******************************************************************************
-::* CONTENTS: 
-::  Runs all existing runVimTests self-test suites. 
-::       	
-::* REMARKS: 
-::       	
-::* REVISION	DATE		REMARKS 
+::* CONTENTS:
+::  Runs all existing runVimTests self-test suites.
+::
+::* REMARKS:
+::
+::* REVISION	DATE		REMARKS
 ::	001	07-Mar-2009	file creation
 ::*******************************************************************************
 
