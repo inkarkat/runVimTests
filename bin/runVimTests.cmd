@@ -7,107 +7,111 @@
 ::* DATE CREATED:   12-Jan-2009
 ::*
 ::*******************************************************************************
-::* DESCRIPTION: 
-::	This script implements a testing framework for Vim. 
+::* DESCRIPTION:
+::	This script implements a testing framework for Vim.
 ::
-::* REMARKS: 
-::       	
+::* REMARKS:
+::
 ::* DEPENDENCIES:
-::  - GNU diff, grep, sed available through %PATH% or 'unix.cmd' script. 
+::  - GNU diff, grep, sed available through %PATH% or 'unix.cmd' script.
 ::  - Optionally for SKIP summary: GNU sort, uniq available through %PATH% or
-::    'unix.cmd' script. 
-::  - runVimMsgFilter.vim, located in this script's directory. 
+::    'unix.cmd' script.
+::  - runVimMsgFilter.vim, located in this script's directory.
 ::
-::* Copyright: (C) 2009-2011 Ingo Karkat
-::   The VIM LICENSE applies to this script; see 'vim -c ":help copyright"'.  
+::* Copyright: (C) 2009-2012 Ingo Karkat
+::   The VIM LICENSE applies to this script; see 'vim -c ":help copyright"'.
 ::
-::* REVISION	DATE		REMARKS 
-::  1.19.027	13-Dec-2011	Cosmetics: Made debug flag uppercase. 
+::* REVISION	DATE		REMARKS
+::  1.19.028	18-Jul-2012	BUG: Remove duplicate quoting when vimExecutable
+::				isn't found. This actually prevented execution
+::				when passing --vimexecutable "C:\Program Files
+::				(x86)\vim\vim73\vim.exe"
+::  1.19.027	13-Dec-2011	Cosmetics: Made debug flag uppercase.
 ::  1.18.026	19-Oct-2011	BUG: When everything is skipped and no TAP tests
 ::				have been run, this would be reported as a "No
-::				test results at all" error. 
+::				test results at all" error.
 ::				CHG: Bail out only aborts from the current
 ::				recursion level, i.e. it skips further tests in
 ::				the same directory, suite, or passed arguments,
 ::				but not testing entirely. Otherwise, a
 ::				super-suite that includes individual suites
-::				would be aborted by a single bail out. 
+::				would be aborted by a single bail out.
 ::  1.16.025	28-Feb-2011	Minor: Need to un-double ^ character in
 ::				parseTapLineEnd; this failed the testdir-v.log
-::				self-test. 
+::				self-test.
 ::				Align error handling of test dir without any
 ::				tests with runVimTests.sh: Print error message
-::				instead of silently ignoring this. 
+::				instead of silently ignoring this.
 ::  1.13.024	29-May-2009	BF: Also sourcing 'unix.cmd' if only optional
-::				tools are not in %PATH%. 
+::				tools are not in %PATH%.
 ::				BF: Now handling (most?) special characters
-::				([<>|]) in SKIP reasons. 
+::				([<>|]) in SKIP reasons.
 ::  1.13.023	28-May-2009	ENH: Now including SKIP reasons in the summary
 ::				(identical reasons are condensed and counted)
 ::				when not running with verbose output. I always
-::				wanted to know why certain tests were skipped. 
-::				Not removing temporary files if %DEBUG%. 
+::				wanted to know why certain tests were skipped.
+::				Not removing temporary files if %DEBUG%.
 ::  1.12.022	14-Mar-2009	Only exiting with exit code 1 in case of test
 ::				failures; using code 2 for invocation errors
 ::				(i.e. wrong command-line arguments) and code 3
-::				for internal errors. 
-::  1.11.021	12-Mar-2009	ENH: TODO tests are reported in test summary. 
+::				for internal errors.
+::  1.11.021	12-Mar-2009	ENH: TODO tests are reported in test summary.
 ::				ENH: TAP output is also parsed for bail out
-::				message. 
+::				message.
 ::  1.11.020	12-Mar-2009	ENH: TAP output is now parsed for # SKIP and #
 ::				TODO directives. The entire TAP test is skipped
 ::				if a 1..0 plan is announced. Non-verbose TAP
 ::				output now also includes succeeding TODO tests
-::				and any details in the lines following it. 
-::  1.10.019	06-Mar-2009	ENH: Also counting test files. 
+::				and any details in the lines following it.
+::  1.10.019	06-Mar-2009	ENH: Also counting test files.
 ::				ENH: Message output is now parsed for signals to
 ::				this test driver. Implemented signals: BAILOUT!,
-::				ERROR, SKIP, SKIP(out), SKIP(msgout), SKIP(tap). 
+::				ERROR, SKIP, SKIP(out), SKIP(msgout), SKIP(tap).
 ::				Summary reports skipped tests and tests with
-::				skips. 
+::				skips.
 ::				Replaced duplicate processing in
 ::				:commandLineLoop with call to
-::				:processSuiteEntry. 
-::				Changed API for :echoStatus. 
+::				:processSuiteEntry.
+::				Changed API for :echoStatus.
 ::				BF: Also re-enable debugging after Vim
-::				invocation in :compareMessages. 
-::  1.00.018	02-Mar-2009	Reviewed for publication. 
+::				invocation in :compareMessages.
+::  1.00.018	02-Mar-2009	Reviewed for publication.
 ::	017	28-Feb-2009	BF: FAIL (msgout) and FAIL (tap) didn't print
-::				test header in non-verbose mode. 
+::				test header in non-verbose mode.
 ::				Refactored :printTestHeader so that it does the
-::				check for already printed header itself. 
+::				check for already printed header itself.
 ::	016	24-Feb-2009	Added short options -0/1/2 for the plugin load
-::				level and -d for --debug. 
+::				level and -d for --debug.
 ::				Added check for Unix tools; Unix tools can be
-::				winked in via 'unix' script. 
+::				winked in via 'unix' script.
 ::				Now only printing failed tests and errors, and
 ::				only explicitly mentioning the test if it wasn't
 ::				successful. This greatly reduces the visual
 ::				output the user has to scan.
 ::				Added --verbose option to also print successful
-::				tests, the previous default behavior. 
-::				Added empty line between individual tests. 
+::				tests, the previous default behavior.
+::				Added empty line between individual tests.
 ::	015	19-Feb-2009	Added explicit option '--user' for the default
 ::				Vim mode, and adding 'user' to
 ::				%vimVariableOptionsValue% (so that tests can
 ::				easily check for that mode). Command-line
 ::				argument parsing now ensures that only one mode
-::				is specified. 
-::	014	12-Feb-2009	Shortened -e -s to -es. 
+::				is specified.
+::	014	12-Feb-2009	Shortened -e -s to -es.
 ::	013	11-Feb-2009	Merged in changes resulting from the bash
-::				implementation of this script: 
-::				Variable renamings. 
+::				implementation of this script:
+::				Variable renamings.
 ::				Checking whether Vim executable exists and
-::				whether output is to terminal. 
+::				whether output is to terminal.
 ::	012	06-Feb-2009	Renamed g:debug to g:runVimTests; now, script
 ::				options 'debug' and 'pure' are appended to this
 ::				variable. This allows for greater flexibility
 ::				inside Vim and avoids that overly general
-::				variable name. 
+::				variable name.
 ::				Added command-line options --vimexecutable,
-::				--vimversion and --graphical. 
+::				--vimversion and --graphical.
 ::				Added command-line option --default to launch
-::				Vim without any user settings. 
+::				Vim without any user settings.
 ::	011	05-Feb-2009	Replaced runVimTests.cfg with
 ::				runVimTestsSetup.vim, which is sourced on every
 ::				test run if it exists. I was mistaken in that
@@ -115,30 +119,30 @@
 ::				was caused by my .vimrc not setting
 ::				'runtimepath' to ~/.vim! Thus, there's no need
 ::				for the "essential Vim scripts" and the
-::				--reallypure option. 
-::				Split off documentation into separate help file. 
+::				--reallypure option.
+::				Split off documentation into separate help file.
 ::	010	04-Feb-2009	Suites can now also contain directories and
-::				other suite files, not just tests. 
+::				other suite files, not just tests.
 ::	009	02-Feb-2009	Added --debug argument to :let g:debug = 1
-::				inside Vim. 
+::				inside Vim.
 ::	008	29-Jan-2009	Added --runtime argument to simplify sourcing of
-::				scripts below the user's ~/.vim directory. 
+::				scripts below the user's ~/.vim directory.
 ::				Essential vimscripts are now read from separate
 ::				runVimTests.cfg config file to remove hardcoding
-::				inside this script. 
+::				inside this script.
 ::				BF: Forgot -N -u NONE when invoking Vim for
-::				runVimMsgFilter. 
+::				runVimMsgFilter.
 ::	007	28-Jan-2009	Changed counting of tests and algorithm to
 ::				determine whether any test results have been
 ::				supplied: Added counter for tests (vs. tests
 ::				run) and removed the special handling for the
-::				TAP method. 
+::				TAP method.
 ::				ENH: In case of a TAP test count mismatch, the
-::				difference is included in the error message. 
+::				difference is included in the error message.
 ::				ENH: All method-specific messages include the
-::				method (out, msgout, tap) now. 
+::				method (out, msgout, tap) now.
 ::				ENH: Use first comment line from test script as
-::				test synopsis and include in test header. 
+::				test synopsis and include in test header.
 ::	006	27-Jan-2009	ENH: Now supporting enhanced matching of
 ::				captured messages by filtering through custom
 ::				'runVimMsgFilter.vim' functionality instead of a
@@ -147,24 +151,24 @@
 ::				re-echo canonicalized messages or manipulate the
 ::				msgout themselves (e.g. to get rid of platform-
 ::				and system-specific strings like path separators
-::				and dirspecs). 
+::				and dirspecs).
 ::				BF: Still forgot to add to fail and error lists
-::				when TAP test failed or errored. 
+::				when TAP test failed or errored.
 ::				Added autoload/vimtest.vim and
 ::				plugin/SidTools.vim to essential Vim scripts
-::				sourced with --pure (if they exist). 
-::				Added --reallypure option. 
+::				sourced with --pure (if they exist).
+::				Added --reallypure option.
 ::	005	16-Jan-2009	BF: Added testname twice to fail and error lists
-::				when both output and saved messages tests failed. 
-::				Forgot to add when TAP test failed or errored. 
+::				when both output and saved messages tests failed.
+::				Forgot to add when TAP test failed or errored.
 ::				Moved adding to fail and error lists from the
-::				individual test methods to :runTest. 
-::				Now explicitly sourcing vimtap.vim in pure mode. 
-::	004	15-Jan-2009	Added support for TAP unit tests. 
-::	003	15-Jan-2009	Improved accuracy of :compareMessages algorithm. 
-::	002	13-Jan-2009	Generalized and documented. 
+::				individual test methods to :runTest.
+::				Now explicitly sourcing vimtap.vim in pure mode.
+::	004	15-Jan-2009	Added support for TAP unit tests.
+::	003	15-Jan-2009	Improved accuracy of :compareMessages algorithm.
+::	002	13-Jan-2009	Generalized and documented.
 ::				Addded summary of failed / error test names and
-::				optional suppression of test transcript. 
+::				optional suppression of test transcript.
 ::	001	12-Jan-2009	file creation
 ::*******************************************************************************
 setlocal enableextensions
@@ -179,32 +183,32 @@ call :checkUnixTools "mandatory" || goto:prerequisiteError
 call :determineUserVimFilesDirspec
 
 :: Prerequisite Vim script to match the message assumptions against the actual
-:: message output. 
+:: message output.
 set runVimMsgFilterScript=%~dp0runVimMsgFilter.vim
 if not exist "%runVimMsgFilterScript%" (
     echo.ERROR: Script prerequisite "%runVimMsgFilterScript%" does not exist!
     exit /B 2
 )
 
-:: Vim variables set by the test framework. 
+:: Vim variables set by the test framework.
 set vimVariableOptionsName=g:runVimTests
 set vimVariableOptionsValue=
 set vimVariableTestName=g:runVimTest
 
-:: Vim mode of sourcing scripts. 
+:: Vim mode of sourcing scripts.
 set vimMode=
 
-:: Default Vim executable. 
+:: Default Vim executable.
 set vimExecutable=vim
 
-:: Default Vim command-line arguments. 
+:: Default Vim command-line arguments.
 ::
 :: Always wait for the edit session to finish (only applies to the GUI version,
 :: is ignored for the terminal version), so that this script can process the
-:: files generated by the test run. 
+:: files generated by the test run.
 set vimArguments=-f
 
-:: Optional user-provided setup scripts. 
+:: Optional user-provided setup scripts.
 set vimLocalSetupScript=_setup.vim
 set vimGlobalSetupScript=%~dpn0Setup.vim
 if exist "%vimGlobalSetupScript%" set vimArguments=%vimArguments% -S "%vimGlobalSetupScript%"
@@ -220,7 +224,7 @@ set PIPE=!PIPE!
 :commandLineOptions
 set arg=%~1
 
-:: Allow short /o and -o option syntax. 
+:: Allow short /o and -o option syntax.
 if /I "%arg:/=-%" == "-h" set arg=--help
 if /I "%arg:/=-%" == "-g" set arg=--graphical
 if /I "%arg:/=-%" == "-v" set arg=--verbose
@@ -229,7 +233,7 @@ if /I "%arg:/=-%" == "-1" set arg=--default
 if /I "%arg:/=-%" == "-2" set arg=--user
 if /I "%arg:/=-%" == "-d" set arg=--debug
 
-:: Allow both /option and --option syntax. 
+:: Allow both /option and --option syntax.
 if not "%arg%" == "" set arg=%arg:/=--%
 
 if not "%arg%" == "" (
@@ -424,7 +428,7 @@ exit /B 0
 (goto:EOF)
 
 :determineUserVimFilesDirspec
-:: Determine dirspec of user vimfiles for --runtime argument. 
+:: Determine dirspec of user vimfiles for --runtime argument.
 set userVimFilesDirspec=%HOME%\vimfiles\
 if not exist "%userVimFilesDirspec%" set userVimFilesDirspec=%HOME%\.vim\
 if not exist "%userVimFilesDirspec%" set userVimFilesDirspec=%HOMEDRIVE%%HOMEPATH%\vimfiles\
@@ -444,12 +448,12 @@ if not exist "%userVimFilesDirspec%" set userVimFilesDirspec=$VIMRUNTIME/
 :: %vimExecutable% is a valid executable. (Which would also be difficult
 :: to do in the Windows shell, considering that the file extension may be
 :: missing from the executable name, so a simple ~$PATH:I search wouldn't be
-:: sufficient.) 
+:: sufficient.)
 set capturedVimErrorOutput=%TEMP%\capturedVimErrorOutput
 set vimTerminalArguments=
 call %vimExecutable% -f -N -u NONE -c "quitall!" 2>"%capturedVimErrorOutput%"
 if %ERRORLEVEL% NEQ 0 (
-    (echo.ERROR: "%vimExecutable%" is not a Vim executable!)
+    (echo.ERROR: %vimExecutable% is not a Vim executable!)
     set vimExecutable=
 ) else (
     findstr /C:"Output is not to a terminal" "%capturedVimErrorOutput%" >NUL && set vimTerminalArguments= -es
@@ -466,9 +470,9 @@ if not defined isExecutionOutput (goto:EOF)
 set headerMessage=%~2:
 echo.
 :: If the first line of the test script starts with '" Test', include this as
-:: the test's synopsis in the test header. Otherwise, just print the test name. 
+:: the test's synopsis in the test header. Otherwise, just print the test name.
 :: Limit the test header to one unwrapped output line, i.e. truncate to 80
-:: characters. 
+:: characters.
 sed -n -e "1s/^\d034 \(Test.*\)$/%headerMessage% \1/p" -e "tx" -e "1c%headerMessage%" -e ":x" -- %1 | sed "/^.\{80,\}/s/\(^.\{,76\}\).*$/\1.../"
 (goto:EOF)
 
@@ -570,7 +574,7 @@ if exist "%argAsDirspec%" (
 (goto:EOF)
 :runSuite
 :: Change to suite directory so that relative paths and filenames are resolved
-:: correctly. 
+:: correctly.
 pushd "%~dp1"
 for /F "eol=# delims=" %%f in (%~nx1) do (
     if not defined isBailOut call :processSuiteEntry "%%f"
@@ -589,7 +593,7 @@ set testDirspec=%~dp1
 set testFile=%~nx1
 set testName=%~n1
 
-:: The setup script is not a test, silently skip it. 
+:: The setup script is not a test, silently skip it.
 if "%testFile%" == "%vimLocalSetupScript%" (goto:EOF)
 
 set testOk=%testName%.ok
@@ -597,19 +601,19 @@ set testOut=%testName%.out
 set testMsgok=%testName%.msgok
 set testMsgout=%testName%.msgout
 set testTap=%testName%.tap
-:: Escape for Vim :set command. 
+:: Escape for Vim :set command.
 set testMsgoutForSet=%testMsgout:\=/%
 set testMsgoutForSet=%testMsgout: =\ %
 
 set /A cntTestFiles+=1
 pushd "%testDirspec%"
 
-:: Remove old output files from the previous testrun. 
+:: Remove old output files from the previous testrun.
 if exist "%testOut%" del "%testOut%"
 if exist "%testMsgout%" del "%testMsgout%"
 if exist "%testTap%" del "%testTap%"
 
-:: Source local setup script before the testfile. 
+:: Source local setup script before the testfile.
 set vimLocalSetup=
 if exist "%vimLocalSetupScript%" (
     set vimLocalSetup= -S "%vimLocalSetupScript%"
@@ -619,12 +623,12 @@ set isPrintedHeader=
 if %verboseLevel% GTR 0 call :printTestHeader "%testFile%" "%testName%"
 
 :: Default Vim arguments and options:
-:: -n		No swapfile. 
+:: -n		No swapfile.
 :: :set nomore	Suppress the more-prompt when the screen is filled with messages
-::		or output to avoid blocking. 
-:: :set verbosefile Capture all messages in a file. 
-:: :let %vimVariableTestName% = Absolute test filespec. 
-:: :let %vimVariableOptionsName% = Options for this test run, concatenated with ','. 
+::		or output to avoid blocking.
+:: :set verbosefile Capture all messages in a file.
+:: :let %vimVariableTestName% = Absolute test filespec.
+:: :let %vimVariableOptionsName% = Options for this test run, concatenated with ','.
 ::
 :: Note: With -S {file}, Vim wants {file} escaped for Ex commands. (It should
 :: really escape {file} itself, as it does for normal {file} arguments.)
@@ -634,7 +638,7 @@ if %verboseLevel% GTR 0 call :printTestHeader "%testFile%" "%testName%"
 :: # or <cword>) is part of a test filename. (On Windows somehow spaces must not
 :: necessarily be escaped?!)
 call %vimExecutable% -n -c "let %vimVariableTestName%='%testFilespec:'=''%'|set nomore verbosefile=%testMsgoutForSet%" %vimArguments%%vimLocalSetup% -S "%testFile: =\ %"
-:: vim.bat turns echo off. Redo here to allow debugging to continue. 
+:: vim.bat turns echo off. Redo here to allow debugging to continue.
 @echo on
 @echo off %DEBUG%
 
@@ -651,7 +655,7 @@ set isSkipMsgout=
 set isSkipTap=
 call :parseMessageOutputForSignals
 :: In case of a bail out, do not run check the results of any method; just say
-:: that a test has run and go straight to the results evaluation. 
+:: that a test has run and go straight to the results evaluation.
 if defined isBailOut (
     set /A thisTests=1
     (goto:resultsEvaluation)
@@ -700,7 +704,7 @@ if exist "%testTap%" (
 )
 
 :: When everything is skipped and no TAP tests have been run, this would be
-:: reported as a "No test results at all" error. 
+:: reported as a "No test results at all" error.
 if %thisTests% EQU 0 (
     if defined isSkipOut (
 	if defined isSkipMsgout (
@@ -805,9 +809,9 @@ set testMsgresult=%~3.msgresult
 if exist "%testMsgresult%" del "%testMsgresult%"
 :: Note: Cannot use silent-batch mode (-es) here, because that one messes up
 :: the console. (Except when the entire test log is not printed to stdout but
-:: redirected.) 
+:: redirected.)
 call vim %vimTerminalArguments% -N -u NONE -n -c "set nomore" -S "%runVimMsgFilterScript%" -c "RunVimMsgFilter" -c "quitall!" -- "%testMsgok%"
-:: vim.bat turns echo off. Redo here to allow debugging to continue. 
+:: vim.bat turns echo off. Redo here to allow debugging to continue.
 @echo on
 @echo off %DEBUG%
 
@@ -835,7 +839,7 @@ call :printTestHeader "%testFile%" "%testName%"
 (goto:EOF)
 
 :parseTapLine
-:: Ignore all further TAP output after a bail out. 
+:: Ignore all further TAP output after a bail out.
 if defined isBailOut (goto:EOF)
 
 set tapTestSkipReason=
@@ -885,23 +889,23 @@ if "%~1 %~2" == "not ok" (
     (goto:parseTapLineEnd)
 )
 
-:: Handle bail out. 
+:: Handle bail out.
 if "%~1 %~2" == "Bail out!" (
     set isBailOut=true
     set /A thisError+=1
     (goto:parseTapLineEnd)
 )
 
-:: Ignore all other TAP output unless it's a plan. 
+:: Ignore all other TAP output unless it's a plan.
 echo.%~1|grep -q -e "^[0-9][0-9]*\.\.[0-9][0-9]*$" || (goto:parseTapLineEnd)
-:: No tests planned means the TAP test is skipped completely. 
+:: No tests planned means the TAP test is skipped completely.
 if "%~1" == "1..0" (
     set /A thisTests+=1
     set /A thisSkip+=1
     set tapTestSkipReason="%~4 %~5 %~6"
     (goto:parseTapLineEnd)
 )
-:: Extract the number of planned tests. 
+:: Extract the number of planned tests.
 for /F "tokens=1,2 delims=." %%a in ("%~1") do set /A tapTestNum=%%b - %%a + 1
 
 :parseTapLineEnd
@@ -918,11 +922,11 @@ set tapTestNum=
 set /A tapTestCnt=0
 set tapTestIsPrintTapOutput=
 for /F "eol=# tokens=1-5* delims= " %%i in (%~1) do call :parseTapLine "%%i" "%%j" "%%k" "%%l" "%%m" "%%n"
-:: Print the entire TAP output if in verbose mode, else only print 
+:: Print the entire TAP output if in verbose mode, else only print
 :: - failed tests
 :: - successful TODO tests
 :: - bail out message
-:: plus any details in the lines following it. 
+:: plus any details in the lines following it.
 :: (But truncate any additional TAP output after a bail out.)
 set tapPrintTapOutputSedPattern=^^not ok\^|^^ok \([0-9]\+ \)\?# [tT][oO][dD][oO]\^|^^Bail out!
 if %verboseLevel% GTR 0 (
@@ -935,7 +939,7 @@ if %verboseLevel% GTR 0 (
 )
 
 :: If this TAP test has bailed out, return the number of tests run so far, but
-:: at least one (to avoid the "no test results" error). 
+:: at least one (to avoid the "no test results" error).
 if defined isBailOut (
     if %tapTestCnt% EQU 0 (
 	set /A thisTests+=1
