@@ -1,0 +1,4 @@
+# Tests specified by a file glob.
+doesnotexist*.vim
+test0?3.vim
+*with spaces*.vim
