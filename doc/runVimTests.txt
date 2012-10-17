@@ -408,7 +408,12 @@ IDEAS							   *runVimTests-ideas*
 ==============================================================================
 HISTORY							 *runVimTests-history*
 
-1.19	18-Jul-2012
+1.20	27-Jul-2012
+- ENH: Handle file globs in the passed tests and in suite entries on Windows,
+  too. (In contrast to the Unix shell, these must be explicitly expanded on
+  Windows.)
+
+1.19	18-Jul-2012 (unreleased)
 - BUG: In the Windows test runner, remove duplicate quoting when vimExecutable
   isn't found. This actually prevented execution when passing --vimexecutable
   "C:\Program Files (x86)\vim\vim73\vim.exe"
