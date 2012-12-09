@@ -22,6 +22,10 @@
 ::   The VIM LICENSE applies to this script; see 'vim -c ":help copyright"'.
 ::
 ::* REVISION	DATE		REMARKS
+::  1.20.029	27-Jul-2012	ENH: Handle file globs in the passed tests
+::				(in contrast to the Unix shell, these must be
+::				explicitly expanded on Windows) and in suite
+::				entries.
 ::  1.19.028	18-Jul-2012	BUG: Remove duplicate quoting when vimExecutable
 ::				isn't found. This actually prevented execution
 ::				when passing --vimexecutable "C:\Program Files
@@ -555,6 +559,18 @@ set isProcessedTestInDir=
 (goto:EOF)
 
 :processSuiteEntry
+:: XXX: For spaces in the glob to work, it must be double-quoted, but that only
+:: seems to work in the interactive shell. As a workaround, skip quoting and
+:: replace spaces with the ? glob.
+set entryGlob=%~1
+set didGlobExpand=
+for %%f in (%entryGlob: =?%) do (set didGlobExpand=1&call :processSuiteFile "%%f")
+:: In contrast to the Unix shell, a glob that does not match expands to nothing,
+:: not to itself. But we still want the error message that the test does not
+:: exist.
+if not defined didGlobExpand call :processSuiteFile "%entryGlob%"
+(goto:EOF)
+:processSuiteFile
 set arg=%~1
 set argExt=%~x1
 set argAsDirspec=%~1
