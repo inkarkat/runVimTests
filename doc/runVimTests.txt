@@ -49,7 +49,9 @@ approaches with great success.
 - vimUnit (by Staale Flock), vimscript #1125
 - tAssert (by Tom Link), vimscript #1730
 - VimTAP (by Meikel Brandmeyer), vimscript #2213
+- spec.vim (by Tom Link), vimscript #2580
 - UT (by Luc Hermitte), http://code.google.com/p/lh-vim/wiki/UT
+- vim-unittest (by h1mesuke), https://github.com/h1mesuke/vim-unittest
 
 RELATED WORKS								     *
 
