@@ -263,7 +263,6 @@ if not "%arg%" == "" (
 	    (echo.)
 	    (goto:printShortUsage)
 	)
-	set vimArguments=-N -u NONE %vimArguments%
 	set vimMode=pure
 	shift /1
     ) else if /I "%arg%" == "--default" (
@@ -272,7 +271,6 @@ if not "%arg%" == "" (
 	    (echo.)
 	    (goto:printShortUsage)
 	)
-	set vimArguments=--cmd "set rtp=$VIM/vimfiles,$VIMRUNTIME,$VIM/vimfiles/after" -N -u NORC -c "set rtp&" %vimArguments%
 	set vimMode=default
 	shift /1
     ) else if /I "%arg%" == "--user" (
@@ -337,6 +335,11 @@ call :determineTerminalAndValidVimExecutable
 if not defined vimExecutable (exit /B 2)
 
 if not defined vimMode (set vimMode=default)
+if "%vimMode%" == "pure" (
+    set vimArguments=-N -u NONE %vimArguments%
+) else if "%vimMode%" == "default" (
+    set vimArguments=--cmd "set rtp=$VIM/vimfiles,$VIMRUNTIME,$VIM/vimfiles/after" -N -u NORC -c "set rtp&" %vimArguments%
+)
 set vimVariableOptionsValue=%vimMode%,%vimVariableOptionsValue%
 set vimVariableOptionsValue=%vimVariableOptionsValue:~0,-1%
 set vimArguments=%vimArguments% --cmd "let %vimVariableOptionsName%='%vimVariableOptionsValue%'"
