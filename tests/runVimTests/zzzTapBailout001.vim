@@ -15,8 +15,6 @@ try
     call vimtap#Ok(0, 'not right')
     call vimtap#Like('foobar 2000', 'fo\+.* \d\+', 'matches')
 catch VimTAP:BailOut
-    " Note: We're not bailing out here because we want the next tests to run. 
-    " call vimtest#BailOut('')
 endtry
 
 call vimtest#Quit()
