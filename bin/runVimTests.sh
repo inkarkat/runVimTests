@@ -786,12 +786,10 @@ do
 	--help|-h|-\?)	    shift; printLongUsage; exit 0;;
 	--pure|-0)	    verifyVimModeSetOnlyOnce "$1"
 			    shift
-			    vimArguments="-N -u NONE $vimArguments"
 			    vimMode='pure'
 			    ;;
 	--default|-1)	    verifyVimModeSetOnlyOnce "$1"
 			    shift
-			    vimArguments="--cmd 'set rtp=\$VIM/vimfiles,\$VIMRUNTIME,\$VIM/vimfiles/after' -N -u NORC -c 'set rtp&' $vimArguments"
 			    vimMode='default'
 			    ;;
 	--user|-2)	    verifyVimModeSetOnlyOnce "$1"
@@ -826,6 +824,10 @@ do
 done
 [ $# -eq 0 ] && { printUsage; exit 2; }
 [ "$vimMode" ] || vimMode='default'
+case $vimMode in
+    pure)	vimArguments="-N -u NONE $vimArguments";;
+    default)	vimArguments="--cmd 'set rtp=\$VIM/vimfiles,\$VIMRUNTIME,\$VIM/vimfiles/after' -N -u NORC -c 'set rtp&' $vimArguments";;
+esac
 vimVariableOptionsValue="${vimMode},${vimVariableOptionsValue}"
 vimVariableOptionsValue="${vimVariableOptionsValue%,}"
 vimArguments="$vimArguments --cmd \"let ${vimVariableOptionsName}='${vimVariableOptionsValue}'\""
