@@ -6,13 +6,13 @@ cwd001: Test that CWD is set to the test file's directory.
 1..1
 ok 1 - CWD is test file's directory
 
-signalError001: Test error signal to test driver. 
+signalError001: Test error signal to test driver.
 ERROR
-ERROR: This test doesn't test ABC.
+ERROR: This test does not test ABC.
 OK (msgout)
 
-signalSkip001: Test skip signal to test driver. 
-SKIP: Let's just forget about this one.
+signalSkip001: Test skip signal to test driver.
+SKIP: Let us just forget about this one.
 
 signalSkip002: Test skip(out) signal to test driver. 
 SKIP (out): Lets just forget about the saved buffer contents.
@@ -20,26 +20,26 @@ OK (msgout)
 1..1
 ok 1 - all right
 
-signalSkip003: Test skip(msgout) signal to test driver. 
-SKIP (msgout): Let's just forget about the captured messages.
+signalSkip003: Test skip(msgout) signal to test driver.
+SKIP (msgout): Let us just forget about the captured messages.
 OK (out)
 1..1
 ok 1 - all right
 
-signalSkip004: Test skip(tap) signal to test driver. 
-SKIP (tap): Let's just forget about the TAP unit tests.
+signalSkip004: Test skip(tap) signal to test driver.
+SKIP (tap): Let us just forget about the TAP unit tests.
 OK (out)
 OK (msgout)
 
-signalSkip005: Test skip all individual signals to test driver. 
-SKIP (out): Let's just forget about the saved buffer contents.
-SKIP (msgout): Let's just forget about the captured messages.
-SKIP (tap): Let's just forget about the TAP unit tests.
+signalSkip005: Test skip all individual signals to test driver.
+SKIP (out): Let us just forget about the saved buffer contents.
+SKIP (msgout): Let us just forget about the captured messages.
+SKIP (tap): Let us just forget about the TAP unit tests.
 
-signalSkip006: Test convenience function vimtest#SkipAndQuitIf(). 
-SKIP: Let's just forget about this one.
+signalSkip006: Test convenience function vimtest#SkipAndQuitIf().
+SKIP: Let us just forget about this one.
 
-signalSkip007: Test inactive convenience function vimtest#SkipAndQuitIf(). 
+signalSkip007: Test inactive convenience function vimtest#SkipAndQuitIf().
 FAIL (out): expected output           |   actual output
 This is the expected result. 	      |	Can write what I want, does not matte
 This should be in here!			This should be in here!
@@ -121,7 +121,7 @@ FAIL (msgout): The message assertion was not satisfied by the output:
      Successful execution.$
 
 test013: Test missing message output. 
-ERROR: Couldn't capture message output.
+ERROR: Could not capture message output.
 ERROR (msgout): No test messages.
 
 test014: Test empty message output. 
@@ -201,7 +201,7 @@ not ok 3 - matches
 # Some diagnostic message.
 
 test033: Test error combination buffer + message + TAP output. 
-ERROR: Couldn't capture message output.
+ERROR: Could not capture message output.
 ERROR (out): No test output.
 ERROR (msgout): No test messages.
 1..3
@@ -227,11 +227,11 @@ OK (out)
 OK (msgout)
 
 zzzSignalBailout001: Test bailout signal to test driver. 
-BAIL OUT: It's so f...ed up!
+BAIL OUT: It is so f...ed up!
 
 35 files with 101 tests; 24 skipped, 70 run: 50 OK, 16 failures, 12 errors, 4 TODO.
-Skipped tests: signalSkip001, signalSkip005, signalSkip006, tapSkip002
-Tests with skips: signalSkip002, signalSkip003, signalSkip004, tapParsing001, tapSkip001, tapSkip003
-Failed tests: signalSkip007, tapSkip003, test002, test012, test014, test022, test024, test032, test033
-Tests with errors: signalError001, test003, test013, test023, test024, test033, zzzSignalBailout001
-TODO tests: tapTodo001
+Skipped tests: signalSkip001.vim signalSkip005.vim signalSkip006.vim tapSkip002.vim
+Tests with skips: signalSkip002.vim signalSkip003.vim signalSkip004.vim tapParsing001.vim tapSkip001.vim tapSkip003.vim
+Failed tests: signalSkip007.vim tapSkip003.vim test002.vim test012.vim test014.vim test022.vim test024.vim test032.vim test033.vim
+Tests with errors: signalError001.vim test003.vim test013.vim test023.vim test024.vim test033.vim zzzSignalBailout001.vim
+TODO tests: tapTodo001.vim
