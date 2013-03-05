@@ -15,4 +15,4 @@ subtest041: Test no sourcing of nonexisting local setup script in subdirecto...
 ok 1 - no sourcing of nonexisting local setup script in subdirectory
 
 3 files with 3 tests; 0 skipped, 3 run: 2 OK, 1 failure, 0 errors.
-Failed tests: subtest002
+Failed tests: subtest002.vim
