@@ -1,13 +1,13 @@
 
 Starting test run with these Vim options:
-vim -f -es --cmd "let g:runVimTests='user'"
+vim --cmd 'set rtp=$VIM/vimfiles,$VIMRUNTIME,$VIM/vimfiles/after' -N -u NORC -c 'set rtp&' -f -es --cmd "let g:runVimTests='default'"
 ERROR: Test file "doesnotexist*.vim" doesn't exist.
 
 test003: Test no buffer output was saved. 
 ERROR (out): No test output.
 
 test013: Test missing message output. 
-ERROR: Couldn't capture message output.
+ERROR: Could not capture message output.
 ERROR (msgout): No test messages.
 
 test023: Test TAP output with errors. 
@@ -17,7 +17,7 @@ ok 2 - 1 == 1
 ERROR (tap): Not all 3 planned tests have been executed, 1 test missed.
 
 test033: Test error combination buffer + message + TAP output. 
-ERROR: Couldn't capture message output.
+ERROR: Could not capture message output.
 ERROR (out): No test output.
 ERROR (msgout): No test messages.
 1..3
@@ -33,5 +33,5 @@ OK (out)
 OK (msgout)
 
 5 files with 12 tests; 0 skipped, 6 run: 5 OK, 1 failure, 9 errors.
-Failed tests: test033
-Tests with errors: test003, test013, test023, test033
+Failed tests: test033.vim
+Tests with errors: test003.vim test013.vim test023.vim test033.vim
