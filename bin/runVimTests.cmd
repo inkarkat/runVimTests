@@ -26,6 +26,10 @@
 ::				/ errored test and add .vim extension, so that
 ::				the file list can be copy-and-pasted to another
 ::				runVimTests invocation or :argedit'ed in Vim.
+::				CHG: Change default mode from "user" to
+::				"default"; this is what I use all the time,
+::				anyway, as the "user" mode is too susceptible to
+::				incompatible customizations.
 ::  1.21.030	10-Dec-2012	FIX: Prevent script errors when the error
 ::				message containing the full command line from a
 ::				failing vimtest#System() contains characters
@@ -332,7 +336,7 @@ if "%~1" == "" (goto:printUsage)
 call :determineTerminalAndValidVimExecutable
 if not defined vimExecutable (exit /B 2)
 
-if not defined vimMode (set vimMode=user)
+if not defined vimMode (set vimMode=default)
 set vimVariableOptionsValue=%vimMode%,%vimVariableOptionsValue%
 set vimVariableOptionsValue=%vimVariableOptionsValue:~0,-1%
 set vimArguments=%vimArguments% --cmd "let %vimVariableOptionsName%='%vimVariableOptionsValue%'"
@@ -407,7 +411,8 @@ echo.    			but in nocompatible mode. Adds 'pure' to %vimVariableOptionsName%.
 echo.    -1^|--default	Start Vim only with default settings and plugins,
 echo.    			without loading user .vimrc and plugins.
 echo.    			Adds 'default' to %vimVariableOptionsName%.
-echo.    -2^|--user		^(Default:^) Start Vim with user .vimrc and plugins.
+echo.    -2^|--user		Start Vim with user .vimrc and plugins.
+echo.    			Adds 'user' to %vimVariableOptionsName%.
 echo.    --source filespec	Source filespec before test execution.
 echo.    --runtime filespec	Source filespec relative to ~/.vim. Can be used to
 echo.    			load the script-under-test when using --pure.
@@ -522,10 +527,10 @@ if not "%~2" == "" (
     set status=%status% ^(%~2^)
 )
 set sanitizedErrorMessage=%~3
-set sanitizedErrorMessage=%sanitizedErrorMessage:"=%
-set sanitizedErrorMessage=%sanitizedErrorMessage:'=%
-set sanitizedErrorMessage=%sanitizedErrorMessage:(=%
-set sanitizedErrorMessage=%sanitizedErrorMessage:)=%
+if defined sanitizedErrorMessage set sanitizedErrorMessage=%sanitizedErrorMessage:"=%
+if defined sanitizedErrorMessage set sanitizedErrorMessage=%sanitizedErrorMessage:'=%
+if defined sanitizedErrorMessage set sanitizedErrorMessage=%sanitizedErrorMessage:(=%
+if defined sanitizedErrorMessage set sanitizedErrorMessage=%sanitizedErrorMessage:)=%
 if "%sanitizedErrorMessage%" == "" (
     echo.%status%
 ) else (
@@ -812,7 +817,7 @@ if "%~1" == "BAILOUT!" (
 :parseMessageOutputForSignals
 if not exist "%testMsgout%" (
     set /A thisError+=1
-    call :echoError "" "Couldn't capture message output."
+    call :echoError "" "Could not capture message output."
     (goto:EOF)
 )
 for /F "tokens=2* delims= " %%s in ('grep -e "^runVimTests: " "%testMsgout%"') do call :parseSignal "%%~s" "%%~t"
