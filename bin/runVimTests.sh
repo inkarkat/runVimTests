@@ -7,99 +7,107 @@
 # DATE CREATED:	02-Feb-2009
 #
 ###############################################################################
-# CONTENTS: 
-#   This script implements a testing framework for Vim. 
-#   
-# REMARKS: 
-#   
+# CONTENTS:
+#   This script implements a testing framework for Vim.
+#
+# REMARKS:
+#
 # DEPENDENCIES:
-#   - Requires Bash 3.0 or higher. 
-#   - GNU diff, grep, readlink, sed, sort, tr, uniq. 
-#   - runVimMsgFilter.vim, located in this script's directory. 
+#   - Requires Bash 3.0 or higher.
+#   - GNU diff, grep, readlink, sed, sort, tr, uniq.
+#   - runVimMsgFilter.vim, located in this script's directory.
 #
-# Copyright: (C) 2009-2011 Ingo Karkat
-#   The VIM LICENSE applies to this script; see 'vim -c ":help copyright"'.  
+# Copyright: (C) 2009-2013 Ingo Karkat
+#   The VIM LICENSE applies to this script; see 'vim -c ":help copyright"'.
 #
-# FILE_SCCS = "@(#)runVimTests.sh	1.18.014	(19-Oct-2011)	runVimTests";
+# FILE_SCCS = "@(#)runVimTests.sh	1.21.015	(06-Mar-2013)	runVimTests";
 #
-# REVISION	DATE		REMARKS 
+# REVISION	DATE		REMARKS
+#  1.21.031	06-Mar-2013	CHG: Drop comma in the lists of failed / skipped
+#				/ errored test and add .vim extension, so that
+#				the file list can be copy-and-pasted to another
+#				runVimTests invocation or :argedit'ed in Vim.
+#				CHG: Change default mode from "user" to
+#				"default"; this is what I use all the time,
+#				anyway, as the "user" mode is too susceptible to
+#				incompatible customizations.
 #   1.18.014	19-Oct-2011	BUG: When everything is skipped and no TAP tests
 #				have been run, this would be reported as a "No
-#				test results at all" error. 
+#				test results at all" error.
 #				CHG: Bail out only aborts from the current
 #				recursion level, i.e. it skips further tests in
 #				the same directory, suite, or passed arguments,
 #				but not testing entirely. Otherwise, a
 #				super-suite that includes individual suites
-#				would be aborted by a single bail out. 
+#				would be aborted by a single bail out.
 #   1.17.013	04-Sep-2011	BUG: When runVimTests.sh is invoked via a
 #				relative filespec, $scriptDir is relative and
 #				this makes the message output comparison
 #				(but not the prerequisite check) fail with
 #				"ERROR (msgout): Evaluation of test messages
-#				failed." when CWD has changed into $testDirspec. 
-#				Thanks to Javier Rojas for sending a patch. 
+#				failed." when CWD has changed into $testDirspec.
+#				Thanks to Javier Rojas for sending a patch.
 #				Use "readlink -f" to resolve symlinks and into
 #				absolute dirspec. This also handles the case
 #				when runVimTests.sh, but not runVimMsgFilter.vim
-#				is symlinked into another bin directory. 
+#				is symlinked into another bin directory.
 #   1.14.012	02-Jun-2010	Now also handling *.suite files with Windows
-#				(CR-LF) line endings. 
+#				(CR-LF) line endings.
 #   1.13.011	28-May-2009	ENH: Now including SKIP reasons in the summary
 #				(identical reasons are condensed and counted)
 #				when not running with verbose output. I always
-#				wanted to know why certain tests were skipped. 
+#				wanted to know why certain tests were skipped.
 #   1.12.010	14-Mar-2009	Added quoting of regexp in addToList(), which is
-#				needed in Bash 3.0 and 3.1. 
-#				Now checking Bash version. 
+#				needed in Bash 3.0 and 3.1.
+#				Now checking Bash version.
 #				Only exiting with exit code 1 in case of test
 #				failures; using code 2 for invocation errors
 #				(i.e. wrong command-line arguments) or
 #				missing prerequisites and code 3 for internal
-#				errors. 
-#   1.11.009	12-Mar-2009	ENH: TODO tests are reported in test summary. 
+#				errors.
+#   1.11.009	12-Mar-2009	ENH: TODO tests are reported in test summary.
 #				ENH: TAP output is also parsed for bail out
-#				message. 
+#				message.
 #			    	ENH: TAP output is now parsed for # SKIP and #
 #				TODO directives. The entire TAP test is skipped
 #				if a 1..0 plan is announced. Non-verbose TAP
 #				output now also includes succeeding TODO tests
-#				and any details in the lines following it. 
+#				and any details in the lines following it.
 #				Factored out addToList(), which now only matches
-#				exact test names, not partial overlaps. 
-#   1.10.008	06-Mar-2009	ENH: Also counting test files. 
+#				exact test names, not partial overlaps.
+#   1.10.008	06-Mar-2009	ENH: Also counting test files.
 #				ENH: Message output is now parsed for signals to
 #				this test driver. Implemented signals: BAILOUT!,
-#				ERROR, SKIP, SKIP(out), SKIP(msgout), SKIP(tap). 
+#				ERROR, SKIP, SKIP(out), SKIP(msgout), SKIP(tap).
 #				Summary reports skipped tests and tests with
-#				skips. 
-#				Changed API for echoStatus. 
-#   1.00.007	02-Mar-2009	Reviewed for publication. 
+#				skips.
+#				Changed API for echoStatus.
+#   1.00.007	02-Mar-2009	Reviewed for publication.
 #	006	28-Feb-2009	BF: FAIL (msgout) and FAIL (tap) didn't print
-#				test header in non-verbose mode. 
+#				test header in non-verbose mode.
 #				Refactored :printTestHeader so that it does the
-#				check for already printed header itself. 
+#				check for already printed header itself.
 #	005	25-Feb-2009	Now only printing failed tests and errors, and
 #				only explicitly mentioning the test if it wasn't
 #				successful. This greatly reduces the visual
 #				output the user has to scan.
 #				Added --verbose option to also print successful
-#				tests, the previous default behavior. 
-#				Added empty line between individual tests. 
+#				tests, the previous default behavior.
+#				Added empty line between individual tests.
 #	004	24-Feb-2009	Added short options -0/1/2 for the plugin load
-#				level. 
+#				level.
 #	003	19-Feb-2009	Added explicit option '--user' for the default
 #				Vim mode, and adding 'user' to
 #				%vimVariableOptionsValue% (so that tests can
 #				easily check for that mode). Command-line
 #				argument parsing now ensures that only one mode
-#				is specified. 
-#	002	11-Feb-2009	Completed porting of Windows shell script. 
+#				is specified.
+#	002	11-Feb-2009	Completed porting of Windows shell script.
 #	001	02-Feb-2009	file creation
 ###############################################################################
 
 # Enable extended file pattern matching operators from ksh
-# (?(pattern-list), !(pattern-list), ...) in Bash. 
+# (?(pattern-list), !(pattern-list), ...) in Bash.
 shopt -qs extglob
 
 initialize()
@@ -107,35 +115,35 @@ initialize()
     [ ${BASH_VERSINFO[0]} -ge 3 ] || { echo >&2 "ERROR: This script requires Bash 3.0 or higher!"; exit 2; }
 
     readonly scriptDir=$([ "${BASH_SOURCE[0]}" ] && absoluteScriptFile="$(readlink -nf -- "${BASH_SOURCE[0]}")" && dirname -- "$absoluteScriptFile" || exit 3)
-    [ -d "$scriptDir" ] || { echo >&2 "ERROR: Cannot determine script directory!"; exit 3; } 
+    [ -d "$scriptDir" ] || { echo >&2 "ERROR: Cannot determine script directory!"; exit 3; }
 
     skipsRecord=${TEMP:-/tmp}/skipsRecord.txt.$$
     [ -f "$skipsRecord" ] && { rm -- "$skipsRecord" || skipsRecord=; }
 
     # Prerequisite Vim script to match the message assumptions against the actual
-    # message output. 
+    # message output.
     readonly runVimMsgFilterScript=${scriptDir}/runVimMsgFilter.vim
     if [ ! -r "$runVimMsgFilterScript" ]; then
 	echo >&2 "ERROR: Script prerequisite \"${runVimMsgFilterScript}\" does not exist!"
 	exit 2
     fi
 
-    # Vim variables set by the test framework. 
+    # Vim variables set by the test framework.
     readonly vimVariableOptionsName=g:runVimTests
     vimVariableOptionsValue=
     readonly vimVariableTestName=g:runVimTest
 
-    # Vim mode of sourcing scripts. 
+    # Vim mode of sourcing scripts.
     vimMode=
 
-    # Default Vim executable. 
+    # Default Vim executable.
     vimExecutable='vim'
 
-    # Default Vim command-line arguments. 
+    # Default Vim command-line arguments.
     #
     # Always wait for the edit session to finish (only applies to the GUI
     # version, is ignored for the terminal version), so that this script can
-    # process the files generated by the test run. 
+    # process the files generated by the test run.
     vimArguments=-f
 
     # Use silent-batch mode (-es) when the test log is not printed to stdout (but
@@ -145,7 +153,7 @@ initialize()
     # (Just passing '-T dumb' is not enough.)
     [ -t 1 ] || vimArguments="$vimArguments -es"
 
-    # Optional user-provided setup scripts. 
+    # Optional user-provided setup scripts.
     readonly vimLocalSetupScript=_setup.vim
     readonly vimGlobalSetupScript=${scriptDir}/$(basename -- "$0")Setup.vim
     [ -r "$vimGlobalSetupScript" ] && vimArguments="$vimArguments $(vimSourceCommand "$vimGlobalSetupScript")"
@@ -169,8 +177,8 @@ SHORTHELPTEXT
 }
 printUsage()
 {
-    # This is the short help when launched with no or incorrect arguments. 
-    # It is printed to stderr to avoid accidental processing. 
+    # This is the short help when launched with no or incorrect arguments.
+    # It is printed to stderr to avoid accidental processing.
     printShortUsage >&2
     cat >&2 <<MOREHELP
 Try "$(basename "$0")" --help for more information.
@@ -178,10 +186,10 @@ MOREHELP
 }
 printLongUsage()
 {
-    # This is the long "man page" when launched with the help argument. 
-    # It is printed to stdout to allow paging with 'more'. 
+    # This is the long "man page" when launched with the help argument.
+    # It is printed to stdout to allow paging with 'more'.
     cat <<HELPDESCRIPTION
-A testing framework for Vim. 
+A testing framework for Vim.
 HELPDESCRIPTION
     echo
     printShortUsage
@@ -191,7 +199,8 @@ HELPDESCRIPTION
     -1|--default	Start Vim only with default settings and plugins,
 			without loading user .vimrc and plugins.
 			Adds 'default' to ${vimVariableOptionsName}.
-    -2|--user		(Default:) Start Vim with user .vimrc and plugins.
+    -2|--user		Start Vim with user .vimrc and plugins.
+			Adds 'user' to ${vimVariableOptionsName}.
     --source filespec	Source filespec before test execution.
     --runtime filespec	Source filespec relative to ~/.vim. Can be used to
 			load the script-under-test when using --pure.
@@ -199,7 +208,7 @@ HELPDESCRIPTION
 	path/to/vim	found in \$PATH.
     -g|--graphical	Use GUI version of Vim.
     --summaryonly	Do not show detailed transcript and differences, during
-			test run, only summary. 
+			test run, only summary.
     -v^|--verbose	Show passed tests and more details during test
 			execution.
     -d|--debug		Test debugging mode: Adds 'debug' to ${vimVariableOptionsName}
@@ -267,7 +276,7 @@ vimSourceCommand()
     # As we don't know the Vim version, we cannot work around this via
     #	-c "execute 'source' fnameescape('${testfile}')"
     # Thus, we just escape spaces and hope that no other special string (like %,
-    # # or <cword>) is part of a test filename. 
+    # # or <cword>) is part of a test filename.
     echo "-S '${1// /\\ }'"
 }
 
@@ -293,7 +302,7 @@ runSuite()
     local -r suiteFilename=$(basename -- "$1")
 
     # Change to suite directory so that relative paths and filenames are
-    # resolved correctly. 
+    # resolved correctly.
     pushd "$suiteDir" >/dev/null
 
     local testEntry
@@ -322,8 +331,8 @@ runDir()
 addToList()
 {
     eval local listName=\$list$1
-    if [[ ! "$listName" =~ "(^|,\ )${2}(,\ |$)" ]]; then
-	eval list${1}=\"${listName}${2}, \"
+    if [[ ! "$listName" =~ "(^|\ )${2}\.vim(\ |$)" ]]; then
+	eval list${1}=\"${listName}${2}.vim \"
     fi
 }
 addToListSkipped()
@@ -357,7 +366,7 @@ printTestHeader()
     # If the first line of the test script starts with '" Test', include this as
     # the test's synopsis in the test header. Otherwise, just print the test
     # name. Limit the test header to one unwrapped output line, i.e. truncate to
-    # 80 characters. 
+    # 80 characters.
     sed -n -e "1s/^\\d034 \\(Test.*\\)$/${headerMessage} \\1/p" -e 'tx' -e "1c${headerMessage}" -e ':x' -- "$1" | sed '/^.\{80,\}/s/\(^.\{,76\}\).*$/\1.../'
 }
 
@@ -389,13 +398,13 @@ parseMessageOutputForSignals()
 {
     if [ ! -r "$testMsgout" ]; then
 	let thisError+=1
-	echoError '' "Couldn't capture message output."
+	echoError '' "Could not capture message output."
 	return
     fi
 
     # Vim doesn't put a final newline at the end of the last written message.
     # This incomplete last line is in turn not processed by 'read'. Fix this by
-    # appending a final newline. 
+    # appending a final newline.
     echo >> "$testMsgout"
 
     local signalLine
@@ -432,7 +441,7 @@ compareMessages()
     [ -f "$testMsgresult" ] && rm "$testMsgresult"
 
     # Use silent-batch mode (-es) to match the message assumptions against the
-    # actual message output. 
+    # actual message output.
     eval "vim -N -u NONE -es -c 'set nomore' $(vimSourceCommand "$runVimMsgFilterScript") -c 'RunVimMsgFilter' -c 'quitall!' -- \"$testMsgok\""
 
     if [ ! -r "$testMsgresult" ]; then
@@ -499,11 +508,11 @@ parseTapOutput()
 	    Bail\ out!*)
 		isBailOut='true'
 		let thisError+=1
-		# Ignore all further TAP output after a bail out. 
+		# Ignore all further TAP output after a bail out.
 		break
 		;;
 	    1..0)
-		# No tests planned means the TAP test is skipped completely. 
+		# No tests planned means the TAP test is skipped completely.
 		let thisTests+=1
 		let thisSkip+=1
 		recordTapSkip "${tapLine#1..0}"
@@ -516,15 +525,15 @@ parseTapOutput()
 	esac
     done < "$1"
 
-    # Print the entire TAP output if in verbose mode, else only print 
+    # Print the entire TAP output if in verbose mode, else only print
     # - failed tests
     # - successful TODO tests
     # - bail out message
-    # plus any details in the lines following it. 
+    # plus any details in the lines following it.
     # (But truncate any additional TAP output after a bail out.)
     if [ "$isExecutionOutput" ]; then
 	if [ $verboseLevel -gt 0 ]; then
-	    # In verbose mode, the test header has already been printed. 
+	    # In verbose mode, the test header has already been printed.
 	    cat -- "$1"
 	else
 	    [ "$tapTestIsPrintTapOutput" ] && printTestHeader "$testFile" "$testName"
@@ -534,7 +543,7 @@ parseTapOutput()
     fi
 
     # If this TAP test has bailed out, return the number of tests run so far,
-    # but at least one (to avoid the "no test results" error). 
+    # but at least one (to avoid the "no test results" error).
     if [ "$isBailOut" ]; then
 	if [ $tapTestCnt -eq 0 ]; then
 	    let thisTests+=1
@@ -577,7 +586,7 @@ runTest()
     local -r testFilespec=$(cd "$testDirspec" && echo "${PWD}/${testFile}") || { echo >&2 "ERROR: Cannot determine absolute filespec!"; exit 3; }
     local -r testName=${testFile%.*}
 
-    # The setup script is not a test, silently skip it. 
+    # The setup script is not a test, silently skip it.
     [ "$testFile" = "$vimLocalSetupScript" ] && return
 
     local -r testOk=${testName}.ok
@@ -589,14 +598,14 @@ runTest()
     let cntTestFiles+=1
     pushd "$testDirspec" >/dev/null
 
-    # Remove old output files from the previous test run. 
+    # Remove old output files from the previous test run.
     local file
     for file in "$testOut" "$testMsgout" "$testTap"
     do
 	[ -f "$file" ] && rm "$file"
     done
 
-    # Source local setup script before the testfile. 
+    # Source local setup script before the testfile.
     local vimLocalSetup
     [ -f "$vimLocalSetupScript" ] && vimLocalSetup=" $(vimSourceCommand "${vimLocalSetupScript}")"
 
@@ -604,12 +613,12 @@ runTest()
     [ $verboseLevel -gt 0 ] && printTestHeader "$testFile" "$testName"
 
     # Default Vim arguments and options:
-    # -n		No swapfile. 
+    # -n		No swapfile.
     # :set nomore	Suppress the more-prompt when the screen is filled with messages
-    #			or output to avoid blocking. 
-    # :set verbosefile	Capture all messages in a file. 
-    # :let $vimVariableTestName = Absolute test filespec. 
-    # :let $vimVariableOptionsName = Options for this test run, concatenated with ','. 
+    #			or output to avoid blocking.
+    # :set verbosefile	Capture all messages in a file.
+    # :let $vimVariableTestName = Absolute test filespec.
+    # :let $vimVariableOptionsName = Options for this test run, concatenated with ','.
     eval "$vimExecutable -n -c \"let ${vimVariableTestName}='${testFilespec//\'/\'\'}'|set nomore verbosefile=${testMsgout// /\\ }\" ${vimArguments}${vimLocalSetup} $(vimSourceCommand "$testFile")"
 
     local thisTests=0
@@ -627,10 +636,10 @@ runTest()
     if [ "$isBailOut" ]; then
 	# In case of a bail out, do not run check the results of any method;
 	# just say that a test has run and go straight to the results
-	# evaluation. 
+	# evaluation.
 	let thisTests=1
     else
-	# Method output. 
+	# Method output.
 	if [ -r "$testOk" ]; then
 	    let thisTests+=1
 	    if [ "$isSkipOut" ]; then
@@ -646,7 +655,7 @@ runTest()
 	    fi
 	fi
 
-	# Method message output. 
+	# Method message output.
 	if [ -r "$testMsgok" ]; then
 	    let thisTests+=1
 	    if [ "$isSkipMsgout" ]; then
@@ -662,10 +671,10 @@ runTest()
 	    fi
 	fi
 
-	# Method TAP. 
+	# Method TAP.
 	if [ -r "$testTap" ]; then
 	    if [ "$isSkipTap" ]; then
-		let thisTests+=1	# Just assume there was only one TAP test. 
+		let thisTests+=1	# Just assume there was only one TAP test.
 		let thisSkip+=1
 	    else
 		parseTapOutput "$testTap" "$testName"
@@ -673,13 +682,13 @@ runTest()
 	fi
 
 	# When everything is skipped and no TAP tests have been run, this would
-	# be reported as a "No test results at all" error. 
+	# be reported as a "No test results at all" error.
 	if [ $thisTests -eq 0 -a "$isSkipOut" -a "$isSkipMsgout" -a "$isSkipTap" ]; then
 	    let thisTests=1
 	    let thisSkip=1
 	fi
     fi
-    # Results evaluation. 
+    # Results evaluation.
     if [ $thisTests -eq 0 ]; then
 	let thisError+=1
 	echoError '' 'No test results at all.'
@@ -752,12 +761,12 @@ report()
     [ "$isBailOut" ] && local -r bailOutNotification=' (aborted)' || local -r bailOutNotification=
     echo
     echo "$cntTestFiles $(makePlural $cntTestFiles 'file') with $cntTests $(makePlural $cntTests 'test')${bailOutNotification}; $cntSkip skipped, $cntRun run: $cntOk OK, $cntFail $(makePlural $cntFail 'failure'), $cntError $(makePlural $cntError 'error')${todoNotification}."
-    [ "$listSkipped" ] && echo "Skipped tests: ${listSkipped%, }"
-    [ "$listSkips" ] && echo "Tests with skips: ${listSkips%, }"
+    [ "$listSkipped" ] && echo "Skipped tests: ${listSkipped% }"
+    [ "$listSkips" ] && echo "Tests with skips: ${listSkips% }"
     listSkipReasons
-    [ "$listFailed" ] && echo "Failed tests: ${listFailed%, }"
-    [ "$listError" ] && echo "Tests with errors: ${listError%, }"
-    [ "$listTodo" ] && echo "TODO tests: ${listTodo%, }"
+    [ "$listFailed" ] && echo "Failed tests: ${listFailed% }"
+    [ "$listError" ] && echo "Tests with errors: ${listError% }"
+    [ "$listTodo" ] && echo "TODO tests: ${listTodo% }"
 
     let cntAllProblems=cntError+cntFail
     if [ $cntAllProblems -ne 0 ]; then
@@ -768,6 +777,7 @@ report()
 }
 
 #- main -----------------------------------------------------------------------
+
 initialize
 
 while [ $# -ne 0 ]
@@ -815,7 +825,7 @@ do
     esac
 done
 [ $# -eq 0 ] && { printUsage; exit 2; }
-[ "$vimMode" ] || vimMode='user'
+[ "$vimMode" ] || vimMode='default'
 vimVariableOptionsValue="${vimMode},${vimVariableOptionsValue}"
 vimVariableOptionsValue="${vimVariableOptionsValue%,}"
 vimArguments="$vimArguments --cmd \"let ${vimVariableOptionsName}='${vimVariableOptionsValue}'\""
