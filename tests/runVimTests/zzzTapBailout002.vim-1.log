@@ -1,0 +1,8 @@
+
+Starting test run with these Vim options:
+vim --cmd 'set rtp=$VIM/vimfiles,$VIMRUNTIME,$VIM/vimfiles/after' -N -u NORC -c 'set rtp&' -f -es --cmd "let g:runVimTests='default'"
+Bail out! It is so f...ed up!
+# I had to stop, this was bad!
+
+1 file with 1 test (aborted); 0 skipped, 1 run: 1 OK, 0 failures, 1 error.
+Tests with errors: zzzTapBailout002.vim
