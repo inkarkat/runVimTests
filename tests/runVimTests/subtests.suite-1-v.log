@@ -1,0 +1,18 @@
+
+Starting test run with these Vim options:
+vim --cmd 'set rtp=$VIM/vimfiles,$VIMRUNTIME,$VIM/vimfiles/after' -N -u NORC -c 'set rtp&' -f -es --cmd "let g:runVimTests='default'"
+
+subtest001: Test successful TAP output. 
+1..1
+ok 1 - all right
+
+subtest002: Test failed TAP output. 
+1..1
+not ok 1 - not all right
+
+subtest041: Test no sourcing of nonexisting local setup script in subdirecto...
+1..1
+ok 1 - no sourcing of nonexisting local setup script in subdirectory
+
+3 files with 3 tests; 0 skipped, 3 run: 2 OK, 1 failure, 0 errors.
+Failed tests: subtest002
