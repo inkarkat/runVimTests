@@ -101,7 +101,7 @@ ERROR (tap): Not all 3 planned tests have been executed, 1 test missed.
 zzzSignalBailout001: Test bailout signal to test driver. 
 BAIL OUT: It's so f...ed up!
 
-35 files with 101 tests (aborted); 24 skipped, 70 run: 50 OK, 16 failures, 12 errors, 4 TODO.
+35 files with 101 tests; 24 skipped, 70 run: 50 OK, 16 failures, 12 errors, 4 TODO.
 Skipped tests: signalSkip001, signalSkip005, signalSkip006, tapSkip002
 Tests with skips: signalSkip002, signalSkip003, signalSkip004, tapParsing001, tapSkip001, tapSkip003
       2 SKIP (msgout): Let's just forget about the captured messages.
