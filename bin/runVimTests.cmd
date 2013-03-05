@@ -22,6 +22,10 @@
 ::   The VIM LICENSE applies to this script; see 'vim -c ":help copyright"'.
 ::
 ::* REVISION	DATE		REMARKS
+::  1.21.030	10-Dec-2012	FIX: Prevent script errors when the error
+::				message containing the full command line from a
+::				failing vimtest#System() contains characters
+::				like ['"()].
 ::  1.20.029	27-Jul-2012	ENH: Handle file globs in the passed tests
 ::				(in contrast to the Unix shell, these must be
 ::				explicitly expanded on Windows) and in suite
@@ -513,10 +517,15 @@ set status=%~1
 if not "%~2" == "" (
     set status=%status% ^(%~2^)
 )
-if "%~3" == "" (
+set sanitizedErrorMessage=%~3
+set sanitizedErrorMessage=%sanitizedErrorMessage:"=%
+set sanitizedErrorMessage=%sanitizedErrorMessage:'=%
+set sanitizedErrorMessage=%sanitizedErrorMessage:(=%
+set sanitizedErrorMessage=%sanitizedErrorMessage:)=%
+if "%sanitizedErrorMessage%" == "" (
     echo.%status%
 ) else (
-    echo.%status%: %~3|sed "s/%PIPE%/|/g"
+    echo.%status%: %sanitizedErrorMessage%|sed "s/%PIPE%/|/g"
 )
 (goto:EOF)
 :echoSkip
