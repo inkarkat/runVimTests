@@ -1,6 +1,6 @@
 
 Starting test run with these Vim options:
-vim -f -es --cmd "let g:runVimTests='user'"
+vim --cmd 'set rtp=$VIM/vimfiles,$VIMRUNTIME,$VIM/vimfiles/after' -N -u NORC -c 'set rtp&' -f -es --cmd "let g:runVimTests='default'"
 
 test002: Test failed saved buffer output. 
 FAIL (out): expected output           |   actual output
@@ -10,5 +10,5 @@ test003: Test no buffer output was saved.
 ERROR (out): No test output.
 
 4 files with 4 tests; 0 skipped, 3 run: 2 OK, 1 failure, 1 error.
-Failed tests: test002
-Tests with errors: test003
+Failed tests: test002.vim
+Tests with errors: test003.vim
