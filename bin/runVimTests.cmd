@@ -18,10 +18,14 @@
 ::    'unix.cmd' script.
 ::  - runVimMsgFilter.vim, located in this script's directory.
 ::
-::* Copyright: (C) 2009-2012 Ingo Karkat
+::* Copyright: (C) 2009-2013 Ingo Karkat
 ::   The VIM LICENSE applies to this script; see 'vim -c ":help copyright"'.
 ::
 ::* REVISION	DATE		REMARKS
+::  1.21.031	06-Mar-2013	CHG: Drop comma in the lists of failed / skipped
+::				/ errored test and add .vim extension, so that
+::				the file list can be copy-and-pasted to another
+::				runVimTests invocation or :argedit'ed in Vim.
 ::  1.21.030	10-Dec-2012	FIX: Prevent script errors when the error
 ::				message containing the full command line from a
 ::				failing vimtest#System() contains characters
@@ -370,12 +374,12 @@ set todoNotification=& if %cntTodo% GEQ 1 set todoNotification=, %cntTodo% TODO
 set bailOutNotification=& if defined isBailOut set bailOutNotification= ^(aborted^)
 echo.
 echo.%cntTestFiles% file%pluralTestFiles% with %cntTests% test%pluralTests%%bailOutNotification%; %cntSkip% skipped, %cntRun% run: %cntOk% OK, %cntFail% failure%pluralFail%, %cntError% error%pluralError%%todoNotification%.
-if defined listSkipped (echo.Skipped tests: %listSkipped:~0,-2%)
-if defined listSkips (echo.Tests with skips: %listSkips:~0,-2%)
+if defined listSkipped (echo.Skipped tests: %listSkipped:~0,-1%)
+if defined listSkips (echo.Tests with skips: %listSkips:~0,-1%)
 call :listSkipReasons
-if defined listFailed (echo.Failed tests: %listFailed:~0,-2%)
-if defined listError (echo.Tests with errors: %listError:~0,-2%)
-if defined listTodo (echo.TODO tests: %listTodo:~0,-2%)
+if defined listFailed (echo.Failed tests: %listFailed:~0,-1%)
+if defined listError (echo.Tests with errors: %listError:~0,-1%)
+if defined listTodo (echo.TODO tests: %listTodo:~0,-1%)
 
 set /A cntAllProblems=%cntError% + %cntFail%
 if %cntAllProblems% NEQ 0 (exit /B 1) else (exit /B 0)
@@ -485,19 +489,19 @@ sed -n -e "1s/^\d034 \(Test.*\)$/%headerMessage% \1/p" -e "tx" -e "1c%headerMess
 (goto:EOF)
 
 :addToListSkipped
-echo.%listSkipped% | findstr /C:%1 >NUL || set listSkipped=%listSkipped%%~1, 
+echo.%listSkipped% | findstr /C:%1 >NUL || (set listSkipped=%listSkipped%%~1.vim )
 (goto:EOF)
 :addToListSkips
-echo.%listSkips% | findstr /C:%1 >NUL || set listSkips=%listSkips%%~1, 
+echo.%listSkips% | findstr /C:%1 >NUL || (set listSkips=%listSkips%%~1.vim )
 (goto:EOF)
 :addToListFailed
-echo.%listFailed% | findstr /C:%1 >NUL || set listFailed=%listFailed%%~1, 
+echo.%listFailed% | findstr /C:%1 >NUL || (set listFailed=%listFailed%%~1.vim )
 (goto:EOF)
 :addToListError
-echo.%listError% | findstr /C:%1 >NUL || set listError=%listError%%~1, 
+echo.%listError% | findstr /C:%1 >NUL || (set listError=%listError%%~1.vim )
 (goto:EOF)
 :addToListTodo
-echo.%listTodo% | findstr /C:%1 >NUL || set listTodo=%listTodo%%~1, 
+echo.%listTodo% | findstr /C:%1 >NUL || (set listTodo=%listTodo%%~1.vim )
 (goto:EOF)
 
 :echoOk
