@@ -410,6 +410,17 @@ IDEAS							   *runVimTests-ideas*
 ==============================================================================
 HISTORY							 *runVimTests-history*
 
+1.21	07-Mar-2013
+- FIX: Prevent script errors when the error message containing the full
+  command line from a failing vimtest#System() contains characters like
+  ['"()].
+- CHG: Drop comma in the lists of failed / skipped / errored test and add .vim
+  extension, so that the file list can be copy-and-pasted to another
+  runVimTests invocation or :argedit'ed in Vim.
+- CHG: Change default mode from "user" to "default"; this is what I use all
+  the time, anyway, as the "user" mode is too susceptible to incompatible
+  customizations.
+
 1.20	27-Jul-2012
 - ENH: Handle file globs in the passed tests and in suite entries on Windows,
   too. (In contrast to the Unix shell, these must be explicitly expanded on
@@ -488,7 +499,7 @@ runVimTests.sh.
 Started development.
 
 ==============================================================================
-Copyright: (C) 2009-2012 Ingo Karkat
+Copyright: (C) 2009-2013 Ingo Karkat
 The VIM LICENSE applies to this script; see |copyright|.
 
 Maintainer:	Ingo Karkat <ingo@karkat.de>
