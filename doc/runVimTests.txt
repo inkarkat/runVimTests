@@ -7,8 +7,6 @@ description			|runVimTests-description|
 usage				|runVimTests-usage|
 invoking			|runVimTests-invoking|
 installation			|runVimTests-installation|
-configuration			|runVimTests-configuration|
-integration			|runVimTests-integration|
 framework			|runVimTests-framework|
 test scripts			|runVimTests-testscripts|
 limitations			|runVimTests-limitations|
@@ -19,7 +17,7 @@ history				|runVimTests-history|
 ==============================================================================
 MOTIVATION					      *runVimTests-motivation*
 
-Every script writer knows how tedious it is to update a published script. In
+Every script writer knows how tedious it is to update a published plugin. In
 addition to the basic functionality, many corner cases (empty line, last line,
 etc.) and failures (invalid filename, nomodifiable buffer) need to be tested,
 and people use Vim on different platforms (Windows / Linux), UIs (Console /
@@ -135,11 +133,11 @@ arguments) or prerequisites weren't met, 3 in case of an internal error.
 
 After test execution, a summary is printed like this:
     20 files with 33 tests; 2 skipped, 27 run: 16 OK, 11 failures, 6 errors. ~
-    Tests with skips: test006 ~
-    Skipped tests: test007 ~
-	2 SKIP (tap): Need 'autochdir' option~
-    Failed tests: test002, test012, test014, test022, test032, test033 ~
-    Tests with errors: test003, test013, test023, test033 ~
+    Tests with skips: test006.vim ~
+    Skipped tests: test007.vim ~
+	2 SKIP (tap): Need 'autochdir' option ~
+    Failed tests: test002.vim test012.vim test014.vim test022.vim test032.vim ~
+    Tests with errors: test003.vim test013.vim test023.vim test033.vim ~
 
 A test is counted as each existing *.[msg]ok file, or by an announcement of
 the planned tests by a TAP test. Tests have "run" when corresponding output
@@ -171,8 +169,9 @@ the message output.) The --graphical options uses the GUI version GVIM.
 
 In order to ensure that your script-under-test is compatible with other users'
 settings and not dependent on any of your personal settings, it is advisable
-to test at least with the default Vim settings in addition to your customized
-setup. For this, the plugin load level can be specified:
+to test with the default Vim settings; this is the default behavior. To use no
+plugins or all of your user customizations, the plugin load level can be
+specified:
     -0 / --pure	    Starts Vim without loading any .vimrc and plugins, but in
 		    'nocompatible' mode. This is the most pure mode of using
 		    Vim.
@@ -181,8 +180,6 @@ setup. For this, the plugin load level can be specified:
 		    loaded. This emulates a fresh install of Vim.
     -2 / --user	    Starts Vim with user .vimrc and plugins, and thus provides
 		    exactly your personal setup you're used to.
-Tip: If you have lots of plugins in your ~/.vim directory, using -1 can
-greatly speed up test execution. The default is -2, though.
 Tip: If you want to test with especially unusual or tough settings, put them
 into a separate Vim script and use --source to include it in the test run.
 
@@ -249,12 +246,6 @@ These binaries must be accessible through %PATH%. Alternatively, you can just
 make accessible an Windows shell script named "unix.cmd", which is then
 sourced in order to modify %PATH% to include the Unix tools. This way, you can
 avoid to permanently place these Unix tools into %PATH%.
-
-==============================================================================
-CONFIGURATION					   *runVimTests-configuration*
-
-==============================================================================
-INTEGRATION					     *runVimTests-integration*
 
 ==============================================================================
 FRAMEWORK					       *runVimTests-framework*
@@ -500,7 +491,7 @@ Started development.
 
 ==============================================================================
 Copyright: (C) 2009-2013 Ingo Karkat
-The VIM LICENSE applies to this script; see |copyright|.
+The VIM LICENSE applies to this plugin; see |copyright|.
 
 Maintainer:	Ingo Karkat <ingo@karkat.de>
 ==============================================================================

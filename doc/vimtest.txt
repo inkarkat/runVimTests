@@ -1,4 +1,4 @@
-*vimtest.txt*           General utility functions for the runVimTests testing framework. 
+*vimtest.txt*           General utility functions for the runVimTests testing framework.
 
 		       RUN VIM TESTS    by Ingo Karkat
 								*vimtest.vim*
@@ -17,7 +17,7 @@ This autoload script provides convenience and helper functions that simplify
 the writing of tests for the |runVimTests| testing framework; i.e. you have to
 type less, your test scripts contain less boilerplate code, and the
 abstraction layer avoids having to modify all test scripts in case of a future
-incompatible change to the testing framework. 
+incompatible change to the testing framework.
 
 ==============================================================================
 USAGE							      *vimtest-usage*
@@ -25,17 +25,17 @@ USAGE							      *vimtest-usage*
 vimtest#Quit()						      *vimtest#Quit()*
 		Quits Vim at the end of the test execution (so that the next
 		test can be executed in a fresh Vim instance) unless debugging
-		has been enabled. 
+		has been enabled.
 		If you've started TAP testing with |vimtest#StartTap()|, the
 		TAP output is flushed automatically (via |vimtap#FlushOutput|)
-		for you. 
+		for you.
 
 vimtest#System({shellcmd} [, {ignore-errors}])		    *vimtest#System()*
 		Executes {shellcmd} (which must already be properly escaped,
 		cp. |shellescape()|) and aborts test execution if {shellcmd}
 		fails; otherwise returns 1. This is useful if you need to run
 		external commands in order to setup the test harness or to
-		verify the test results. 
+		verify the test results.
 		When the {ignore-errors} argument is present and is non-zero,
 		shell errors are ignored; the function then returns 0 and test
 		execution continues. This can be used to completely bail out
@@ -49,71 +49,71 @@ vimtest#StartTap([{testfilespec}])			  *vimtest#StartTap()*
 		Sets the output file for the |VimTAP| test. {testfilespec} can
 		be omitted, as the test framework sets the test name.
 		If you stop testing via |vimtest#Quit()|, the TAP output is
-		flushed automatically. 
+		flushed automatically.
 		So this function saves you a little bit of typing in
 		comparison to using|vimtap#SetOutputFile|/ |vimtap#FlushOutput|
-		directly. 
+		directly.
 
 vimtest#SaveOut([{testfilespec}])			   *vimtest#SaveOut()*
 		Saves the current buffer as the test output (testXXX.out).
 		{testfilespec} can be omitted, as the test framework sets the
-		test name. 
+		test name.
 		Note: The *.out files are always written with fileformat=unix
-		to allow platform-independent comparisons. 
+		to allow platform-independent comparisons.
 
 vimtest#RequestInput({input})			      *vimtest#RequestInput()*
 		Prompts the user to enter the key(s) described by {input}.
 		Useful if the object-under-test requires a user confirmation
-		(e.g. a prompt "Overwrite yes/no?") to continue. 
+		(e.g. a prompt "Overwrite yes/no?") to continue.
 		This is basically just an |:echomsg| with flashy highlighting
-		so that the message is noticed by the user. 
+		so that the message is noticed by the user.
 		Example: >
-		call vimtest#RequestInput('Yes') 
+		call vimtest#RequestInput('Yes')
 		MyCommandUnderTestThatRequiresUserConfirmation
 <
 							     *vimtest-signals*
 vimtest#BailOut({reason})				   *vimtest#BailOut()*
 		Signals that things are going so badly that all testing should
 		terminate; no further test scripts should be run. Also quits
-		Vim. 
+		Vim.
 
 vimtest#Error({reason})					     *vimtest#Error()*
-		Signals an error in the test execution. 
+		Signals an error in the test execution.
 
 vimtest#ErrorAndQuit({reason})			      *vimtest#ErrorAndQuit()*
 vimtest#ErrorAndQuitIf({condition}, {reason})	    *vimtest#ErrorAndQuitIf()*
 		Signals an error in the test execution and quits this test (if
-		{condition} is true). 
+		{condition} is true).
 		An often used combination of |vimtest#Error()| and
-		|vimtest#Quit()|. 
+		|vimtest#Quit()|.
 
 vimtest#Skip({reason})					      *vimtest#Skip()*
 		Signals that this test should be skipped and all test output
-		should be disregarded. 
+		should be disregarded.
 
 vimtest#SkipOut({reason})				   *vimtest#SkipOut()*
 vimtest#SkipMsgout({reason})				*vimtest#SkipMsgout()*
 vimtest#SkipTap({reason})				   *vimtest#SkipTap()*
 		Signals that once particular test method (saved buffer output,
-		captured messages or TAP unit tests) should be disregarded. 
+		captured messages or TAP unit tests) should be disregarded.
 
 vimtest#SkipAndQuitIf({condition}, {reason})	     *vimtest#SkipAndQuitIf()*
 		Signals that this test should be skipped (e.g. due to missing
 		dependencies, unsupported platform, etc.) if {condition} is
-		true. Also quits Vim. 
+		true. Also quits Vim.
 		This is a convenience method that combines the check for
-		skipping with the skip signal and quitting. 
+		skipping with the skip signal and quitting.
 
 ==============================================================================
 INSTALLATION					       *vimtest-installation*
 
 Put the script into your user or system Vim autoload directory
-(e.g. ~/.vim/autoload). 
+(e.g. ~/.vim/autoload).
 
 DEPENDENCIES					       *vimtest-dependencies*
 
-- Requires Vim 7.0 or higher. 
-- Requires escapings.vim autoload script (for Vim 7.0/7.1). 
+- Requires Vim 7.0 or higher.
+- Requires escapings.vim autoload script (for Vim 7.0/7.1).
 
 ==============================================================================
 LIMITATIONS						*vimtest-limitations*
@@ -127,25 +127,25 @@ HISTORY							    *vimtest-history*
 
 1.15	07-Oct-2010 (unreleased)
 - ENH: Added vimtest#ErrorAndQuit() and vimtest#ErrorAndQuitIf() for
-  convenience. 
+  convenience.
 
 1.14	10-Jul-2009 (unreleased)
-- BF: vimtest#System() didn't abort via vimtest#Quit() on shell errors. 
+- BF: vimtest#System() didn't abort via vimtest#Quit() on shell errors.
 - Added optional isIgnoreErrors argument to vimtest#System().
 
 1.10	08-Mar-2009
 ENH: Added vimtest#BailOut(), vimtest#Error(), and vimtest#Skip...()
-functions. 
+functions.
 
 1.00	02-Mar-2009
-First published version. 
+First published version.
 
 0.01	29-Jan-2009
-Started development. 
+Started development.
 
 ==============================================================================
 Copyright: (C) 2009-2010 Ingo Karkat
-The VIM LICENSE applies to this script; see |copyright|. 
+The VIM LICENSE applies to this plugin; see |copyright|.
 
 Maintainer:	Ingo Karkat <ingo@karkat.de>
 ==============================================================================
