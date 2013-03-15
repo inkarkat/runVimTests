@@ -398,8 +398,20 @@ IDEAS							   *runVimTests-ideas*
   script once it becomes too unwieldy. (Many will argue it already did.)
 - Do we also need a TODO signal (and vimtest#Todo...() functions)?
 
+CONTRIBUTING					      *runVimTests-contribute*
+
+The code is hosted in a Git repo at https://github.com/inkarkat/runVimTests
+Report any bugs, send patches, or suggest features via email (address below),
+or via the issue tracker at https://github.com/inkarkat/runVimTests/issues
+
 ==============================================================================
 HISTORY							 *runVimTests-history*
+
+1.22	15-Mar-2013
+- Include the version 1.21 changes in the Windows runVimTests.cmd, too.
+- Switch to Git for the plugin's development to prevent such omissions (caused
+  by my manual syncing, which is more complex in this case with files
+  distributed over many different directory trees).
 
 1.21	07-Mar-2013
 - FIX: Prevent script errors when the error message containing the full
