@@ -549,7 +549,25 @@ parseTapOutput()
 	else
 	    [ "$tapTestIsPrintTapOutput" ] && printTestHeader "$testFile" "$testName"
 	    local -r tapPrintTapOutputSedPattern='^not ok\|^ok \([0-9]\+ \)\?# [tT][oO][dD][oO]\|^Bail out!'
-	    cat -- "$1" | sed -n -e "\${/^#/H;x;/${tapPrintTapOutputSedPattern}/p}" -e "/${tapPrintTapOutputSedPattern}/{x;/${tapPrintTapOutputSedPattern}/p;b}" -e "/^#/{H;b}" -e "x;/${tapPrintTapOutputSedPattern}/p" -e "/^Bail out!/q"
+	    sed -n "
+		\${
+		    /^#/H
+		    x
+		    /${tapPrintTapOutputSedPattern}/p
+		}
+		/${tapPrintTapOutputSedPattern}/{
+		    x
+		    /${tapPrintTapOutputSedPattern}/p
+		    b
+		}
+		/^#/{
+		    H
+		    b
+		}
+		x
+		/${tapPrintTapOutputSedPattern}/p
+		/^Bail out!/q
+		" "$1"
 	fi
     fi
 
