@@ -378,7 +378,7 @@ printTestHeader()
     # the test's synopsis in the test header. Otherwise, just print the test
     # name. Limit the test header to one unwrapped output line, i.e. truncate to
     # 80 characters.
-    sed -n -e "1s/^\\d034 \\(Test.*\\)$/${headerMessage} \\1/p" -e 'tx' -e "1c${headerMessage}" -e ':x' -- "$1" | sed '/^.\{80,\}/s/\(^.\{,76\}\).*$/\1.../'
+    sed -n -e "1s/^\\d034 \\(Test.*\\)$/${headerMessage} \\1/p" -e 'tx' -e "1c${headerMessage}" -e ':x' -- "$1" | sed '/^.\{80\}/s/\(^.\{1,76\}\).*$/\1.../'
 }
 
 parseSignal()
