@@ -110,11 +110,22 @@
 # (?(pattern-list), !(pattern-list), ...) in Bash.
 shopt -qs extglob
 
+# https://github.com/dominictarr/JSON.sh/pull/2#issuecomment-2526006
+canonical_readlink ()
+{
+    cd `dirname $1`;
+    __filename=`basename $1`;
+    if [ -h "$__filename" ]; then
+        canonical_readlink `readlink $__filename`;
+    else
+        echo "`pwd -P`/$__filename"|tr -d '\n';
+    fi
+}
 initialize()
 {
     [ ${BASH_VERSINFO[0]} -ge 3 ] || { echo >&2 "ERROR: This script requires Bash 3.0 or higher!"; exit 2; }
 
-    readonly scriptDir=$([ "${BASH_SOURCE[0]}" ] && absoluteScriptFile="$(readlink -nf -- "${BASH_SOURCE[0]}")" && dirname -- "$absoluteScriptFile" || exit 3)
+    readonly scriptDir=$([ "${BASH_SOURCE[0]}" ] && absoluteScriptFile="$(canonical_readlink "${BASH_SOURCE[0]}")" && dirname -- "$absoluteScriptFile" || exit 3)
     [ -d "$scriptDir" ] || { echo >&2 "ERROR: Cannot determine script directory!"; exit 3; }
 
     skipsRecord=${TEMP:-/tmp}/skipsRecord.txt.$$
@@ -257,7 +268,7 @@ echoFail()
 listSkipReasons()
 {
     [ ! "$skipsRecord" -o $cntSkip -eq 0 -o ! -f "$skipsRecord" ] && return
-    sort --ignore-case -- "$skipsRecord" | uniq --ignore-case --count
+    sort --ignore-case -- "$skipsRecord" | uniq -i -c
     case "$DEBUG" in *skipsRecord*) ;; *) rm -- "$skipsRecord";; esac
 }
 
@@ -367,7 +378,7 @@ printTestHeader()
     # the test's synopsis in the test header. Otherwise, just print the test
     # name. Limit the test header to one unwrapped output line, i.e. truncate to
     # 80 characters.
-    sed -n -e "1s/^\\d034 \\(Test.*\\)$/${headerMessage} \\1/p" -e 'tx' -e "1c${headerMessage}" -e ':x' -- "$1" | sed '/^.\{80,\}/s/\(^.\{,76\}\).*$/\1.../'
+    sed -n -e "1s/^\\d034 \\(Test.*\\)$/${headerMessage} \\1/p" -e 'tx' -e "1c${headerMessage}" -e ':x' -- "$1" | sed '/^.\{80\}/s/\(^.\{1,76\}\).*$/\1.../'
 }
 
 parseSignal()
@@ -538,7 +549,25 @@ parseTapOutput()
 	else
 	    [ "$tapTestIsPrintTapOutput" ] && printTestHeader "$testFile" "$testName"
 	    local -r tapPrintTapOutputSedPattern='^not ok\|^ok \([0-9]\+ \)\?# [tT][oO][dD][oO]\|^Bail out!'
-	    cat -- "$1" | sed -n -e "\${/^#/H;x;/${tapPrintTapOutputSedPattern}/p}" -e "/${tapPrintTapOutputSedPattern}/{x;/${tapPrintTapOutputSedPattern}/p;b}" -e "/^#/{H;b}" -e "x;/${tapPrintTapOutputSedPattern}/p" -e "/^Bail out!/q"
+	    sed -n "
+		\${
+		    /^#/H
+		    x
+		    /${tapPrintTapOutputSedPattern}/p
+		}
+		/${tapPrintTapOutputSedPattern}/{
+		    x
+		    /${tapPrintTapOutputSedPattern}/p
+		    b
+		}
+		/^#/{
+		    H
+		    b
+		}
+		x
+		/${tapPrintTapOutputSedPattern}/p
+		/^Bail out!/q
+		" "$1"
 	fi
     fi
 
