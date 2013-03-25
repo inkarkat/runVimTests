@@ -111,21 +111,25 @@
 shopt -qs extglob
 
 # https://github.com/dominictarr/JSON.sh/pull/2#issuecomment-2526006
-canonical_readlink ()
+readlinkEmulation()
 {
-    cd `dirname $1`;
-    __filename=`basename $1`;
-    if [ -h "$__filename" ]; then
-        canonical_readlink `readlink $__filename`;
+    cd "$(dirname $1)"
+    local filename=$(basename $1)
+    if [ -h "$filename" ]; then
+	readlinkEmulation "$(readlink $filename)"
     else
-        echo "`pwd -P`/$__filename"|tr -d '\n';
+        printf %s "$(pwd -P)/${filename}"
     fi
+}
+readlinkWrapper()
+{
+    readlink -nf "$@" 2>/dev/null || readlinkEmulation "$@"
 }
 initialize()
 {
     [ ${BASH_VERSINFO[0]} -ge 3 ] || { echo >&2 "ERROR: This script requires Bash 3.0 or higher!"; exit 2; }
 
-    readonly scriptDir=$([ "${BASH_SOURCE[0]}" ] && absoluteScriptFile="$(canonical_readlink "${BASH_SOURCE[0]}")" && dirname -- "$absoluteScriptFile" || exit 3)
+    readonly scriptDir=$([ "${BASH_SOURCE[0]}" ] && absoluteScriptFile="$(readlinkWrapper "${BASH_SOURCE[0]}")" && dirname -- "$absoluteScriptFile" || exit 3)
     [ -d "$scriptDir" ] || { echo >&2 "ERROR: Cannot determine script directory!"; exit 3; }
 
     skipsRecord=${TEMP:-/tmp}/skipsRecord.txt.$$
