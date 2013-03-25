@@ -22,6 +22,7 @@
 ::   The VIM LICENSE applies to this script; see 'vim -c ":help copyright"'.
 ::
 ::* REVISION	DATE		REMARKS
+::  1.23.032	25-Mar-2013	Minor: Show the skip counts with less indent.
 ::  1.21.031	06-Mar-2013	CHG: Drop comma in the lists of failed / skipped
 ::				/ errored test and add .vim extension, so that
 ::				the file list can be copy-and-pasted to another
@@ -561,7 +562,7 @@ call :echoStatus "FAIL" %*
 if not defined skipsRecord (goto:EOF)
 if %cntSkip% EQU 0 (goto:EOF)
 if not exist "%skipsRecord%" (goto:EOF)
-sort --ignore-case -- "%skipsRecord%" | uniq --ignore-case --count
+sort --ignore-case -- "%skipsRecord%" | uniq --ignore-case --count | sed "s/^ \{4\}/ /"
 if not defined DEBUG del "%skipsRecord%"
 (goto:EOF)
 
