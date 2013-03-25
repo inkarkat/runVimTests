@@ -7,37 +7,45 @@
 # DATE CREATED:	11-Feb-2009
 #
 ###############################################################################
-# CONTENTS: 
+# CONTENTS:
 #  Runs a runVimTests self-test and compares the test output with previously
-#  captured nominal output. 
+#  captured nominal output.
 #  The command-line arguments to runVimTests and the test file are embedded in
-#  the captured output filename and are extracted automatically: 
+#  the captured output filename and are extracted automatically:
 #  testrun.suite-1-v.log ->
 #	$ runVimTests -1 -v testrun.suite > /tmp/testrun.suite-1-v.log 2>&1
-#  The special name "testdir" represents all tests in the directory (i.e. '.'): 
+#  The special name "testdir" represents all tests in the directory (i.e. '.'):
 #  testdir-1-v.log ->
 #	$ runVimTests -1 -v . > /tmp/testdir-1-v.log 2>&1
-#   
-# REMARKS: 
-#   
-# REVISION	DATE		REMARKS 
-#	005	28-May-2009	Pin down locale to get reproducible sorting order. 
+#
+# REMARKS:
+#
+# REVISION	DATE		REMARKS
+#	006	25-Mar-2013	Prepend the repository's bin directory to PATH
+#				to prefer the current script from the repository.
+#	005	28-May-2009	Pin down locale to get reproducible sorting order.
 #	004	12-Mar-2009	Also capturing stderr output, e.g. for "test not
-#				found" errors. 
+#				found" errors.
 #				BF: Didn't handle captured output filename
-#				without any -options. 
+#				without any -options.
 #	003	07-Mar-2009	The test file (suite) is now also embedded in
 #				the captured output name so that multiple test
-#				files and suites can be captured. 
+#				files and suites can be captured.
 #				Added command-line option --onlyresults for
-#				compareAllLogs.sh. 
+#				compareAllLogs.sh.
 #	002	25-Feb-2009	Command-line arguments are now embedded in the
 #				captured output filename and extracted
-#				automatically. 
+#				automatically.
 #	001	11-Feb-2009	file creation
 ###############################################################################
 
-# Pin down locale to get reproducible sorting order. 
+readonly scriptDir=$([ "${BASH_SOURCE[0]}" ] && dirname -- "${BASH_SOURCE[0]}" || exit 2)
+[ -d "$scriptDir" ] || { echo >&2 "ERROR: Cannot determine script directory!"; exit 2; }
+
+# Prefer the current script from the repository.
+PATH="${scriptDir}/../../bin:$PATH"
+
+# Pin down locale to get reproducible sorting order.
 export LC_ALL=C
 
 isTrackProgress='true'
