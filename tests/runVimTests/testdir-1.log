@@ -104,18 +104,18 @@ BAIL OUT: It is so f...ed up!
 35 files with 101 tests; 24 skipped, 70 run: 50 OK, 16 failures, 12 errors, 4 TODO.
 Skipped tests: signalSkip001.vim signalSkip005.vim signalSkip006.vim tapSkip002.vim
 Tests with skips: signalSkip002.vim signalSkip003.vim signalSkip004.vim tapParsing001.vim tapSkip001.vim tapSkip003.vim
-      2 SKIP (msgout): Let us just forget about the captured messages.
-      1 SKIP (out): Let us just forget about the saved buffer contents.
-      1 SKIP (out): Lets just forget about the saved buffer contents.
-      2 SKIP (tap): 
-      1 SKIP (tap): all -> right <-
-      3 SKIP (tap): fOO
-      2 SKIP (tap): Let us just forget about the TAP unit tests.
-      2 SKIP (tap): need (different) "arithmetics"
-      1 SKIP (tap): need a (('nice' ^)) miracle&&hope||luck
-      1 SKIP (tap): need a miracle
-      2 SKIP (tap): need different arithmetics
-      2 SKIP: Let us just forget about this one.
+   2 SKIP (msgout): Let us just forget about the captured messages.
+   1 SKIP (out): Let us just forget about the saved buffer contents.
+   1 SKIP (out): Lets just forget about the saved buffer contents.
+   2 SKIP (tap): 
+   1 SKIP (tap): all -> right <-
+   3 SKIP (tap): fOO
+   2 SKIP (tap): Let us just forget about the TAP unit tests.
+   2 SKIP (tap): need (different) "arithmetics"
+   1 SKIP (tap): need a (('nice' ^)) miracle&&hope||luck
+   1 SKIP (tap): need a miracle
+   2 SKIP (tap): need different arithmetics
+   2 SKIP: Let us just forget about this one.
 Failed tests: signalSkip007.vim tapSkip003.vim test002.vim test012.vim test014.vim test022.vim test024.vim test032.vim test033.vim
 Tests with errors: signalError001.vim test003.vim test013.vim test023.vim test024.vim test033.vim zzzSignalBailout001.vim
 TODO tests: tapTodo001.vim

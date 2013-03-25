@@ -268,7 +268,7 @@ echoFail()
 listSkipReasons()
 {
     [ ! "$skipsRecord" -o $cntSkip -eq 0 -o ! -f "$skipsRecord" ] && return
-    sort --ignore-case -- "$skipsRecord" | uniq -i -c
+    sort --ignore-case -- "$skipsRecord" | uniq -i -c | sed 's/^ \{4\}/ /'
     case "$DEBUG" in *skipsRecord*) ;; *) rm -- "$skipsRecord";; esac
 }
 
