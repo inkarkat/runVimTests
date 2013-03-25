@@ -378,7 +378,11 @@ printTestHeader()
     # the test's synopsis in the test header. Otherwise, just print the test
     # name. Limit the test header to one unwrapped output line, i.e. truncate to
     # 80 characters.
-    sed -n -e "1s/^\\d034 \\(Test.*\\)$/${headerMessage} \\1/p" -e 'tx' -e "1c${headerMessage}" -e ':x' -- "$1" | sed '/^.\{80\}/s/\(^.\{1,76\}\).*$/\1.../'
+    sed -n "
+	1s/^\" \\(Test.*\\)$/${headerMessage} \\1/p
+	t
+	1c\\
+	${headerMessage}" "$1" | sed '/^.\{80\}/s/\(^.\{1,76\}\).*$/\1.../'
 }
 
 parseSignal()
@@ -460,7 +464,7 @@ compareMessages()
 	echoError 'msgout' 'Evaluation of test messages failed.'
 	return
     fi
-    local -r evaluationResult=$(sed -n '1s/^\([A-Z][A-Z]*\).*/\1/p' -- "$testMsgresult")
+    local -r evaluationResult=$(sed -n '1s/^\([A-Z][A-Z]*\).*/\1/p' "$testMsgresult")
     local isPrintEvaluation='true'
     case "$evaluationResult" in
 	OK)	let thisOk+=1
@@ -548,8 +552,8 @@ parseTapOutput()
 	    cat -- "$1"
 	else
 	    [ "$tapTestIsPrintTapOutput" ] && printTestHeader "$testFile" "$testName"
-	    local -r tapPrintTapOutputSedPattern='^not ok\|^ok \([0-9]\+ \)\?# [tT][oO][dD][oO]\|^Bail out!'
-	    sed -n "
+	    local -r tapPrintTapOutputSedPattern='^not ok|^ok ([0-9]+ )?# [tT][oO][dD][oO]|^Bail out!'
+	    sed -E -n "
 		\${
 		    /^#/H
 		    x
