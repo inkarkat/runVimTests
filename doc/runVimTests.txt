@@ -407,6 +407,11 @@ or via the issue tracker at https://github.com/inkarkat/runVimTests/issues
 ==============================================================================
 HISTORY							 *runVimTests-history*
 
+1.23	25-Mar-2013
+- Add support for Mac OS X; thanks to Israel Chauca Fuentes for sending a pull
+  request. https://github.com/inkarkat/runVimTests/pull/1
+- Add support for BSD (tested on PC-BSD 9.1).
+
 1.22	15-Mar-2013
 - Include the version 1.21 changes in the Windows runVimTests.cmd, too.
 - Switch to Git for the plugin's development to prevent such omissions (caused

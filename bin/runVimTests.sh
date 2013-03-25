@@ -20,10 +20,13 @@
 # Copyright: (C) 2009-2013 Ingo Karkat
 #   The VIM LICENSE applies to this script; see 'vim -c ":help copyright"'.
 #
-# FILE_SCCS = "@(#)runVimTests.sh	1.21.015	(06-Mar-2013)	runVimTests";
+# FILE_SCCS = "@(#)runVimTests.sh	1.23.016	(25-Mar-2013)	runVimTests";
 #
 # REVISION	DATE		REMARKS
-#  1.21.031	06-Mar-2013	CHG: Drop comma in the lists of failed / skipped
+#  1.23.016	25-Mar-2013	Add support for Mac OS X; thanks to Israel
+#				Chauca Fuentes for sending a pull request.
+#				Add support for BSD.
+#  1.21.015	06-Mar-2013	CHG: Drop comma in the lists of failed / skipped
 #				/ errored test and add .vim extension, so that
 #				the file list can be copy-and-pasted to another
 #				runVimTests invocation or :argedit'ed in Vim.
