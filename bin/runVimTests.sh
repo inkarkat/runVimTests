@@ -121,7 +121,7 @@ readlinkEmulation()
     if [ -h "$filename" ]; then
 	readlinkEmulation "$(readlink $filename)"
     else
-        printf %s "$(pwd -P)/${filename}"
+	printf %s "$(pwd -P)/${filename}"
     fi
 }
 readlinkWrapper()
@@ -389,7 +389,7 @@ printTestHeader()
 	1s/^\" \\(Test.*\\)$/${headerMessage} \\1/p
 	t
 	1c\\
-	${headerMessage}" "$1" | sed '/^.\{80\}/s/\(^.\{1,76\}\).*$/\1.../'
+${headerMessage}" "$1" | sed '/^.\{80\}/s/\(^.\{1,76\}\).*$/\1.../'
 }
 
 parseSignal()
