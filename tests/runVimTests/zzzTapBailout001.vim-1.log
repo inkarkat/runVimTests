@@ -1,6 +1,6 @@
 
 Starting test run with these Vim options:
-vim --cmd 'set rtp=$VIM/vimfiles,$VIMRUNTIME,$VIM/vimfiles/after' -N -u NORC -c 'set rtp&' -f -es --cmd "let g:runVimTests='default'"
+vim --cmd 'set rtp=$VIM/vimfiles,$VIMRUNTIME,$VIM/vimfiles/after' -N -u NORC -c 'set rtp&' -f -i '~/.vimtestinfo' -n -es --cmd "let g:runVimTests='default'"
 
 zzzTapBailout001: Test BailOut from TAP tests. 
 not ok 2 - 1 == 2

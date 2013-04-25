@@ -1,6 +1,6 @@
 
 Starting test run with these Vim options:
-vim -N -u NONE -f -es --cmd "let g:runVimTests='pure'"
+vim -N -u NONE -f -i '~/.vimtestinfo' -n -es --cmd "let g:runVimTests='pure'"
 ERROR: Test file "doesnotexist.vim" doesn't exist.
 ERROR: Suite file "another.suite" doesn't exist.
 ERROR: Suite file "nosuchdirectory/nosuchsubdir" doesn't exist.
