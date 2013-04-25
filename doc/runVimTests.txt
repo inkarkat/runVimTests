@@ -407,6 +407,12 @@ or via the issue tracker at https://github.com/inkarkat/runVimTests/issues
 ==============================================================================
 HISTORY							 *runVimTests-history*
 
+1.24	RELEASEME
+- Don't clobber the default viminfo file with the test results; use a special
+  ~/.vimtestinfo value for the actual test run (to enable tests that use
+  viminfo), and no viminfo for the checking and processing steps.
+- Show _all_ global, non-test-specific Vim arguments in the initial message.
+
 1.23	25-Mar-2013
 - Add support for Mac OS X; thanks to Israel Chauca Fuentes for sending a pull
   request. https://github.com/inkarkat/runVimTests/pull/1
