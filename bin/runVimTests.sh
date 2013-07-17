@@ -20,9 +20,10 @@
 # Copyright: (C) 2009-2013 Ingo Karkat
 #   The VIM LICENSE applies to this script; see 'vim -c ":help copyright"'.
 #
-# FILE_SCCS = "@(#)runVimTests.sh	1.24.017	(25-Apr-2013)	runVimTests";
+# FILE_SCCS = "@(#)runVimTests.sh	1.24.018	(17-Jul-2013)	runVimTests";
 #
 # REVISION	DATE		REMARKS
+#  1.24.018	17-Jul-2013	Minor tweak to debugging config.
 #  1.24.017	25-Apr-2013	Don't clobber the default viminfo file with the
 #				test results; use a special .vimtestinfo value
 #				for the actual test run (to enable tests that
@@ -286,7 +287,7 @@ listSkipReasons()
 {
     [ ! "$skipsRecord" -o $cntSkip -eq 0 -o ! -f "$skipsRecord" ] && return
     sort --ignore-case -- "$skipsRecord" | uniq -i -c | sed 's/^ \{4\}/ /'
-    case "$DEBUG" in *skipsRecord*) ;; *) rm -- "$skipsRecord";; esac
+    case ",${DEBUG}," in *,skipsRecord,*) ;; *) rm -- "$skipsRecord";; esac
 }
 
 makePlural()
