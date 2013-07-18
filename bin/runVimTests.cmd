@@ -199,7 +199,7 @@
 ::				optional suppression of test transcript.
 ::	001	12-Jan-2009	file creation
 ::*******************************************************************************
-setlocal enableextensions enabledelayedexpansion
+setlocal enableextensions
 
 set skipsRecord=%TEMP%\skipsRecord.txt
 if exist "%skipsRecord%" del "%skipsRecord%"
@@ -301,8 +301,7 @@ if not "%arg%" == "" (
 	shift /1
 	shift /1
     ) else if /I "%arg%" == "--source" (
-	for %%a in (%2) do set absoluteFilespec=%%~fa
-	set vimArguments=%vimArguments% -S "!absoluteFilespec!"
+	call :setSourceArgument %2
 	shift /1
 	shift /1
     ) else if /I "%arg%" == "--vimexecutable" (
@@ -413,6 +412,11 @@ if %cntAllProblems% NEQ 0 (exit /B 1) else (exit /B 0)
 echo.ERROR: Script prerequisites aren't met!
 exit /B 2
 (goto:EOF)
+:setSourceArgument
+for %%a in (%1) do set absoluteFilespec=%%~fa
+set vimArguments=%vimArguments% -S "%absoluteFilespec%"
+(goto:EOF)
+
 
 :printShortUsage
 echo.Usage: "%~nx0" [-0^|--pure^|-1^|--default^|-2^|--user] [--source filespec [--source filespec [...]]] [--runtime plugin/file.vim [--runtime autoload/file.vim [...]]] [--vimexecutable path\to\vim.exe^|--vimversion NN] [-g^|--graphical] [--summaryonly^|-v^|--verbose] [-d^|--debug] [-?^|-h^|--help] test001.vim^|testsuite.txt^|path\to\testdir\ [...]
