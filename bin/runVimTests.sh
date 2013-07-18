@@ -20,9 +20,13 @@
 # Copyright: (C) 2009-2013 Ingo Karkat
 #   The VIM LICENSE applies to this script; see 'vim -c ":help copyright"'.
 #
-# FILE_SCCS = "@(#)runVimTests.sh	1.24.018	(17-Jul-2013)	runVimTests";
+# FILE_SCCS = "@(#)runVimTests.sh	1.24.019	(25-Apr-2013)	runVimTests";
 #
 # REVISION	DATE		REMARKS
+#  1.24.019	18-Jul-2013	Convert the filespec passed to --source to an
+#				absolute one; relative ones only work when the
+#				test driver script doesn't cd into a different
+#				directory.
 #  1.24.018	17-Jul-2013	Minor tweak to debugging config.
 #  1.24.017	25-Apr-2013	Don't clobber the default viminfo file with the
 #				test results; use a special .vimtestinfo value
@@ -847,7 +851,7 @@ do
 			    vimMode='user'
 			    ;;
 	--runtime)	    shift; vimArguments="$vimArguments $(vimSourceCommand "$HOME/.vim/$1")"; shift;;
-	--source)	    shift; vimArguments="$vimArguments $(vimSourceCommand "$1")"; shift;;
+	--source)	    shift; vimArguments="$vimArguments $(vimSourceCommand $(readlinkWrapper "$1"))"; shift;;
 	--vimexecutable)    shift
 			    vimExecutable=$1
 			    shift
