@@ -22,6 +22,10 @@
 ::   The VIM LICENSE applies to this script; see 'vim -c ":help copyright"'.
 ::
 ::* REVISION	DATE		REMARKS
+::  1.24.034	18-Jul-2013	Convert the filespec passed to --source to an
+::				absolute one; relative ones only work when the
+::				test driver script doesn't cd into a different
+::				directory.
 ::  1.24.033	25-Apr-2013	Don't clobber the default viminfo file with the
 ::				test results; use a special _vimtestinfo value
 ::				for the actual test run (to enable tests that
@@ -195,7 +199,7 @@
 ::				optional suppression of test transcript.
 ::	001	12-Jan-2009	file creation
 ::*******************************************************************************
-setlocal enableextensions
+setlocal enableextensions enabledelayedexpansion
 
 set skipsRecord=%TEMP%\skipsRecord.txt
 if exist "%skipsRecord%" del "%skipsRecord%"
@@ -297,7 +301,8 @@ if not "%arg%" == "" (
 	shift /1
 	shift /1
     ) else if /I "%arg%" == "--source" (
-	set vimArguments=%vimArguments% -S %2
+	for %%a in (%2) do set absoluteFilespec=%%~fa
+	set vimArguments=%vimArguments% -S "!absoluteFilespec!"
 	shift /1
 	shift /1
     ) else if /I "%arg%" == "--vimexecutable" (
