@@ -125,6 +125,10 @@ TODO							       *vimtest-todo*
 ==============================================================================
 HISTORY							    *vimtest-history*
 
+1.24	RELEASEME
+- Uses the |ingo-library.vim| plugin (vimscript #4433), version 1.012 or
+  higher.
+
 1.15	07-Oct-2010 (unreleased)
 - ENH: Added vimtest#ErrorAndQuit() and vimtest#ErrorAndQuitIf() for
   convenience.
@@ -144,7 +148,7 @@ First published version.
 Started development.
 
 ==============================================================================
-Copyright: (C) 2009-2010 Ingo Karkat
+Copyright: (C) 2009-2013 Ingo Karkat
 The VIM LICENSE applies to this plugin; see |copyright|.
 
 Maintainer:	Ingo Karkat <ingo@karkat.de>

@@ -1,49 +1,50 @@
-" vimtest.vim: General utility functions for the runVimTests testing framework. 
+" vimtest.vim: General utility functions for the runVimTests testing framework.
 "
 " DEPENDENCIES:
-"   - Requires Vim 7.0 or higher.  
-"   - escapings.vim autoload script (for Vim 7.0/7.1). 
+"   - Requires Vim 7.0 or higher.
+"   - ingo/compat.vim autoload script (for Vim 7.0/7.1)
 "
-" Copyright: (C) 2009-2010 Ingo Karkat
-"   The VIM LICENSE applies to this script; see ':help copyright'. 
+" Copyright: (C) 2009-2013 Ingo Karkat
+"   The VIM LICENSE applies to this script; see ':help copyright'.
 "
 " Maintainer:	Ingo Karkat <ingo@karkat.de>
 "
-" REVISION	DATE		REMARKS 
+" REVISION	DATE		REMARKS
+"   1.24.012	08-Aug-2013	Move escapings.vim into ingo-library.
 "   1.15.011	07-Oct-2010	ENH: Added vimtest#ErrorAndQuitIf(), because
-"				it's a common use case, too. 
+"				it's a common use case, too.
 "   1.15.010	03-Oct-2010	ENH: Added vimtest#ErrorAndQuit(), because it's
-"				a common use case. 
+"				a common use case.
 "   1.14.009	10-Jul-2009	BF: vimtest#System() didn't abort via
-"				vimtest#Quit() on shell errors. 
+"				vimtest#Quit() on shell errors.
 "				Added optional isIgnoreErrors argument to
-"				vimtest#System(). 
+"				vimtest#System().
 "   1.10.008	08-Mar-2009	Split vimtest#SkipAndQuit() into vimtest#Skip(),
 "				a general, single-purpose function, and
 "				vimtest#SkipAndQuitIf(), a special (but
-"				often-used) convenience function. 
+"				often-used) convenience function.
 "   1.10.007	05-Mar-2009	ENH: Added vimtest#BailOut(), vimtest#Error(),
-"				and vimtest#Skip...() functions. 
+"				and vimtest#Skip...() functions.
 "   1.00.006	02-Mar-2009	Adapted to VimTAP 0.3: Changed function name to
 "				vimtap#SetOutputFile() and added
-"				vimtap#FlushOutput(). 
+"				vimtap#FlushOutput().
 "	005	28-Feb-2009	BF: Improved insertion of 'call' in
-"				vimtest#System(). 
+"				vimtest#System().
 "	004	19-Feb-2009	Added vimtest#System(), vimtap#Error() and
 "				vimtest#RequestInput(), plus a stub for
-"				vimtest#Skip(). 
+"				vimtest#Skip().
 "	003	09-Feb-2009	The *.out files are always written with
 "				fileformat=unix to allow platform-independent
-"				comparisons. 
-"	002	06-Feb-2009	Renamed g:debug to g:runVimTests. 
+"				comparisons.
+"	002	06-Feb-2009	Renamed g:debug to g:runVimTests.
 "				Removed check for processed msgout output, this
 "				is now done as a separate process with
-"				'runVimMsgFilter.vim'. 
-"				Now escaping saved *.out filespec. 
+"				'runVimMsgFilter.vim'.
+"				Now escaping saved *.out filespec.
 "				Passing of the test name is not optional, it is
 "				can be determined automatically from
 "				g:vimRunTest, if the test is run from within the
-"				test framework. 
+"				test framework.
 "	001	25-Jan-2009	file creation
 
 function! vimtest#Quit()
@@ -101,10 +102,10 @@ function! vimtest#System( shellcmd, ... )
 	" In case the shellcmd is a batch file, the invocation via 'cmd.exe /c ...'
 	" doesn't return the batch file's exit status. Since it's safe to invoke
 	" all executables through 'cmd.exe /c call ...', we always interject
-	" this, unless it's already there. 
+	" this, unless it's already there.
 	" We need to do a careful replacement here, the entire shell command may
 	" be enclosed in double quotes, so that command lists (e.g. cmd1 &&
-	" cmd2) work. 
+	" cmd2) work.
 	if l:shellcmd !~# '^\("\)\?call .*\1$'
 	    let l:shellcmd = substitute(l:shellcmd, '^\("\)\?\zs\ze.*\1$', 'call ', '')
 	endif
@@ -135,7 +136,7 @@ function! vimtest#SaveOut( ... )
     if exists('*fnameescape')
 	execute 'saveas! ++ff=unix ' . fnameescape(l:outname)
     else
-	execute 'saveas! ++ff=unix ' . escapings#fnameescape(l:outname)
+	execute 'saveas! ++ff=unix' ingo#compat#fnameescape(l:outname)
     endif
 endfunction
 
