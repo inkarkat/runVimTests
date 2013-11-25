@@ -49,6 +49,9 @@
 ::*******************************************************************************
 setlocal enableextensions
 
+:: Prefer the current script from the repository.
+set PATH=%~dp0..\..\bin;%PATH%
+
 :: Pin down locale to get reproducible sorting order.
 :: XXX: The gnuwin32 tools do not seem to pick this up, and always use the
 :: default Windows user locale.
