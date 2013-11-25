@@ -425,6 +425,9 @@ HISTORY							 *runVimTests-history*
 - Show _all_ global, non-test-specific Vim arguments in the initial message.
 - Convert the filespec passed to --source to an absolute one; relative ones
   only work when the test driver script doesn't cd into a different directory.
+- BUG: runVimTestsSetup.vim isn't sourced on Unix when invoked through
+  runVimTests.sh (with the .sh file extension). Reported by Ryan Carney.
+  https://github.com/inkarkat/runVimTests/issues/6
 - Replace the distributed escapings.vim autoload script with an optional
   dependency (for Vim 7.0 and 7.1) to the ingo-library. *** You need to
   separately install ingo-library (vimscript #4433) version 1.012 (or higher)!

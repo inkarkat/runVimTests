@@ -20,9 +20,12 @@
 # Copyright: (C) 2009-2013 Ingo Karkat
 #   The VIM LICENSE applies to this script; see 'vim -c ":help copyright"'.
 #
-# FILE_SCCS = "@(#)runVimTests.sh	1.24.019	(25-Apr-2013)	runVimTests";
+# FILE_SCCS = "@(#)runVimTests.sh	1.24.020	(25-Nov-2013)	runVimTests";
 #
 # REVISION	DATE		REMARKS
+#  1.24.020	25-Nov-2013	BUG: runVimTestsSetup.vim isn't sourced on Unix
+#				when invoked through runVimTests.sh (with the
+#				.sh file extension). Reported by Ryan Carney.
 #  1.24.019	18-Jul-2013	Convert the filespec passed to --source to an
 #				absolute one; relative ones only work when the
 #				test driver script doesn't cd into a different
@@ -188,7 +191,8 @@ initialize()
 
     # Optional user-provided setup scripts.
     readonly vimLocalSetupScript=_setup.vim
-    readonly vimGlobalSetupScript=${scriptDir}/$(basename -- "$0")Setup.vim
+    local -r scriptFilename="$(basename -- "$0")"
+    readonly vimGlobalSetupScript="${scriptDir}/${scriptFilename%.*}Setup.vim"
     [ -r "$vimGlobalSetupScript" ] && vimArguments="$vimArguments $(vimSourceCommand "$vimGlobalSetupScript")"
 
     verboseLevel=0
