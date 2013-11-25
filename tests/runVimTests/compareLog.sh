@@ -84,6 +84,13 @@ else
     runVimTests.sh $options "$tests" > "$log" 2>&1
 fi
 
+# Don't include the invocation of "runVimTestsSetup.vim", as it contains its
+# absolute path, which would make the test run unreproducible on different
+# systems.
+sed -i \
+    -e "/^Starting test run/{n;s/ -S '[^']*runVimTestsSetup.vim'//}" \
+    "$log"
+
 echo
 echo "DIFFERENCES:"
 diff -u "$old" "$log"

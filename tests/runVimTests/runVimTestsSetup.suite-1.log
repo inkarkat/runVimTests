@@ -1,0 +1,5 @@
+
+Starting test run with these Vim options:
+vim --cmd 'set rtp=$VIM/vimfiles,$VIMRUNTIME,$VIM/vimfiles/after' -N -u NORC -c 'set rtp&' -f -i '~/.vimtestinfo' -n -es --cmd "let g:runVimTests='default'"
+
+1 file with 1 test; 0 skipped, 1 run: 1 OK, 0 failures, 0 errors.

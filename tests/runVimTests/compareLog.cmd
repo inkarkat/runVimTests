@@ -93,8 +93,9 @@ call runVimTests.cmd%options% "%tests%" > "%log%" 2>&1
 :: Windows log look like the old log.(Which I always create on Unix, because the
 :: Windows diff is able to handle files with different line endings
 :: transparently.)
-:: - On Windows, I use a custom 'runVimTestsSetup.vim' global setup script, but
-::   on Unix, I don't. (This is just for me.)
+:: - Don't include the invocation of "runVimTestsSetup.vim", as it contains its
+::   absolute path, which would make the test run unreproducible on different
+::   systems.
 :: - In the Windows shell, all Vim arguments must be enclosed in double quotes,
 ::   but the Unix shell script uses single quotes where possible.
 :: - The file glob error message uses backslashes.
