@@ -55,11 +55,13 @@ approaches with great success.
 
 RELATED WORKS								     *
 
-- robot-vim by Matt Margolis, https://github.com/mrmargolis/robot-vim, allows
+- robot-vim (https://github.com/mrmargolis/robot-vim) by Matt Margolis allows
   to TDD Vim scripts using Ruby scripts that launch Vim instances, pass text,
   execute commands and then run assertions against the buffer text in Ruby.
-- vspec by Kana Natsuno, vimscript #3012, allows to write tests BDD-style with
+- vspec (vimscript #3012) by Kana Natsuno allows to write tests BDD-style with
   custom matchers, and is driven by a small Bash script.
+- Vader (vimscript #4832) by Junegunn Choi implements BDD-style testing from
+  within Vim via a test script in a custom syntax.
 
 DESCRIPTION					     *runVimTests-description*
 
@@ -212,7 +214,7 @@ They can be put anywhere (preferably somewhere in $PATH for easy invocation).
 runVimMsgFilter.vim must be in the same directory as the shell script.
 
 The doc/ subdirectory contains the documentation. Put the files into
-~/.vim/doc and execute |:helptags|~/.vim/doc to re-generate the help tags.
+~/.vim/doc and execute |:helptags| ~/.vim/doc to re-generate the help tags.
 
 The autoload/ subdirectory contains optional convenience and helper functions.
 (E.g. |vimtest#Quit()|, |vimtest#SaveOut()|, |vimtest#RequestInput()|, and
@@ -420,7 +422,7 @@ or via the issue tracker at https://github.com/inkarkat/runVimTests/issues
 ==============================================================================
 HISTORY							 *runVimTests-history*
 
-1.24	RELEASEME
+1.24	29-Jan-2014
 - Don't clobber the default viminfo file with the test results; use a special
   ~/.vimtestinfo value for the actual test run (to enable tests that use
   viminfo), and no viminfo for the checking and processing steps.
@@ -535,7 +537,7 @@ runVimTests.sh.
 Started development.
 
 ==============================================================================
-Copyright: (C) 2009-2013 Ingo Karkat
+Copyright: (C) 2009-2014 Ingo Karkat
 The VIM LICENSE applies to this plugin; see |copyright|.
 
 Maintainer:	Ingo Karkat <ingo@karkat.de>
