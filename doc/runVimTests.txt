@@ -62,6 +62,8 @@ RELATED WORKS								     *
   custom matchers, and is driven by a small Bash script.
 - Vader (vimscript #4832) by Junegunn Choi implements BDD-style testing from
   within Vim via a test script in a custom syntax.
+- doctest (vimscript #4998) embeds test expressions as comments in a
+  Vimscript, and provides a :DocTest command to execute them.
 
 DESCRIPTION					     *runVimTests-description*
 
@@ -422,6 +424,11 @@ or via the issue tracker at https://github.com/inkarkat/runVimTests/issues
 ==============================================================================
 HISTORY							 *runVimTests-history*
 
+1.25	RELEASEME
+- vimtest#Quit(): Don't exit Vim when not running inside the runVimTests test
+  framework. This is better behavior when accidentally (or for testing)
+  executing the test script in plain Vim.
+
 1.24	29-Jan-2014
 - Don't clobber the default viminfo file with the test results; use a special
   ~/.vimtestinfo value for the actual test run (to enable tests that use
@@ -537,7 +544,7 @@ runVimTests.sh.
 Started development.
 
 ==============================================================================
-Copyright: (C) 2009-2014 Ingo Karkat
+Copyright: (C) 2009-2015 Ingo Karkat
 The VIM LICENSE applies to this plugin; see |copyright|.
 
 Maintainer:	Ingo Karkat <ingo@karkat.de>

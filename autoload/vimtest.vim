@@ -4,12 +4,16 @@
 "   - Requires Vim 7.0 or higher.
 "   - ingo/compat.vim autoload script (for Vim 7.0/7.1)
 "
-" Copyright: (C) 2009-2013 Ingo Karkat
+" Copyright: (C) 2009-2015 Ingo Karkat
 "   The VIM LICENSE applies to this script; see ':help copyright'.
 "
 " Maintainer:	Ingo Karkat <ingo@karkat.de>
 "
 " REVISION	DATE		REMARKS
+"   1.25.013	21-Mar-2015	vimtest#Quit(): Don't exit Vim when not running
+"				inside the runVimTests test framework. This is
+"				better behavior when accidentally (or for
+"				testing) executing the test script in plain Vim.
 "   1.24.012	08-Aug-2013	Move escapings.vim into ingo-library.
 "   1.15.011	07-Oct-2010	ENH: Added vimtest#ErrorAndQuitIf(), because
 "				it's a common use case, too.
@@ -52,7 +56,7 @@ function! vimtest#Quit()
 	call vimtap#FlushOutput()
     endif
 
-    if ! (exists('g:runVimTests') && g:runVimTests =~# '\<debug\>')
+    if exists('g:runVimTests') && g:runVimTests !~# '\<debug\>'
 	quitall!
     endif
 endfunction
