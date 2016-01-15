@@ -642,7 +642,7 @@ runTest()
     fi
     local -r testDirspec=$(dirname -- "$1")
     local -r testFile=$(basename -- "$1")
-    local -r testFilespec=$(cd "$testDirspec" && echo "${PWD}/${testFile}") || { echo >&2 "ERROR: Cannot determine absolute filespec!"; exit 3; }
+    local -r testFilespec=$(cd "$testDirspec" > /dev/null && echo "${PWD}/${testFile}") || { echo >&2 "ERROR: Cannot determine absolute filespec!"; exit 3; }
     local -r testName=${testFile%.*}
 
     # The setup script is not a test, silently skip it.
