@@ -4,7 +4,8 @@
 let &runtimepath = expand('<sfile>:p:h:h') . ',' . &runtimepath
 
 " Use VimTAP from a repository next to runVimTests (if available).
-let s:VimTAPRepositoryDirspec = expand('<sfile>:p:h:h:h') . '/VimTAP'
+let s:VimTAPRepositoryDirspec = substitute(
+    \ glob(expand('<sfile>:p:h:h:h') . '/VimTAP*'), "\n.*", '', '')
 if isdirectory(s:VimTAPRepositoryDirspec)
     let &runtimepath = s:VimTAPRepositoryDirspec . ',' . &runtimepath
 endif
