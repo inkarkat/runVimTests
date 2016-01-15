@@ -231,7 +231,8 @@ convenience, but pollute the test environment in my opinion. If you like, you
 can use my own fork of version 0.3.0:
     https://github.com/inkarkat/VimTAP
 Note that nothing prevents you from using the latest, original version for
-your own tests.
+your own tests. The default |runVimTestsSetup.vim| will automatically include
+VimTAP into 'runtimepath' if it's located in a repository next to runVimTests.
 
 The tests/ subdirectory contains example test suites and a self-test of the
 test framework. For a simple sanity check, execute: >
@@ -319,7 +320,8 @@ require some additional library functions: >
     source helpers/listbuffers.vim
     ...
     call IsBufferList(['foo.txt', 'bar.txt'], 'opened all text files')
-
+<
+							*runVimTestsSetup.vim*
 A global setup script "runVimTestsSetup.vim" can reside in the same directory
 as the "runVimTests" shell script. It should contain system-specific setup
 code (e.g. if you have set a non-default 'runtimepath' in your .vimrc and you
@@ -428,6 +430,12 @@ HISTORY							 *runVimTests-history*
 - vimtest#Quit(): Don't exit Vim when not running inside the runVimTests test
   framework. This is better behavior when accidentally (or for testing)
   executing the test script in plain Vim.
+- FIX: "cd" might print the path when CDPATH is set; discard it. Thanks to
+  Raimondi for sending a pull request.
+  https://github.com/inkarkat/runVimTests/pull/11
+- ENH: Make runVimTestsSetup.vim accept any directory starting with VimTAP;
+  thanks to Marcelo Montu for the pull request.
+  https://github.com/inkarkat/runVimTests/pull/9
 
 1.24	29-Jan-2014
 - Don't clobber the default viminfo file with the test results; use a special

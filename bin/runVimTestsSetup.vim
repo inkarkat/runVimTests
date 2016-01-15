@@ -3,8 +3,11 @@
 " Prefer vimtest.vim from the repository.
 let &runtimepath = expand('<sfile>:p:h:h') . ',' . &runtimepath
 
-" Use VimTAP from a repository next to runVimTests (if available).
-let s:VimTAPRepositoryDirspec = expand('<sfile>:p:h:h:h') . '/VimTAP'
+" Use (first found) VimTAP from a repository next to runVimTests (if available).
+let s:VimTAPRepositoryDirspec = substitute(
+\   glob(expand('<sfile>:p:h:h:h') . '/VimTAP*'),
+\   "\n.*", '', ''
+\)
 if isdirectory(s:VimTAPRepositoryDirspec)
     let &runtimepath = s:VimTAPRepositoryDirspec . ',' . &runtimepath
 endif
