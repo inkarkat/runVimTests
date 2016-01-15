@@ -229,7 +229,7 @@ introduced compatibility-breaking changes, which I don't like; the functions
 are now cumbersome to use, and the added commands don't offer much
 convenience, but pollute the test environment in my opinion. If you like, you
 can use my own fork of version 0.3.0:
-    https://github.com/inkarkat/vimtap
+    https://github.com/inkarkat/VimTAP
 Note that nothing prevents you from using the latest, original version for
 your own tests.
 
