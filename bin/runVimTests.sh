@@ -358,7 +358,7 @@ runSuite()
 runDir()
 {
     local testFilename
-    for testFilename in "${1}/"*.vim
+    for testFilename in "${1%/}/"*.vim
     do
 	[ "$isBailOut" ] && break
 	runTest "$testFilename"
