@@ -100,11 +100,13 @@ call runVimTests.cmd%options% "%tests%" > "%log%" 2>&1
 ::   absolute path, which would make the test run unreproducible on different
 ::   systems.
 :: - In the Windows shell, all Vim arguments must be enclosed in double quotes,
-::   but the Unix shell script uses single quotes where possible.
+::   but the Unix shell script uses single quotes where possible (except for
+::   --cmd "let g:runVimTests='...'").
 :: - The file glob error message uses backslashes.
 :: - The path and name of the special .vimtestinfo file is different.
 sed -i ^
-    -e "/^Starting test run/{n;s/ -S \d034[^\d034]*runVimTestsSetup.vim\d034//;s/ \d034\([^'\d034]*\)\d034/ '\1'/g};s+ -i '.*\\_vimtestinfo' + -i '~/.vimtestinfo' +" ^
+-e "/^Starting test run/{ n; s/ -S \d034[^\d034]*runVimTestsSetup.vim\d034//; y/\d034'/'\d034/; s/'let g:runVimTests=\d034\([^']*\)\d034'/\d034let g:runVimTests='\1'\d034/ }" ^
+    -e "s+ -i '.*\\_vimtestinfo' + -i '~/.vimtestinfo' +" ^
     -e "s+\\\*+/*+g" ^
     "%log%"
 
