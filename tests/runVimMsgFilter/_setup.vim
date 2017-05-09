@@ -1,7 +1,8 @@
 runtime plugin/SidTools.vim
-if has('win32') || has('win64')
-    source O:/tools/runVimMsgFilter.vim
-else
-    source $HOME/bin/runVimMsgFilter.vim
+
+let s:runVimMsgFilterFilespec = ingo#compat#globpath(substitute($PATH, ingo#os#PathSeparator(), ',', 'g'), 'runVimMsgFilter.vim')
+if empty(s:runVimMsgFilterFilespec)
+    call vimtest#BailOut('runVimMsgFilter.vim not found in $PATH')
 endif
 
+execute 'source' ingo#compat#fnameescape(s:runVimMsgFilterFilespec)

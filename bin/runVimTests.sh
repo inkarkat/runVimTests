@@ -17,12 +17,16 @@
 #   - GNU diff, grep, readlink, sed, sort, tr, uniq.
 #   - runVimMsgFilter.vim, located in this script's directory.
 #
-# Copyright: (C) 2009-2013 Ingo Karkat
+# Copyright: (C) 2009-2017 Ingo Karkat
 #   The VIM LICENSE applies to this script; see 'vim -c ":help copyright"'.
 #
-# FILE_SCCS = "@(#)runVimTests.sh	1.24.020	(25-Nov-2013)	runVimTests";
+# FILE_SCCS = "@(#)runVimTests.sh	1.25.021	(09-May-2017)	runVimTests";
 #
 # REVISION	DATE		REMARKS
+#  1.25.021	09-May-2017	With -1 / --default, newer Vim versions still
+#				pick up user plugins from the ~/.vim/pack
+#				directory. Temporarily modify 'packpath' during
+#				Vim startup to avoid that.
 #  1.24.020	25-Nov-2013	BUG: runVimTestsSetup.vim isn't sourced on Unix
 #				when invoked through runVimTests.sh (with the
 #				.sh file extension). Reported by Ryan Carney.
@@ -884,7 +888,7 @@ done
 [ "$vimMode" ] || vimMode='default'
 case $vimMode in
     pure)	vimArguments="-N -u NONE $vimArguments";;
-    default)	vimArguments="--cmd 'set rtp=\$VIM/vimfiles,\$VIMRUNTIME,\$VIM/vimfiles/after' -N -u NORC -c 'set rtp&' $vimArguments";;
+    default)	vimArguments="--cmd 'set rtp=\$VIM/vimfiles,\$VIMRUNTIME,\$VIM/vimfiles/after | if exists(\"+packpath\") | let &packpath = &rtp | endif' -N -u NORC -c 'set rtp& | if exists(\"+packpath\") | set packpath& | endif' $vimArguments";;
 esac
 vimVariableOptionsValue="${vimMode},${vimVariableOptionsValue}"
 vimVariableOptionsValue="${vimVariableOptionsValue%,}"

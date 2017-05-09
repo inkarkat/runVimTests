@@ -1,6 +1,6 @@
 
 Starting test run with these Vim options:
-vim --cmd 'set rtp=$VIM/vimfiles,$VIMRUNTIME,$VIM/vimfiles/after' -N -u NORC -c 'set rtp&' -f -i '~/.vimtestinfo' -n -es --cmd "let g:runVimTests='default'"
+vim --cmd 'set rtp=$VIM/vimfiles,$VIMRUNTIME,$VIM/vimfiles/after | if exists("+packpath") | let &packpath = &rtp | endif' -N -u NORC -c 'set rtp& | if exists("+packpath") | set packpath& | endif' -f -i '~/.vimtestinfo' -n -es --cmd "let g:runVimTests='default'"
 Bail out! It is so f...ed up!
 # I had to stop, this was bad!
 

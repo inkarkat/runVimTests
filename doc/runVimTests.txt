@@ -426,7 +426,7 @@ or via the issue tracker at https://github.com/inkarkat/runVimTests/issues
 ==============================================================================
 HISTORY							 *runVimTests-history*
 
-1.25	RELEASEME
+1.25	09-May-2017
 - vimtest#Quit(): Don't exit Vim when not running inside the runVimTests test
   framework. This is better behavior when accidentally (or for testing)
   executing the test script in plain Vim.
@@ -436,6 +436,9 @@ HISTORY							 *runVimTests-history*
 - ENH: Make runVimTestsSetup.vim accept any directory starting with VimTAP;
   thanks to Marcelo Montu for the pull request.
   https://github.com/inkarkat/runVimTests/pull/9
+- With -1 / --default, newer Vim versions still pick up user plugins from the
+  ~/.vim/pack directory. Temporarily modify 'packpath' during Vim startup to
+  avoid that.
 
 1.24	29-Jan-2014
 - Don't clobber the default viminfo file with the test results; use a special

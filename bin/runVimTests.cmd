@@ -18,10 +18,14 @@
 ::    'unix.cmd' script.
 ::  - runVimMsgFilter.vim, located in this script's directory.
 ::
-::* Copyright: (C) 2009-2013 Ingo Karkat
+::* Copyright: (C) 2009-2017 Ingo Karkat
 ::   The VIM LICENSE applies to this script; see 'vim -c ":help copyright"'.
 ::
 ::* REVISION	DATE		REMARKS
+::  1.25.035	09-May-2017	With -1 / --default, newer Vim versions still
+::				pick up user plugins from the ~/.vim/pack
+::				directory. Temporarily modify 'packpath' during
+::				Vim startup to avoid that.
 ::  1.24.034	18-Jul-2013	Convert the filespec passed to --source to an
 ::				absolute one; relative ones only work when the
 ::				test driver script doesn't cd into a different
@@ -353,7 +357,7 @@ if not defined vimMode (set vimMode=default)
 if "%vimMode%" == "pure" (
     set vimArguments=-N -u NONE %vimArguments%
 ) else if "%vimMode%" == "default" (
-    set vimArguments=--cmd "set rtp=$VIM/vimfiles,$VIMRUNTIME,$VIM/vimfiles/after" -N -u NORC -c "set rtp&" %vimArguments%
+    set vimArguments=--cmd "set rtp=$VIM/vimfiles,$VIMRUNTIME,$VIM/vimfiles/after | if exists('+packpath') | let &packpath = &rtp | endif" -N -u NORC -c "set rtp& | if exists('+packpath') | set packpath& | endif" %vimArguments%
 )
 set vimVariableOptionsValue=%vimMode%,%vimVariableOptionsValue%
 set vimVariableOptionsValue=%vimVariableOptionsValue:~0,-1%
