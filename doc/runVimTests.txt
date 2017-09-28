@@ -204,6 +204,12 @@ function behaves in exactly this way.
 ==============================================================================
 INSTALLATION					    *runVimTests-installation*
 
+The code is hosted in a Git repo at
+    https://github.com/inkarkat/vim-runVimTests
+You can use your favorite plugin manager, or "git clone" into a directory used
+for Vim |packages|. Releases are on the "stable" branch, the latest unstable
+development snapshot on "master".
+
 This framework is packaged as a ZIP archive. You can unpack it directly into
 |your-runtime-dir| (~/.vim), but you can also install the script executables
 somewhere else.
@@ -419,12 +425,16 @@ IDEAS							   *runVimTests-ideas*
 
 CONTRIBUTING					      *runVimTests-contribute*
 
-The code is hosted in a Git repo at https://github.com/inkarkat/runVimTests
-Report any bugs, send patches, or suggest features via email (address below),
-or via the issue tracker at https://github.com/inkarkat/runVimTests/issues
+CONTRIBUTING			*runVimTests-contribute*
+
+Report any bugs, send patches, or suggest features via the issue tracker at
+https://github.com/inkarkat/vim-runVimTests/issues or email (address below).
 
 ==============================================================================
 HISTORY							 *runVimTests-history*
+
+1.30	RELEASEME
+- Add vimtest#AddDependency() and vimtest#features#SupportsNormalWithCount().
 
 1.25	09-May-2017
 - vimtest#Quit(): Don't exit Vim when not running inside the runVimTests test
@@ -555,7 +565,7 @@ runVimTests.sh.
 Started development.
 
 ==============================================================================
-Copyright: (C) 2009-2015 Ingo Karkat
+Copyright: (C) 2009-2017 Ingo Karkat
 The VIM LICENSE applies to this plugin; see |copyright|.
 
 Maintainer:	Ingo Karkat <ingo@karkat.de>
