@@ -1,3 +1,4 @@
+call vimtest#AddDependency('vim-ingo-library')
 runtime plugin/SidTools.vim
 
 let s:runVimMsgFilterFilespec = ingo#compat#globpath(substitute($PATH, ingo#os#PathSeparator(), ',', 'g'), 'runVimMsgFilter.vim')

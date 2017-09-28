@@ -4,12 +4,14 @@
 "   - Requires Vim 7.0 or higher.
 "   - ingo/compat.vim autoload script (for Vim 7.0/7.1)
 "
-" Copyright: (C) 2009-2015 Ingo Karkat
+" Copyright: (C) 2009-2017 Ingo Karkat
 "   The VIM LICENSE applies to this script; see ':help copyright'.
 "
 " Maintainer:	Ingo Karkat <ingo@karkat.de>
 "
 " REVISION	DATE		REMARKS
+"   1.30.014	29-May-2017	Refactoring: Factor out s:fnameescape().
+"				Add vimtest#AddDependency().
 "   1.25.013	21-Mar-2015	vimtest#Quit(): Don't exit Vim when not running
 "				inside the runVimTests test framework. This is
 "				better behavior when accidentally (or for
@@ -135,13 +137,16 @@ function! vimtest#StartTap( ... )
     call vimtap#SetOutputFile(s:MakeFilename(a:000, '.tap'))
     let s:isTap = 1
 endfunction
+function! s:fnameescape( filename )
+    if exists('*fnameescape')
+	return fnameescape(a:filename)
+    else
+	return ingo#compat#fnameescape(a:filename)
+    endif
+endfunction
 function! vimtest#SaveOut( ... )
     let l:outname = s:MakeFilename(a:000, '.out')
-    if exists('*fnameescape')
-	execute 'saveas! ++ff=unix ' . fnameescape(l:outname)
-    else
-	execute 'saveas! ++ff=unix' ingo#compat#fnameescape(l:outname)
-    endif
+    execute 'saveas! ++ff=unix ' . s:fnameescape(l:outname)
 endfunction
 
 function! vimtest#RequestInput( input )
@@ -152,6 +157,28 @@ function! vimtest#RequestInput( input )
     echohl Search
     echon "'"
     echohl None
+endfunction
+
+function! vimtest#AddDependency( name )
+    let l:defaultBaseDirspec = expand(has('dos16') || has('dos32') || has('win95') || has('win32') || has('win64') ? '~\vimfiles' : '~/.vim')
+    let l:baseDirspec = (empty($RUNVIMTESTS_DEPENDENCY_BASE_DIRSPEC) ? l:defaultBaseDirspec : $RUNVIMTESTS_DEPENDENCY_BASE_DIRSPEC)
+
+    let l:dirspec = finddir(a:name, l:baseDirspec . '/**')
+    if empty(l:dirspec)
+	call vimtest#BailOut(printf('Dependency %s not found under %s', a:name, l:baseDirspec))
+    endif
+
+    if stridx(',' . &runtimepath . ',', ',' . l:dirspec . ',') == -1
+	let &runtimepath = l:dirspec . ',' . &runtimepath . ',' . l:dirspec . '/after'
+
+	" Source any plugin scripts, but only from the added directory (and
+	" after directory).
+	let l:pluginScripts = split(globpath(l:dirspec, 'plugin/*.vim'), '\n') + split(globpath(l:dirspec, 'plugin/*/*.vim'), '\n')
+
+	for l:ps in l:pluginScripts
+	    execute 'source' s:fnameescape(l:ps)
+	endfor
+    endif
 endfunction
 
 " vim: set ts=8 sts=4 sw=4 noexpandtab ff=unix fdm=syntax :

@@ -1,5 +1,19 @@
 " This is the system-specific setup script used by the runVimTests test suite.
 
+" If the project's tests reside in a "tests/" subdirectory, automatically put
+" its parent directory onto 'runtimepath'. For the common "one repository per
+" plugin" setup, this will make the plugin-under-test's scripts automatically
+" available (for :runtime plugin/name.vim, or autoloading).
+let s:testsDirspec = finddir('tests', getcwd() . ';')
+if ! empty(s:testsDirspec)
+    let s:rootDirspec = simplify(s:testsDirspec . '/..')
+    if stridx(',' . &runtimepath . ',', ',' . s:rootDirspec . ',') == -1
+	let &runtimepath = s:rootDirspec . ',' . &runtimepath . ',' . s:rootDirspec . '/after'
+    endif
+    unlet! s:rootDirspec
+endif
+unlet! s:testsDirspec
+
 " Prefer vimtest.vim from the repository.
 let &runtimepath = expand('<sfile>:p:h:h') . ',' . &runtimepath
 

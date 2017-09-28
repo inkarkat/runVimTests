@@ -104,6 +104,29 @@ vimtest#SkipAndQuitIf({condition}, {reason})	     *vimtest#SkipAndQuitIf()*
 		This is a convenience method that combines the check for
 		skipping with the skip signal and quitting.
 
+vimtest#AddDependency({name})			     *vimtest#AddDependency()*
+		Searches for a subdirectory {name} inside the default user
+		vimfiles (~/.vim / ~\vimfiles) or the directory override in
+		$RUNVIMTESTS_DEPENDENCY_BASE_DIRSPEC, prepends the first
+		occurrence to 'runtimepath', appends the corresponding after
+		directory, and |:source|s any plugin scripts from the added
+		directories, unless the directory had been already contained
+		in the 'runtimepath'.
+		This can be used (e.g. in _setup.vim) if the script-under-test
+		has dependencies that need to be available. Depending on how
+		|runVimTests| is invoked (|runVimTests-load-level|),
+		dependencies usually are not automatically available.
+		Dependencies in the (new with Vim 8.0) |package| directories
+		(and how to handle testing with older Vim versions) are
+		another complication that can be solved with this.
+
+				  *vimtest#features#SupportsNormalWithCount()*
+vimtest#features#SupportsNormalWithCount()
+		Predicate that returns 1 if the current Vim version supports
+		passing a [count] to |:normal|. Tests of mappings with [count]
+		typically require this. Use like this: >
+    call vimtest#SkipAndQuitIf(! vimtest#features#SupportsNormalWithCount(), 'Need support for :normal with count')
+<
 ==============================================================================
 INSTALLATION					       *vimtest-installation*
 
@@ -113,7 +136,8 @@ Put the script into your user or system Vim autoload directory
 DEPENDENCIES					       *vimtest-dependencies*
 
 - Requires Vim 7.0 or higher.
-- Requires escapings.vim autoload script (for Vim 7.0/7.1).
+- Requires the |ingo-library.vim| plugin (vimscript #4433), version 1.012 or
+  higher (for Vim 7.0/7.1).
 
 ==============================================================================
 LIMITATIONS						*vimtest-limitations*
@@ -125,9 +149,12 @@ TODO							       *vimtest-todo*
 ==============================================================================
 HISTORY							    *vimtest-history*
 
-1.24	RELEASEME
+1.30	RELEASEME
+- Add vimtest#AddDependency().
+- Add vimtest#features#SupportsNormalWithCount(). I had this in my private
+  toolbox for quite some time; makes sense to publish, too.
 - Uses the |ingo-library.vim| plugin (vimscript #4433), version 1.012 or
-  higher.
+  higher for old Vim versions 7.0/7.1.
 
 1.15	07-Oct-2010 (unreleased)
 - ENH: Added vimtest#ErrorAndQuit() and vimtest#ErrorAndQuitIf() for
@@ -148,7 +175,7 @@ First published version.
 Started development.
 
 ==============================================================================
-Copyright: (C) 2009-2013 Ingo Karkat
+Copyright: (C) 2009-2017 Ingo Karkat
 The VIM LICENSE applies to this plugin; see |copyright|.
 
 Maintainer:	Ingo Karkat <ingo@karkat.de>
