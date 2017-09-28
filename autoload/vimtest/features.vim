@@ -6,9 +6,6 @@
 "   The VIM LICENSE applies to this script; see ':help copyright'.
 "
 " Maintainer:	Ingo Karkat <ingo@karkat.de>
-"
-" REVISION	DATE		REMARKS
-"	001	16-Mar-2011	file creation
 
 function! vimtest#features#SupportsNormalWithCount()
     return v:version > 703 || v:version == 703 && has('patch100')

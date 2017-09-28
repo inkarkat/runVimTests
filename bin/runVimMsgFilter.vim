@@ -1,28 +1,18 @@
 " runVimMsgFilter.vim: Matching of *.msgok message assumptions against *.msgout
-" file, writing results into *.msgresult. 
+" file, writing results into *.msgresult.
 "
 " DEPENDENCIES:
-"   - Requires VIM 7.2 or higher.  
-"     (Some bug in lower patch levels of VIM 7.1 causes a second message
+"   - Requires ViM 7.2 or higher.
+"     (Some bug in lower patch levels of ViM 7.1 causes a second message
 "     condition to not match if a previous message condition matched the message
-"     directly above; i.e. matches eat the following message, too.) 
+"     directly above; i.e. matches eat the following message, too.)
 "
-" Copyright: (C) 2009 Ingo Karkat
-"   The VIM LICENSE applies to this script; see ':help copyright'. 
+" Copyright: (C) 2009-2017 Ingo Karkat
+"   The VIM LICENSE applies to this script; see ':help copyright'.
 "
 " Maintainer:	Ingo Karkat <ingo@karkat.de>
-"
-" REVISION	DATE		REMARKS 
-"   1.00.004	02-Mar-2009	Reviewed for publication. 
-"	003	10-Feb-2009	Using fnameescape(). 
-"	002	28-Jan-2009	Now removing trailing empty line in result
-"				buffer, so that the test results dump to stdout
-"				isn't torn apart by an empty line. 
-"				Shortened OK result summary to have less visual
-"				clutter on the expected execution path. 
-"	001	26-Jan-2009	file creation
 
-" Avoid installing twice or when in unsupported VIM version. 
+" Avoid installing twice or when in unsupported Vim version.
 if exists('g:loaded_runVimMsgFilter') || (v:version < 702)
     finish
 endif
@@ -31,16 +21,16 @@ let g:loaded_runVimMsgFilter = 1
 function! s:ProcessLine( line )
     if a:line =~# '^\([^0-9a-zA-Z \t\\"]\)\1\@!.*\1$'
 	let l:regExpDelimiter = strpart(a:line, 0, 1)
-	" Extract the regexp out of the delimiters. 
+	" Extract the regexp out of the delimiters.
 	let l:regExp = strpart(a:line, 1, strlen(a:line) - 2)
-	" And unescape any escaped regexp delimiters. 
+	" And unescape any escaped regexp delimiters.
 	" Note: Inside this simplistic engine, escaping is not necessary, but
 	" it's still good practice to make these regexps look as they would in
-	" VIM. 
+	" Vim.
 	let l:regExp = substitute(l:regExp, '\%(\%(^\|[^\\]\)\%(\\\\\)*\\\)\@<!\\' . l:regExpDelimiter, l:regExpDelimiter, 'g')
 	return l:regExp . '\n'
     else
-	" Literal string, encase in "very nomagic" block. 
+	" Literal string, encase in "very nomagic" block.
 	return '\V' . escape(a:line, '\') . '\m\n'
     endif
 endfunction
@@ -65,7 +55,7 @@ function! s:LoadMsgAssertions()
     let l:msgAssertions = []
     let l:lineNum = 1
     while 1
-	let l:msgAssertion = s:LoadMsgAssertion(l:lineNum) 
+	let l:msgAssertion = s:LoadMsgAssertion(l:lineNum)
 	if empty(l:msgAssertion)
 	    break
 	else
@@ -92,13 +82,13 @@ function! s:ApplyMsgAssertions( msgAssertions )
     let l:successes = []
 
     for l:msgAssertion in a:msgAssertions
-	" If the regexp begins with an empty line (\n), VIM doesn't match an
+	" If the regexp begins with an empty line (\n), Vim doesn't match an
 	" empty first line in the buffer, even when the 'c' flag is set. So
-	" start from the very end and wrap around on the first search. 
+	" start from the very end and wrap around on the first search.
 	if ! search(l:msgAssertion.regexp, (l:isFirstSearch ? 'w' : 'cW'))
 	    if l:isFirstSearch
 		" The first search from the last character in the buffer didn't
-		" succeed, so jump to start of buffer manually. 
+		" succeed, so jump to start of buffer manually.
 		normal! gg
 	    endif
 	    let l:failure = { 'startline': l:startLineNum, 'assertion': l:msgAssertion }
@@ -120,7 +110,7 @@ endfunction
 
 function! s:Print( text )
     set paste
-    execute 'normal! i' . a:text . "\<CR>" 
+    execute 'normal! i' . a:text . "\<CR>"
     set nopaste
 endfunction
 function! s:LineRangeText( startLine, endLine )
@@ -130,14 +120,14 @@ endfunction
 function! s:ReportFailures( failures )
     for l:failure in a:failures
 	call s:Print(' --> Message assertion ' . (l:failure.assertion.index + 1) . ' from ' . s:LineRangeText(l:failure.assertion.startline, l:failure.assertion.endline) . ' did not match in output ' . s:LineRangeText(l:failure.startline, l:failure.endline))
-	" Strip off leading ^. 
+	" Strip off leading ^.
 	let l:pattern = strpart(l:failure.assertion.regexp, 1)
-	" Convert \n atom into both visible and actual newline, and indent pattern. 
+	" Convert \n atom into both visible and actual newline, and indent pattern.
 	let l:pattern = '     ' . substitute(l:pattern, '\\n', '\\n\n     ', 'g')
 	" Strip off "very nomagic" from literal patterns and end those with '$'
-	" to indicate the literalness. 
+	" to indicate the literalness.
 	let l:pattern = substitute(l:pattern, '\\V\(.\{-}\)\\m\\n\n', '\1$\n', 'g')
-	" Strip off last \n. 
+	" Strip off last \n.
 	let l:pattern = substitute(l:pattern, '\n\s*$', '', '')
 	call s:Print(l:pattern)
     endfor
@@ -164,7 +154,7 @@ function! s:ReportResults( failures, successes )
 	endif
     endif
 
-    " Delete trailing empty line. 
+    " Delete trailing empty line.
     $g/^$/d
 endfunction
 

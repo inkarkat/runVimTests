@@ -8,50 +8,6 @@
 "   The VIM LICENSE applies to this script; see ':help copyright'.
 "
 " Maintainer:	Ingo Karkat <ingo@karkat.de>
-"
-" REVISION	DATE		REMARKS
-"   1.30.014	29-May-2017	Refactoring: Factor out s:fnameescape().
-"				Add vimtest#AddDependency().
-"   1.25.013	21-Mar-2015	vimtest#Quit(): Don't exit Vim when not running
-"				inside the runVimTests test framework. This is
-"				better behavior when accidentally (or for
-"				testing) executing the test script in plain Vim.
-"   1.24.012	08-Aug-2013	Move escapings.vim into ingo-library.
-"   1.15.011	07-Oct-2010	ENH: Added vimtest#ErrorAndQuitIf(), because
-"				it's a common use case, too.
-"   1.15.010	03-Oct-2010	ENH: Added vimtest#ErrorAndQuit(), because it's
-"				a common use case.
-"   1.14.009	10-Jul-2009	BF: vimtest#System() didn't abort via
-"				vimtest#Quit() on shell errors.
-"				Added optional isIgnoreErrors argument to
-"				vimtest#System().
-"   1.10.008	08-Mar-2009	Split vimtest#SkipAndQuit() into vimtest#Skip(),
-"				a general, single-purpose function, and
-"				vimtest#SkipAndQuitIf(), a special (but
-"				often-used) convenience function.
-"   1.10.007	05-Mar-2009	ENH: Added vimtest#BailOut(), vimtest#Error(),
-"				and vimtest#Skip...() functions.
-"   1.00.006	02-Mar-2009	Adapted to VimTAP 0.3: Changed function name to
-"				vimtap#SetOutputFile() and added
-"				vimtap#FlushOutput().
-"	005	28-Feb-2009	BF: Improved insertion of 'call' in
-"				vimtest#System().
-"	004	19-Feb-2009	Added vimtest#System(), vimtap#Error() and
-"				vimtest#RequestInput(), plus a stub for
-"				vimtest#Skip().
-"	003	09-Feb-2009	The *.out files are always written with
-"				fileformat=unix to allow platform-independent
-"				comparisons.
-"	002	06-Feb-2009	Renamed g:debug to g:runVimTests.
-"				Removed check for processed msgout output, this
-"				is now done as a separate process with
-"				'runVimMsgFilter.vim'.
-"				Now escaping saved *.out filespec.
-"				Passing of the test name is not optional, it is
-"				can be determined automatically from
-"				g:vimRunTest, if the test is run from within the
-"				test framework.
-"	001	25-Jan-2009	file creation
 
 function! vimtest#Quit()
     if s:isTap
