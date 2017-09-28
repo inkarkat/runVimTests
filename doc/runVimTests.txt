@@ -1,7 +1,7 @@
 *runVimTests.txt*       A testing framework for Vim.
 
 		       RUN VIM TESTS    by Ingo Karkat
-								 *runVimTests*
+							     *runVimTests.vim*
 motivation			|runVimTests-motivation|
 description			|runVimTests-description|
 usage				|runVimTests-usage|
@@ -65,6 +65,7 @@ RELATED WORKS								     *
 - doctest (vimscript #4998) embeds test expressions as comments in a
   Vimscript, and provides a :DocTest command to execute them.
 
+==============================================================================
 DESCRIPTION					     *runVimTests-description*
 
 runVimTests implements a testing framework for Vim.
