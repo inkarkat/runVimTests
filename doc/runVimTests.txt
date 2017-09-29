@@ -426,8 +426,6 @@ IDEAS							   *runVimTests-ideas*
 
 CONTRIBUTING					      *runVimTests-contribute*
 
-CONTRIBUTING			*runVimTests-contribute*
-
 Report any bugs, send patches, or suggest features via the issue tracker at
 https://github.com/inkarkat/vim-runVimTests/issues or email (address below).
 
