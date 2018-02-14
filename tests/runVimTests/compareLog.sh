@@ -39,8 +39,8 @@
 #	001	11-Feb-2009	file creation
 ###############################################################################
 
-readonly scriptDir=$([ "${BASH_SOURCE[0]}" ] && dirname -- "${BASH_SOURCE[0]}" || exit 2)
-[ -d "$scriptDir" ] || { echo >&2 "ERROR: Cannot determine script directory!"; exit 2; }
+readonly scriptDir=$([ "${BASH_SOURCE[0]}" ] && absoluteScriptFile="$(readlink -nf -- "${BASH_SOURCE[0]}")" && dirname -- "$absoluteScriptFile" || exit 3)
+[ -d "$scriptDir" ] || { echo >&2 "ERROR: Cannot determine script directory!"; exit 3; }
 
 # Prefer the current script from the repository.
 PATH="${scriptDir}/../../bin:$PATH"
@@ -86,9 +86,11 @@ fi
 
 # Don't include the invocation of "runVimTestsSetup.vim", as it contains its
 # absolute path, which would make the test run unreproducible on different
-# systems.
+# systems. Also remove the absolute path to the test directory (for the same
+# reason), too.
 sed -i \
     -e "/^Starting test run/{n;s/ -S '[^']*runVimTestsSetup.vim'//}" \
+    -e "s#${scriptDir//#/\\#}/##g" \
     "$log"
 
 echo

@@ -434,6 +434,9 @@ HISTORY							 *runVimTests-history*
 
 1.30	RELEASEME
 - Add vimtest#AddDependency() and vimtest#features#SupportsNormalWithCount().
+- CHG: Print full absolute path to tests instead of just the test name itself.
+  When running complete suites or tests with subdirectories, it is difficult
+  to locate a failing test with just the name.
 
 1.25	09-May-2017
 - vimtest#Quit(): Don't exit Vim when not running inside the runVimTests test
@@ -564,7 +567,7 @@ runVimTests.sh.
 Started development.
 
 ==============================================================================
-Copyright: (C) 2009-2017 Ingo Karkat
+Copyright: (C) 2009-2018 Ingo Karkat
 The VIM LICENSE applies to this plugin; see |copyright|.
 
 Maintainer:	Ingo Karkat <ingo@karkat.de>

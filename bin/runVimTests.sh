@@ -17,12 +17,17 @@
 #   - GNU diff, grep, readlink, sed, sort, tr, uniq.
 #   - runVimMsgFilter.vim, located in this script's directory.
 #
-# Copyright: (C) 2009-2017 Ingo Karkat
+# Copyright: (C) 2009-2018 Ingo Karkat
 #   The VIM LICENSE applies to this script; see 'vim -c ":help copyright"'.
 #
-# FILE_SCCS = "@(#)runVimTests.sh	1.25.021	(09-May-2017)	runVimTests";
+# FILE_SCCS = "@(#)runVimTests.sh	1.30.022	(14-Feb-2018)	runVimTests";
 #
 # REVISION	DATE		REMARKS
+#  1.30.022	14-Feb-2018	CHG: Print full absolute path to tests instead
+#				of just the test name itself. When running
+#				complete suites or tests with subdirectories, it
+#				is difficult to locate a failing test with just
+#				the name.
 #  1.25.021	09-May-2017	With -1 / --default, newer Vim versions still
 #				pick up user plugins from the ~/.vim/pack
 #				directory. Temporarily modify 'packpath' during
@@ -276,7 +281,7 @@ echoStatus()
 # $2 method (or empty)
 # $3 explanation (or empty)
 {
-    printTestHeader "$testFile" "$testName"
+    printTestHeader "$testFile" "$testAbsoluteName"
     if [ "$isExecutionOutput" ]; then
 	echoStatusForced "$@"
     fi
@@ -406,13 +411,12 @@ printTestHeader()
     echo
     # If the first line of the test script starts with '" Test', include this as
     # the test's synopsis in the test header. Otherwise, just print the test
-    # name. Limit the test header to one unwrapped output line, i.e. truncate to
-    # 80 characters.
+    # name.
     sed -n "
-	1s/^\" \\(Test.*\\)$/${headerMessage} \\1/p
+	1s#^\" \\(Test.*\\)\$#${headerMessage//#/\\#} \\1#p
 	t
 	1c\\
-${headerMessage}" "$1" | sed '/^.\{80\}/s/\(^.\{1,76\}\).*$/\1.../'
+${headerMessage}" "$1"
 }
 
 parseSignal()
@@ -471,7 +475,7 @@ compareOutput()
     elif [ $? -eq 1 ]; then
 	let thisFail+=1
 	if [ "$isExecutionOutput" ]; then
-	    printTestHeader "$testFile" "$testName"
+	    printTestHeader "$testFile" "$testAbsoluteName"
 	    printf "%-$((${COLUMNS:-80}/2-2))s|   %s\n" "FAIL (out): expected output" "actual output"
 	    diff --side-by-side --width ${COLUMNS:-80} -- "$1" "$2"
 	fi
@@ -507,7 +511,7 @@ compareMessages()
 	*)	echo >&2 "ASSERT: Received unknown result \"${evaluationResult}\" from RunVimMsgFilter."; exit 3;;
     esac
     if [ "$isExecutionOutput" -a "$isPrintEvaluation" ]; then
-	printTestHeader "$testFile" "$testName"
+	printTestHeader "$testFile" "$testAbsoluteName"
 	cat -- "$testMsgresult"
     fi
 }
@@ -581,7 +585,7 @@ parseTapOutput()
 	    # In verbose mode, the test header has already been printed.
 	    cat -- "$1"
 	else
-	    [ "$tapTestIsPrintTapOutput" ] && printTestHeader "$testFile" "$testName"
+	    [ "$tapTestIsPrintTapOutput" ] && printTestHeader "$testFile" "$testAbsoluteName"
 	    local -r tapPrintTapOutputSedPattern='^not ok|^ok ([0-9]+ )?# [tT][oO][dD][oO]|^Bail out!'
 	    sed -E -n "
 		\${
@@ -647,6 +651,7 @@ runTest()
     local -r testDirspec=$(dirname -- "$1")
     local -r testFile=$(basename -- "$1")
     local -r testFilespec=$(cd "$testDirspec" > /dev/null && echo "${PWD}/${testFile}") || { echo >&2 "ERROR: Cannot determine absolute filespec!"; exit 3; }
+    local -r testAbsoluteName=${testFilespec%.*}
     local -r testName=${testFile%.*}
 
     # The setup script is not a test, silently skip it.
@@ -673,7 +678,7 @@ runTest()
     [ -f "$vimLocalSetupScript" ] && vimLocalSetup=" $(vimSourceCommand "${vimLocalSetupScript}")"
 
     local isPrintedHeader=
-    [ $verboseLevel -gt 0 ] && printTestHeader "$testFile" "$testName"
+    [ $verboseLevel -gt 0 ] && printTestHeader "$testFile" "$testAbsoluteName"
 
     # Default Vim arguments and options:
     # :set nomore	Suppress the more-prompt when the screen is filled with messages
@@ -766,22 +771,22 @@ runTest()
     if [ $thisSkip -ge 1 ]; then
 	let cntSkip+=thisSkip
 	if [ $thisSkip -eq $thisTests ]; then
-	    addToListSkipped "$testName"
+	    addToListSkipped "$testAbsoluteName"
 	else
-	    addToListSkips "$testName"
+	    addToListSkips "$testAbsoluteName"
 	fi
     fi
     if [ $thisFail -ge 1 ]; then
 	let cntFail+=thisFail
-	addToListFailed "$testName"
+	addToListFailed "$testAbsoluteName"
     fi
     if [ $thisError -ge 1 ]; then
 	let cntError+=thisError
-	addToListError "$testName"
+	addToListError "$testAbsoluteName"
     fi
     if [ $thisTodo -ge 1 ]; then
 	let cntTodo+=thisTodo
-	addToListTodo "$testName"
+	addToListTodo "$testAbsoluteName"
     fi
 
     popd >/dev/null
