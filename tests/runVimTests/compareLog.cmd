@@ -49,6 +49,8 @@
 ::*******************************************************************************
 setlocal enableextensions
 
+set scriptDir=%~dp0
+
 :: Prefer the current script from the repository.
 set PATH=%~dp0..\..\bin;%PATH%
 
@@ -104,10 +106,16 @@ call runVimTests.cmd%options% "%tests%" > "%log%" 2>&1
 ::   --cmd "let g:runVimTests='...'").
 :: - The file glob error message uses backslashes.
 :: - The path and name of the special .vimtestinfo file is different.
+:: - The path separator for tests in "subdir" is a backslash instead of a
+::   forward slash.
+:: Also remove the absolute path to the test directory, too.
+set scriptDirEscaped=%scriptDir:\=\\%
 sed -i ^
 -e "/^Starting test run/{ n; s/ -S \d034[^\d034]*runVimTestsSetup.vim\d034//; y/\d034'/'\d034/; s/'let g:runVimTests=\d034\([^']*\)\d034'/\d034let g:runVimTests='\1'\d034/ }" ^
     -e "s+ -i '.*\\_vimtestinfo' + -i '~/.vimtestinfo' +" ^
     -e "s+\\\*+/*+g" ^
+    -e "s#%scriptDirEscaped:#=\#%##g" ^
+    -e "s#\(^\| \)\(subdir[1-9]\?\)\\#\1\2/#g" ^
     "%log%"
 
 :showDifferences

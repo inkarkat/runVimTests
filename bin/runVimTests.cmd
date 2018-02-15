@@ -18,10 +18,15 @@
 ::    'unix.cmd' script.
 ::  - runVimMsgFilter.vim, located in this script's directory.
 ::
-::* Copyright: (C) 2009-2017 Ingo Karkat
+::* Copyright: (C) 2009-2018 Ingo Karkat
 ::   The VIM LICENSE applies to this script; see 'vim -c ":help copyright"'.
 ::
 ::* REVISION	DATE		REMARKS
+::  1.30.022	14-Feb-2018	CHG: Print full absolute path to tests instead
+::				of just the test name itself. When running
+::				complete suites or tests with subdirectories, it
+::				is difficult to locate a failing test with just
+::				the name.
 ::  1.25.035	09-May-2017	With -1 / --default, newer Vim versions still
 ::				pick up user plugins from the ~/.vim/pack
 ::				directory. Temporarily modify 'packpath' during
@@ -516,12 +521,11 @@ set isPrintedHeader=true
 if not defined isExecutionOutput (goto:EOF)
 
 set headerMessage=%~2:
+set headerMessage=%headerMessage:\=\\%
 echo.
 :: If the first line of the test script starts with '" Test', include this as
 :: the test's synopsis in the test header. Otherwise, just print the test name.
-:: Limit the test header to one unwrapped output line, i.e. truncate to 80
-:: characters.
-sed -n -e "1s/^\d034 \(Test.*\)$/%headerMessage% \1/p" -e "tx" -e "1c%headerMessage%" -e ":x" -- %1 | sed "/^.\{80,\}/s/\(^.\{,76\}\).*$/\1.../"
+sed -n -e "1s#^\d034 \(Test.*\)$#%headerMessage:#=\#% \1#p" -e "tx" -e "1c%headerMessage%" -e ":x" -- %1
 (goto:EOF)
 
 :addToListSkipped
@@ -551,7 +555,7 @@ if %verboseLevel% GTR 0 (
 :: %2 method (or empty)
 :: %3 explanation (or empty)
 if not defined isExecutionOutput (goto:EOF)
-call :printTestHeader "%testFile%" "%testName%"
+call :printTestHeader "%testFile%" "%testAbsoluteName%"
 :echoStatusForced
 set status=%~1
 if not "%~2" == "" (
@@ -656,6 +660,7 @@ if not exist "%~1" (
 set testFilespec=%~f1
 set testDirspec=%~dp1
 set testFile=%~nx1
+set testAbsoluteName=%~dpn1
 set testName=%~n1
 
 :: The setup script is not a test, silently skip it.
@@ -685,7 +690,7 @@ if exist "%vimLocalSetupScript%" (
 )
 
 set isPrintedHeader=
-if %verboseLevel% GTR 0 call :printTestHeader "%testFile%" "%testName%"
+if %verboseLevel% GTR 0 call :printTestHeader "%testFile%" "%testAbsoluteName%"
 
 :: Default Vim arguments and options:
 :: :set nomore	Suppress the more-prompt when the screen is filled with messages
@@ -733,7 +738,7 @@ if exist "%testOk%" (
     ) else (
 	if exist "%testOut%" (
 	    set /A thisRun+=1
-	    call :compareOutput "%testOk%" "%testOut%" "%testName%"
+	    call :compareOutput "%testOk%" "%testOut%" "%testAbsoluteName%"
 	) else (
 	    set /A thisError+=1
 	    call :echoError "out" "No test output."
@@ -749,7 +754,7 @@ if exist "%testMsgok%" (
     ) else (
 	if exist "%testMsgout%" (
 	    set /A thisRun+=1
-	    call :compareMessages "%testMsgok%" "%testMsgout%" "%testName%"
+	    call :compareMessages "%testMsgok%" "%testMsgout%" "%testAbsoluteName%"
 	) else (
 	    set /A thisError+=1
 	    call :echoError "msgout" "No test messages."
@@ -763,7 +768,7 @@ if exist "%testTap%" (
 	set /A thisTests+=1
 	set /A thisSkip+=1
     ) else (
-	call :parseTapOutput "%testTap%" "%testName%"
+	call :parseTapOutput "%testTap%" "%testAbsoluteName%"
     )
 )
 
@@ -796,22 +801,22 @@ if %thisOk% GEQ 1 (
 if %thisSkip% GEQ 1 (
     set /A cntSkip+=%thisSkip%
     if %thisSkip% EQU %thisTests% (
-	call :addToListSkipped "%testName%"
+	call :addToListSkipped "%testAbsoluteName%"
     ) else (
-	call :addToListSkips "%testName%"
+	call :addToListSkips "%testAbsoluteName%"
     )
 )
 if %thisFail% GEQ 1 (
     set /A cntFail+=%thisFail%
-    call :addToListFailed "%testName%"
+    call :addToListFailed "%testAbsoluteName%"
 )
 if %thisError% GEQ 1 (
     set /A cntError+=%thisError%
-    call :addToListError "%testName%"
+    call :addToListError "%testAbsoluteName%"
 )
 if %thisTodo% GEQ 1 (
     set /A cntTodo+=%thisTodo%
-    call :addToListTodo "%testName%"
+    call :addToListTodo "%testAbsoluteName%"
 )
 popd
 (goto:EOF)
