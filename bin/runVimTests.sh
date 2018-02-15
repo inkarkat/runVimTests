@@ -20,9 +20,10 @@
 # Copyright: (C) 2009-2018 Ingo Karkat
 #   The VIM LICENSE applies to this script; see 'vim -c ":help copyright"'.
 #
-# FILE_SCCS = "@(#)runVimTests.sh	1.30.022	(14-Feb-2018)	runVimTests";
+# FILE_SCCS = "@(#)runVimTests.sh	1.30.023	(15-Feb-2018)	runVimTests";
 #
 # REVISION	DATE		REMARKS
+#  1.30.023	15-Feb-2018	FIX: Proper sed escaping of header message.
 #  1.30.022	14-Feb-2018	CHG: Print full absolute path to tests instead
 #				of just the test name itself. When running
 #				complete suites or tests with subdirectories, it
@@ -408,15 +409,18 @@ printTestHeader()
     [ ! "$isExecutionOutput" ] && return
 
     local -r headerMessage="${2}:"
+    local -r headerMessageEscaped="${headerMessage//\\/\\\\}"
+    local headerMessageReplacement="${headerMessageEscaped//#/\\#}"
+    local headerMessageReplacement="${headerMessageReplacement//&/\\&}"
     echo
     # If the first line of the test script starts with '" Test', include this as
     # the test's synopsis in the test header. Otherwise, just print the test
     # name.
     sed -n "
-	1s#^\" \\(Test.*\\)\$#${headerMessage//#/\\#} \\1#p
+	1s#^\" \\(Test.*\\)\$#${headerMessageReplacement} \\1#p
 	t
 	1c\\
-${headerMessage}" "$1"
+${headerMessageEscaped}" "$1"
 }
 
 parseSignal()

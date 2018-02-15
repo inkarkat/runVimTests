@@ -22,11 +22,12 @@
 ::   The VIM LICENSE applies to this script; see 'vim -c ":help copyright"'.
 ::
 ::* REVISION	DATE		REMARKS
-::  1.30.022	14-Feb-2018	CHG: Print full absolute path to tests instead
+::  1.30.022	15-Feb-2018	CHG: Print full absolute path to tests instead
 ::				of just the test name itself. When running
 ::				complete suites or tests with subdirectories, it
 ::				is difficult to locate a failing test with just
 ::				the name.
+::				FIX: Proper sed escaping of header message.
 ::  1.25.035	09-May-2017	With -1 / --default, newer Vim versions still
 ::				pick up user plugins from the ~/.vim/pack
 ::				directory. Temporarily modify 'packpath' during
@@ -521,11 +522,13 @@ set isPrintedHeader=true
 if not defined isExecutionOutput (goto:EOF)
 
 set headerMessage=%~2:
-set headerMessage=%headerMessage:\=\\%
+set headerMessageEscaped=%headerMessage:\=\\%
+set headerMessageReplacement=%headerMessageEscaped:#=\#%
+set headerMessageReplacement=%headerMessageReplacement:&=\&%
 echo.
 :: If the first line of the test script starts with '" Test', include this as
 :: the test's synopsis in the test header. Otherwise, just print the test name.
-sed -n -e "1s#^\d034 \(Test.*\)$#%headerMessage:#=\#% \1#p" -e "tx" -e "1c%headerMessage%" -e ":x" -- %1
+sed -n -e "1s#^\d034 \(Test.*\)$#%headerMessageReplacement% \1#p" -e "tx" -e "1c%headerMessageEscaped%" -e ":x" -- %1
 (goto:EOF)
 
 :addToListSkipped
