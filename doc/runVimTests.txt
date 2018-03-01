@@ -437,6 +437,11 @@ HISTORY							 *runVimTests-history*
 - CHG: Print full absolute path to tests instead of just the test name itself.
   When running complete suites or tests with subdirectories, it is difficult
   to locate a failing test with just the name.
+- ENH: Add -o|--output parameter that redirects all script output into a
+  FILESPEC or &N file descriptor. Piping the entire output of runVimTests is
+  problematic because the started Vim instances expect to write the UI to
+  stdout; without that, the screen does not update / is messed up, and you
+  cannot do debugging in there.
 
 1.25	09-May-2017
 - vimtest#Quit(): Don't exit Vim when not running inside the runVimTests test

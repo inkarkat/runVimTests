@@ -211,7 +211,9 @@ They can be put anywhere (preferably somewhere in $PATH for easy invocation).
 runVimMsgFilter.vim must be in the same directory as the shell script.
 
 The doc/ subdirectory contains the documentation. Put the files into
+```
 ~/.vim/doc and execute :helptags ~/.vim/doc to re-generate the help tags.
+```
 
 The autoload/ subdirectory contains optional convenience and helper functions.
 (E.g. vimtest#Quit(), vimtest#SaveOut(), vimtest#RequestInput(), and
@@ -426,6 +428,14 @@ HISTORY
 
 ##### 1.30    RELEASEME
 - Add vimtest#AddDependency() and vimtest#features#SupportsNormalWithCount().
+- CHG: Print full absolute path to tests instead of just the test name itself.
+  When running complete suites or tests with subdirectories, it is difficult
+  to locate a failing test with just the name.
+- ENH: Add -o|--output parameter that redirects all script output into a
+  FILESPEC or &N file descriptor. Piping the entire output of runVimTests is
+  problematic because the started Vim instances expect to write the UI to
+  stdout; without that, the screen does not update / is messed up, and you
+  cannot do debugging in there.
 
 ##### 1.25    09-May-2017
 - vimtest#Quit(): Don't exit Vim when not running inside the runVimTests test
@@ -556,7 +566,7 @@ runVimTests.sh.
 - Started development.
 
 ------------------------------------------------------------------------------
-Copyright: (C) 2009-2017 Ingo Karkat -
+Copyright: (C) 2009-2018 Ingo Karkat -
 The [VIM LICENSE](http://vimdoc.sourceforge.net/htmldoc/uganda.html#license) applies to this plugin.
 
 Maintainer:     Ingo Karkat <ingo@karkat.de>

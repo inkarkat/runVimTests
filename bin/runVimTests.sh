@@ -20,9 +20,16 @@
 # Copyright: (C) 2009-2018 Ingo Karkat
 #   The VIM LICENSE applies to this script; see 'vim -c ":help copyright"'.
 #
-# FILE_SCCS = "@(#)runVimTests.sh	1.30.023	(15-Feb-2018)	runVimTests";
+# FILE_SCCS = "@(#)runVimTests.sh	1.30.024	(01-Mar-2018)	runVimTests";
 #
 # REVISION	DATE		REMARKS
+#  1.30.024	01-Mar-2018	ENH: Add -o|--output parameter that redirects
+#				all script output into a FILESPEC or &N file
+#				descriptor. Piping the entire output of
+#				runVimTests is problematic because the started
+#				Vim instances expect to write the UI to stdout;
+#				without that, the screen does not update / is
+#				messed up, and you cannot do debugging in there.
 #  1.30.023	15-Feb-2018	FIX: Proper sed escaping of header message.
 #  1.30.022	14-Feb-2018	CHG: Print full absolute path to tests instead
 #				of just the test name itself. When running
@@ -208,6 +215,7 @@ initialize()
     verboseLevel=0
     isExecutionOutput='true'
     isBailOut=
+    output=
 }
 verifyVimModeSetOnlyOnce()
 {
@@ -219,7 +227,7 @@ verifyVimModeSetOnlyOnce()
 printShortUsage()
 {
     cat <<SHORTHELPTEXT
-Usage: "$(basename "$0")" [-0|--pure|-1|--default|-2|--user] [--source filespec [--source filespec [...]]] [--runtime plugin/file.vim [--runtime autoload/file.vim [...]]] [--vimexecutable path/to/vim] [-g|--graphical] [--summaryonly|-v|--verbose] [-d|--debug] [-?|-h|--help] test001.vim|testsuite.txt|path/to/testdir/ [...]
+Usage: "$(basename "$0")" [-0|--pure|-1|--default|-2|--user] [--source filespec [--source filespec [...]]] [--runtime plugin/file.vim [--runtime autoload/file.vim [...]]] [--vimexecutable path/to/vim] [-g|--graphical] [--summaryonly|-v|--verbose] [-d|--debug] [-o|--output FILESPEC|&N] [-?|-h|--help] test001.vim|testsuite.txt|path/to/testdir/ [...]
 SHORTHELPTEXT
 }
 printUsage()
@@ -261,21 +269,27 @@ HELPDESCRIPTION
     -d|--debug		Test debugging mode: Adds 'debug' to ${vimVariableOptionsName}
 			variable inside Vim (so that tests do not exit or can
 			produce additional debug info).
+    -o|--output	FILESPEC|&N
+			Output into FILESPEC / file descriptor N. You cannot
+			simply redirect or pipe $(basename "$0")'s output as that
+			would affect the Vim instances started from it, too.
+			Instead, use something like this to filter the output:
 HELPTEXT
+    printf '\t$ exec 5>&1; %q -o \&4 . 4>&1 >&5 5>&- | tail -n 1 5>&-\n' "$(basename "$0")"
 }
 
 executionOutput()
 {
-    [ "$isExecutionOutput" ] && echo "$@"
+    [ "$isExecutionOutput" ] && echo >&3 "$@"
 }
 echoOk()
 {
-    [ "$isExecutionOutput" -a $verboseLevel -gt 0 ] && echo "OK ($1)"
+    [ "$isExecutionOutput" -a $verboseLevel -gt 0 ] && echo >&3 "OK ($1)"
 }
 echoStatusForced()
 {
     local -r status="${1}${2:+ (}${2}${2:+)}"
-    echo "${status}${3:+: }$3"
+    echo >&3 "${status}${3:+: }$3"
 }
 echoStatus()
 # $1 status
@@ -412,11 +426,11 @@ printTestHeader()
     local -r headerMessageEscaped="${headerMessage//\\/\\\\}"
     local headerMessageReplacement="${headerMessageEscaped//#/\\#}"
     local headerMessageReplacement="${headerMessageReplacement//&/\\&}"
-    echo
+    echo >&3
     # If the first line of the test script starts with '" Test', include this as
     # the test's synopsis in the test header. Otherwise, just print the test
     # name.
-    sed -n "
+    sed >&3 -n "
 	1s#^\" \\(Test.*\\)\$#${headerMessageReplacement} \\1#p
 	t
 	1c\\
@@ -480,8 +494,8 @@ compareOutput()
 	let thisFail+=1
 	if [ "$isExecutionOutput" ]; then
 	    printTestHeader "$testFile" "$testAbsoluteName"
-	    printf "%-$((${COLUMNS:-80}/2-2))s|   %s\n" "FAIL (out): expected output" "actual output"
-	    diff --side-by-side --width ${COLUMNS:-80} -- "$1" "$2"
+	    printf >&3 "%-$((${COLUMNS:-80}/2-2))s|   %s\n" "FAIL (out): expected output" "actual output"
+	    diff --side-by-side --width ${COLUMNS:-80} -- "$1" "$2" >&3
 	fi
     else
 	let thisError+=1
@@ -587,11 +601,11 @@ parseTapOutput()
     if [ "$isExecutionOutput" ]; then
 	if [ $verboseLevel -gt 0 ]; then
 	    # In verbose mode, the test header has already been printed.
-	    cat -- "$1"
+	    cat >&3 -- "$1"
 	else
 	    [ "$tapTestIsPrintTapOutput" ] && printTestHeader "$testFile" "$testAbsoluteName"
 	    local -r tapPrintTapOutputSedPattern='^not ok|^ok ([0-9]+ )?# [tT][oO][dD][oO]|^Bail out!'
-	    sed -E -n "
+	    sed >&3 -E -n "
 		\${
 		    /^#/H
 		    x
@@ -888,6 +902,7 @@ do
 	--summaryonly)	    shift; isExecutionOutput='true';;
 	--verbose|-v)	    shift; let verboseLevel+=1; skipsRecord=;;
 	-d|--debug)	    shift; vimVariableOptionsValue="${vimVariableOptionsValue}debug,";;
+	--output|-o)	    shift; output="$1"; shift;;
 	--)		    shift; break;;
 	-*)		    { echo "ERROR: Unknown option \"${1}\"!"; echo; printShortUsage; } >&2; exit 2;;
 	*)		    break;;
@@ -903,6 +918,11 @@ vimVariableOptionsValue="${vimMode},${vimVariableOptionsValue}"
 vimVariableOptionsValue="${vimVariableOptionsValue%,}"
 vimArguments="$vimArguments --cmd \"let ${vimVariableOptionsName}='${vimVariableOptionsValue}'\""
 
-execute "$@"
-report
+case "$output" in
+    '')		exec 3>&1;;
+    \&[0-9])	eval "exec 3>$output";;
+    ?*)		exec 3>"$output";;
+esac
 
+execute "$@"
+report >&3
