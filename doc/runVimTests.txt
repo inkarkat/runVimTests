@@ -64,6 +64,9 @@ RELATED WORKS								     *
   within Vim via a test script in a custom syntax.
 - doctest (vimscript #4998) embeds test expressions as comments in a
   Vimscript, and provides a :DocTest command to execute them.
+- stunter.vim (vimscript #5585) is sourced inside a test script, offers a
+  simple Test() assertion and finally prints test results in a TAP-like format
+  within Vim.
 
 ==============================================================================
 DESCRIPTION					     *runVimTests-description*
@@ -572,7 +575,7 @@ runVimTests.sh.
 Started development.
 
 ==============================================================================
-Copyright: (C) 2009-2018 Ingo Karkat
+Copyright: (C) 2009-2019 Ingo Karkat
 The VIM LICENSE applies to this plugin; see |copyright|.
 
 Maintainer:	Ingo Karkat <ingo@karkat.de>

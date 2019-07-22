@@ -1,4 +1,4 @@
-RUN VIM TESTS   
+RUN VIM TESTS
 ===============================================================================
 _by Ingo Karkat_
 
@@ -52,6 +52,9 @@ approaches with great success.
   within Vim via a test script in a custom syntax.
 - doctest ([vimscript #4998](http://www.vim.org/scripts/script.php?script_id=4998)) embeds test expressions as comments in a
   Vimscript, and provides a :DocTest command to execute them.
+- stunter.vim ([vimscript #5585](http://www.vim.org/scripts/script.php?script_id=5585)) is sourced inside a test script, offers a
+  simple Test() assertion and finally prints test results in a TAP-like format
+  within Vim.
 
 DESCRIPTION
 ------------------------------------------------------------------------------
@@ -211,9 +214,7 @@ They can be put anywhere (preferably somewhere in $PATH for easy invocation).
 runVimMsgFilter.vim must be in the same directory as the shell script.
 
 The doc/ subdirectory contains the documentation. Put the files into
-```
 ~/.vim/doc and execute :helptags ~/.vim/doc to re-generate the help tags.
-```
 
 The autoload/ subdirectory contains optional convenience and helper functions.
 (E.g. vimtest#Quit(), vimtest#SaveOut(), vimtest#RequestInput(), and
@@ -237,7 +238,9 @@ test framework. For a simple sanity check, execute:
     $ runVimTests tests/runVimTests/successful.suite
 
 which should print something like:
+```
     9 files with 19 tests; 0 skipped, 19 run: 19 OK, 0 failures, 0 errors.
+```
 If this is the case, you can start exploring the example tests (in the
 tests/example/ subdirectory) or just start writing your own
 runVimTests-testscripts!
@@ -275,7 +278,7 @@ test's directory.
 The test framework sets these variables within the Vim test process:
 
 The g:runVimTest variable contains the absolute filespec of the currently
-executing test (i.e. the same as expand('<sfile>:p')).
+executing test (i.e. the same as expand('&lt;sfile&gt;:p')).
 
 The g:runVimTests variable contains the test options for this test run,
 concatenated with ",". The test options correspond to the default options and
@@ -432,7 +435,7 @@ HISTORY
   When running complete suites or tests with subdirectories, it is difficult
   to locate a failing test with just the name.
 - ENH: Add -o|--output parameter that redirects all script output into a
-  FILESPEC or &N file descriptor. Piping the entire output of runVimTests is
+  FILESPEC or &amp;N file descriptor. Piping the entire output of runVimTests is
   problematic because the started Vim instances expect to write the UI to
   stdout; without that, the screen does not update / is messed up, and you
   cannot do debugging in there.
@@ -496,7 +499,7 @@ HISTORY
 ##### 1.19    18-Jul-2012 (unreleased)
 - BUG: In the Windows test runner, remove duplicate quoting when vimExecutable
   isn't found. This actually prevented execution when passing --vimexecutable
-  "C:\Program Files (x86)\vim\vim73\vim.exe"
+  "C:\\Program Files (x86)\\vim\\vim73\\vim.exe"
 
 ##### 1.18    19-Oct-2011
 - BUG: When everything is skipped and no TAP tests have been run, this would
@@ -566,7 +569,7 @@ runVimTests.sh.
 - Started development.
 
 ------------------------------------------------------------------------------
-Copyright: (C) 2009-2018 Ingo Karkat -
+Copyright: (C) 2009-2019 Ingo Karkat -
 The [VIM LICENSE](http://vimdoc.sourceforge.net/htmldoc/uganda.html#license) applies to this plugin.
 
-Maintainer:     Ingo Karkat <ingo@karkat.de>
+Maintainer:     Ingo Karkat &lt;ingo@karkat.de&gt;
