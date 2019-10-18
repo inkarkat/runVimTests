@@ -11,10 +11,13 @@ etc.) and failures (invalid filename, nomodifiable buffer) need to be tested,
 and people use Vim on different platforms (Windows / Linux), UIs (Console /
 GUI), with different sets of settings (.vimrc) and other loaded plugins.
 There already exist multiple unit test plugins and assertion facilities [1],
+and since version 8.0 Vim itself has various assertions (assert\_equal()),
 which are good for checking invariants and verifying side effect-free
-implementation functions, but it is still hard to verify the complete plugin
-functionality because custom commands and mappings typically change the buffer
-contents, open additional windows, or produce other side effects.
+implementation functions (see https://stackoverflow.com/a/56054542/813602 how
+to do this with the assert functions), but it is still hard to verify the
+complete plugin functionality because custom commands and mappings typically
+change the buffer contents, open additional windows, or produce other side
+effects.
 
 This work aims to show that Vim, together with a shell script driver built
 around it, allows to write succinct, fully automated regression test suites
@@ -55,6 +58,9 @@ approaches with great success.
 - stunter.vim ([vimscript #5585](http://www.vim.org/scripts/script.php?script_id=5585)) is sourced inside a test script, offers a
   simple Test() assertion and finally prints test results in a TAP-like format
   within Vim.
+- VRoom (https://github.com/google/vroom) is a Python-based runner that
+  executes test scripts that specify Vim commands and can verify buffer
+  contents, messages, and more, by launching a Vim server.
 
 DESCRIPTION
 ------------------------------------------------------------------------------
