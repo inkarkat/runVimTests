@@ -39,7 +39,7 @@ approaches with great success.
 - tAssert (by Tom Link), [vimscript #1730](http://www.vim.org/scripts/script.php?script_id=1730)
 - VimTAP (by Meikel Brandmeyer), [vimscript #2213](http://www.vim.org/scripts/script.php?script_id=2213)
 - spec.vim (by Tom Link), [vimscript #2580](http://www.vim.org/scripts/script.php?script_id=2580)
-- UT (by Luc Hermitte), http://code.google.com/p/lh-vim/wiki/UT
+- UT (by Luc Hermitte), https://github.com/LucHermitte/vim-UT
 - vim-unittest (by h1mesuke), https://github.com/h1mesuke/vim-unittest
 - Ultimate Test Utility (by Kevin Biskar), [vimscript #4724](http://www.vim.org/scripts/script.php?script_id=4724) is a pure Vimscript
   implementation providing various test grouping and assertion functions.
