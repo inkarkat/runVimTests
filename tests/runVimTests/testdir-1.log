@@ -75,7 +75,7 @@ test032: Test failed combination buffer + message + TAP output.
 FAIL (out): expected output           |   actual output
 Successful execution.		      |	Not what was expected. 
 FAIL (msgout): The message assertion was not satisfied by the output: 
- --> Message assertion 1 from line 1 did not match in output lines 1-5
+ --> Message assertion 1 from line 1 did not match in output lines 1-4
      Successful execution.$
 not ok 1 - not right
 not ok 2 - 1 == 2
