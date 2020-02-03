@@ -1,144 +1,22 @@
 #!/bin/bash
 ##########################################################################/^--#
 ##
-# FILE: 	runVimTests.sh
+# FILE:		runVimTests.sh
 # PRODUCT:	runVimTests
-# AUTHOR: 	Ingo Karkat <ingo@karkat.de>
+# AUTHOR:	Ingo Karkat <ingo@karkat.de>
 # DATE CREATED:	02-Feb-2009
 #
 ###############################################################################
 # CONTENTS:
 #   This script implements a testing framework for Vim.
 #
-# REMARKS:
-#
 # DEPENDENCIES:
 #   - Requires Bash 3.0 or higher.
 #   - GNU diff, grep, readlink, sed, sort, tr, uniq.
 #   - runVimMsgFilter.vim, located in this script's directory.
 #
-# Copyright: (C) 2009-2018 Ingo Karkat
+# Copyright: (C) 2009-2020 Ingo Karkat
 #   The VIM LICENSE applies to this script; see 'vim -c ":help copyright"'.
-#
-# FILE_SCCS = "@(#)runVimTests.sh	1.30.024	(01-Mar-2018)	runVimTests";
-#
-# REVISION	DATE		REMARKS
-#  1.30.024	01-Mar-2018	ENH: Add -o|--output parameter that redirects
-#				all script output into a FILESPEC or &N file
-#				descriptor. Piping the entire output of
-#				runVimTests is problematic because the started
-#				Vim instances expect to write the UI to stdout;
-#				without that, the screen does not update / is
-#				messed up, and you cannot do debugging in there.
-#  1.30.023	15-Feb-2018	FIX: Proper sed escaping of header message.
-#  1.30.022	14-Feb-2018	CHG: Print full absolute path to tests instead
-#				of just the test name itself. When running
-#				complete suites or tests with subdirectories, it
-#				is difficult to locate a failing test with just
-#				the name.
-#  1.25.021	09-May-2017	With -1 / --default, newer Vim versions still
-#				pick up user plugins from the ~/.vim/pack
-#				directory. Temporarily modify 'packpath' during
-#				Vim startup to avoid that.
-#  1.24.020	25-Nov-2013	BUG: runVimTestsSetup.vim isn't sourced on Unix
-#				when invoked through runVimTests.sh (with the
-#				.sh file extension). Reported by Ryan Carney.
-#  1.24.019	18-Jul-2013	Convert the filespec passed to --source to an
-#				absolute one; relative ones only work when the
-#				test driver script doesn't cd into a different
-#				directory.
-#  1.24.018	17-Jul-2013	Minor tweak to debugging config.
-#  1.24.017	25-Apr-2013	Don't clobber the default viminfo file with the
-#				test results; use a special .vimtestinfo value
-#				for the actual test run (to enable tests that
-#				use viminfo), and no viminfo for the checking
-#				and processing steps.
-#				Show _all_ global, non-test-specific Vim
-#				arguments in the initial message.
-#  1.23.016	25-Mar-2013	Add support for Mac OS X; thanks to Israel
-#				Chauca Fuentes for sending a pull request.
-#				Add support for BSD.
-#  1.21.015	06-Mar-2013	CHG: Drop comma in the lists of failed / skipped
-#				/ errored test and add .vim extension, so that
-#				the file list can be copy-and-pasted to another
-#				runVimTests invocation or :argedit'ed in Vim.
-#				CHG: Change default mode from "user" to
-#				"default"; this is what I use all the time,
-#				anyway, as the "user" mode is too susceptible to
-#				incompatible customizations.
-#   1.18.014	19-Oct-2011	BUG: When everything is skipped and no TAP tests
-#				have been run, this would be reported as a "No
-#				test results at all" error.
-#				CHG: Bail out only aborts from the current
-#				recursion level, i.e. it skips further tests in
-#				the same directory, suite, or passed arguments,
-#				but not testing entirely. Otherwise, a
-#				super-suite that includes individual suites
-#				would be aborted by a single bail out.
-#   1.17.013	04-Sep-2011	BUG: When runVimTests.sh is invoked via a
-#				relative filespec, $scriptDir is relative and
-#				this makes the message output comparison
-#				(but not the prerequisite check) fail with
-#				"ERROR (msgout): Evaluation of test messages
-#				failed." when CWD has changed into $testDirspec.
-#				Thanks to Javier Rojas for sending a patch.
-#				Use "readlink -f" to resolve symlinks and into
-#				absolute dirspec. This also handles the case
-#				when runVimTests.sh, but not runVimMsgFilter.vim
-#				is symlinked into another bin directory.
-#   1.14.012	02-Jun-2010	Now also handling *.suite files with Windows
-#				(CR-LF) line endings.
-#   1.13.011	28-May-2009	ENH: Now including SKIP reasons in the summary
-#				(identical reasons are condensed and counted)
-#				when not running with verbose output. I always
-#				wanted to know why certain tests were skipped.
-#   1.12.010	14-Mar-2009	Added quoting of regexp in addToList(), which is
-#				needed in Bash 3.0 and 3.1.
-#				Now checking Bash version.
-#				Only exiting with exit code 1 in case of test
-#				failures; using code 2 for invocation errors
-#				(i.e. wrong command-line arguments) or
-#				missing prerequisites and code 3 for internal
-#				errors.
-#   1.11.009	12-Mar-2009	ENH: TODO tests are reported in test summary.
-#				ENH: TAP output is also parsed for bail out
-#				message.
-#			    	ENH: TAP output is now parsed for # SKIP and #
-#				TODO directives. The entire TAP test is skipped
-#				if a 1..0 plan is announced. Non-verbose TAP
-#				output now also includes succeeding TODO tests
-#				and any details in the lines following it.
-#				Factored out addToList(), which now only matches
-#				exact test names, not partial overlaps.
-#   1.10.008	06-Mar-2009	ENH: Also counting test files.
-#				ENH: Message output is now parsed for signals to
-#				this test driver. Implemented signals: BAILOUT!,
-#				ERROR, SKIP, SKIP(out), SKIP(msgout), SKIP(tap).
-#				Summary reports skipped tests and tests with
-#				skips.
-#				Changed API for echoStatus.
-#   1.00.007	02-Mar-2009	Reviewed for publication.
-#	006	28-Feb-2009	BF: FAIL (msgout) and FAIL (tap) didn't print
-#				test header in non-verbose mode.
-#				Refactored :printTestHeader so that it does the
-#				check for already printed header itself.
-#	005	25-Feb-2009	Now only printing failed tests and errors, and
-#				only explicitly mentioning the test if it wasn't
-#				successful. This greatly reduces the visual
-#				output the user has to scan.
-#				Added --verbose option to also print successful
-#				tests, the previous default behavior.
-#				Added empty line between individual tests.
-#	004	24-Feb-2009	Added short options -0/1/2 for the plugin load
-#				level.
-#	003	19-Feb-2009	Added explicit option '--user' for the default
-#				Vim mode, and adding 'user' to
-#				%vimVariableOptionsValue% (so that tests can
-#				easily check for that mode). Command-line
-#				argument parsing now ensures that only one mode
-#				is specified.
-#	002	11-Feb-2009	Completed porting of Windows shell script.
-#	001	02-Feb-2009	file creation
 ###############################################################################
 
 # Enable extended file pattern matching operators from ksh
@@ -445,7 +323,7 @@ parseSignal()
 			let thisError+=1
 			echoStatus 'BAIL OUT' '' "$2"
 			;;
-	ERROR)	    	let thisError+=1
+	ERROR)		let thisError+=1
 			echoError '' "$2"
 			;;
 	SKIP)		isSkipOut='true'
@@ -553,7 +431,7 @@ parseTapOutput()
 		continue
 		;;
 	    ok\ ?(+([0-9])\ )\#\ [sS][kK][iI][pP]*)
-		let thisSkip+=1 	   tapTestCnt+=1
+		let thisSkip+=1		   tapTestCnt+=1
 		recordTapSkip "$tapLine"
 		;;
 	    ok\ ?(+([0-9])\ )\#\ [tT][oO][dD][oO]*)
@@ -563,7 +441,7 @@ parseTapOutput()
 		let thisOk+=1   thisRun+=1 tapTestCnt+=1
 		;;
 	    not\ ok\ ?(+([0-9])\ )\#\ [sS][kK][iI][pP]*)
-		let thisSkip+=1 	   tapTestCnt+=1
+		let thisSkip+=1		   tapTestCnt+=1
 		recordTapSkip "$tapLine"
 		;;
 	    not\ ok\ ?(+([0-9])\ )\#\ [tT][oO][dD][oO]*)
