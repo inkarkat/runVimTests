@@ -1,16 +1,14 @@
 @echo off %DEBUG%
 ::/*************************************************************************/^--*
 ::**
-::* FILE: 	runVimTests.cmd
+::* FILE:	runVimTests.cmd
 ::* PRODUCT:	runVimTests
-::* AUTHOR: 	Ingo Karkat <ingo@karkat.de>
+::* AUTHOR:	Ingo Karkat <ingo@karkat.de>
 ::* DATE CREATED:   12-Jan-2009
 ::*
 ::*******************************************************************************
 ::* DESCRIPTION:
 ::	This script implements a testing framework for Vim.
-::
-::* REMARKS:
 ::
 ::* DEPENDENCIES:
 ::  - GNU diff, grep, sed available through %PATH% or 'unix.cmd' script.
@@ -18,196 +16,8 @@
 ::    'unix.cmd' script.
 ::  - runVimMsgFilter.vim, located in this script's directory.
 ::
-::* Copyright: (C) 2009-2018 Ingo Karkat
+::* Copyright: (C) 2009-2020 Ingo Karkat
 ::   The VIM LICENSE applies to this script; see 'vim -c ":help copyright"'.
-::
-::* REVISION	DATE		REMARKS
-::  1.30.022	15-Feb-2018	CHG: Print full absolute path to tests instead
-::				of just the test name itself. When running
-::				complete suites or tests with subdirectories, it
-::				is difficult to locate a failing test with just
-::				the name.
-::				FIX: Proper sed escaping of header message.
-::  1.25.035	09-May-2017	With -1 / --default, newer Vim versions still
-::				pick up user plugins from the ~/.vim/pack
-::				directory. Temporarily modify 'packpath' during
-::				Vim startup to avoid that.
-::  1.24.034	18-Jul-2013	Convert the filespec passed to --source to an
-::				absolute one; relative ones only work when the
-::				test driver script doesn't cd into a different
-::				directory.
-::  1.24.033	25-Apr-2013	Don't clobber the default viminfo file with the
-::				test results; use a special _vimtestinfo value
-::				for the actual test run (to enable tests that
-::				use viminfo), and no viminfo for the checking
-::				and processing steps.
-::				Show _all_ global, non-test-specific Vim
-::				arguments in the initial message.
-::  1.23.032	25-Mar-2013	Minor: Show the skip counts with less indent.
-::  1.21.031	06-Mar-2013	CHG: Drop comma in the lists of failed / skipped
-::				/ errored test and add .vim extension, so that
-::				the file list can be copy-and-pasted to another
-::				runVimTests invocation or :argedit'ed in Vim.
-::				CHG: Change default mode from "user" to
-::				"default"; this is what I use all the time,
-::				anyway, as the "user" mode is too susceptible to
-::				incompatible customizations.
-::  1.21.030	10-Dec-2012	FIX: Prevent script errors when the error
-::				message containing the full command line from a
-::				failing vimtest#System() contains characters
-::				like ['"()].
-::  1.20.029	27-Jul-2012	ENH: Handle file globs in the passed tests
-::				(in contrast to the Unix shell, these must be
-::				explicitly expanded on Windows) and in suite
-::				entries.
-::  1.19.028	18-Jul-2012	BUG: Remove duplicate quoting when vimExecutable
-::				isn't found. This actually prevented execution
-::				when passing --vimexecutable "C:\Program Files
-::				(x86)\vim\vim73\vim.exe"
-::  1.19.027	13-Dec-2011	Cosmetics: Made debug flag uppercase.
-::  1.18.026	19-Oct-2011	BUG: When everything is skipped and no TAP tests
-::				have been run, this would be reported as a "No
-::				test results at all" error.
-::				CHG: Bail out only aborts from the current
-::				recursion level, i.e. it skips further tests in
-::				the same directory, suite, or passed arguments,
-::				but not testing entirely. Otherwise, a
-::				super-suite that includes individual suites
-::				would be aborted by a single bail out.
-::  1.16.025	28-Feb-2011	Minor: Need to un-double ^ character in
-::				parseTapLineEnd; this failed the testdir-v.log
-::				self-test.
-::				Align error handling of test dir without any
-::				tests with runVimTests.sh: Print error message
-::				instead of silently ignoring this.
-::  1.13.024	29-May-2009	BF: Also sourcing 'unix.cmd' if only optional
-::				tools are not in %PATH%.
-::				BF: Now handling (most?) special characters
-::				([<>|]) in SKIP reasons.
-::  1.13.023	28-May-2009	ENH: Now including SKIP reasons in the summary
-::				(identical reasons are condensed and counted)
-::				when not running with verbose output. I always
-::				wanted to know why certain tests were skipped.
-::				Not removing temporary files if %DEBUG%.
-::  1.12.022	14-Mar-2009	Only exiting with exit code 1 in case of test
-::				failures; using code 2 for invocation errors
-::				(i.e. wrong command-line arguments) and code 3
-::				for internal errors.
-::  1.11.021	12-Mar-2009	ENH: TODO tests are reported in test summary.
-::				ENH: TAP output is also parsed for bail out
-::				message.
-::  1.11.020	12-Mar-2009	ENH: TAP output is now parsed for # SKIP and #
-::				TODO directives. The entire TAP test is skipped
-::				if a 1..0 plan is announced. Non-verbose TAP
-::				output now also includes succeeding TODO tests
-::				and any details in the lines following it.
-::  1.10.019	06-Mar-2009	ENH: Also counting test files.
-::				ENH: Message output is now parsed for signals to
-::				this test driver. Implemented signals: BAILOUT!,
-::				ERROR, SKIP, SKIP(out), SKIP(msgout), SKIP(tap).
-::				Summary reports skipped tests and tests with
-::				skips.
-::				Replaced duplicate processing in
-::				:commandLineLoop with call to
-::				:processSuiteEntry.
-::				Changed API for :echoStatus.
-::				BF: Also re-enable debugging after Vim
-::				invocation in :compareMessages.
-::  1.00.018	02-Mar-2009	Reviewed for publication.
-::	017	28-Feb-2009	BF: FAIL (msgout) and FAIL (tap) didn't print
-::				test header in non-verbose mode.
-::				Refactored :printTestHeader so that it does the
-::				check for already printed header itself.
-::	016	24-Feb-2009	Added short options -0/1/2 for the plugin load
-::				level and -d for --debug.
-::				Added check for Unix tools; Unix tools can be
-::				winked in via 'unix' script.
-::				Now only printing failed tests and errors, and
-::				only explicitly mentioning the test if it wasn't
-::				successful. This greatly reduces the visual
-::				output the user has to scan.
-::				Added --verbose option to also print successful
-::				tests, the previous default behavior.
-::				Added empty line between individual tests.
-::	015	19-Feb-2009	Added explicit option '--user' for the default
-::				Vim mode, and adding 'user' to
-::				%vimVariableOptionsValue% (so that tests can
-::				easily check for that mode). Command-line
-::				argument parsing now ensures that only one mode
-::				is specified.
-::	014	12-Feb-2009	Shortened -e -s to -es.
-::	013	11-Feb-2009	Merged in changes resulting from the bash
-::				implementation of this script:
-::				Variable renamings.
-::				Checking whether Vim executable exists and
-::				whether output is to terminal.
-::	012	06-Feb-2009	Renamed g:debug to g:runVimTests; now, script
-::				options 'debug' and 'pure' are appended to this
-::				variable. This allows for greater flexibility
-::				inside Vim and avoids that overly general
-::				variable name.
-::				Added command-line options --vimexecutable,
-::				--vimversion and --graphical.
-::				Added command-line option --default to launch
-::				Vim without any user settings.
-::	011	05-Feb-2009	Replaced runVimTests.cfg with
-::				runVimTestsSetup.vim, which is sourced on every
-::				test run if it exists. I was mistaken in that
-::				:runtime commands don't work in pure mode; that
-::				was caused by my .vimrc not setting
-::				'runtimepath' to ~/.vim! Thus, there's no need
-::				for the "essential Vim scripts" and the
-::				--reallypure option.
-::				Split off documentation into separate help file.
-::	010	04-Feb-2009	Suites can now also contain directories and
-::				other suite files, not just tests.
-::	009	02-Feb-2009	Added --debug argument to :let g:debug = 1
-::				inside Vim.
-::	008	29-Jan-2009	Added --runtime argument to simplify sourcing of
-::				scripts below the user's ~/.vim directory.
-::				Essential vimscripts are now read from separate
-::				runVimTests.cfg config file to remove hardcoding
-::				inside this script.
-::				BF: Forgot -N -u NONE when invoking Vim for
-::				runVimMsgFilter.
-::	007	28-Jan-2009	Changed counting of tests and algorithm to
-::				determine whether any test results have been
-::				supplied: Added counter for tests (vs. tests
-::				run) and removed the special handling for the
-::				TAP method.
-::				ENH: In case of a TAP test count mismatch, the
-::				difference is included in the error message.
-::				ENH: All method-specific messages include the
-::				method (out, msgout, tap) now.
-::				ENH: Use first comment line from test script as
-::				test synopsis and include in test header.
-::	006	27-Jan-2009	ENH: Now supporting enhanced matching of
-::				captured messages by filtering through custom
-::				'runVimMsgFilter.vim' functionality instead of a
-::				plain diff. The previous line-by-line comparison
-::				was too limited and prompted test writers to
-::				re-echo canonicalized messages or manipulate the
-::				msgout themselves (e.g. to get rid of platform-
-::				and system-specific strings like path separators
-::				and dirspecs).
-::				BF: Still forgot to add to fail and error lists
-::				when TAP test failed or errored.
-::				Added autoload/vimtest.vim and
-::				plugin/SidTools.vim to essential Vim scripts
-::				sourced with --pure (if they exist).
-::				Added --reallypure option.
-::	005	16-Jan-2009	BF: Added testname twice to fail and error lists
-::				when both output and saved messages tests failed.
-::				Forgot to add when TAP test failed or errored.
-::				Moved adding to fail and error lists from the
-::				individual test methods to :runTest.
-::				Now explicitly sourcing vimtap.vim in pure mode.
-::	004	15-Jan-2009	Added support for TAP unit tests.
-::	003	15-Jan-2009	Improved accuracy of :compareMessages algorithm.
-::	002	13-Jan-2009	Generalized and documented.
-::				Addded summary of failed / error test names and
-::				optional suppression of test transcript.
-::	001	12-Jan-2009	file creation
 ::*******************************************************************************
 setlocal enableextensions
 
@@ -440,27 +250,27 @@ echo.A testing framework for Vim.
 echo.
 call :printShortUsage
 echo.    -0^|--pure		Start Vim without loading any .vimrc and plugins,
-echo.    			but in nocompatible mode. Adds 'pure' to %vimVariableOptionsName%.
+echo.			but in nocompatible mode. Adds 'pure' to %vimVariableOptionsName%.
 echo.    -1^|--default	Start Vim only with default settings and plugins,
-echo.    			without loading user .vimrc and plugins.
-echo.    			Adds 'default' to %vimVariableOptionsName%.
+echo.			without loading user .vimrc and plugins.
+echo.			Adds 'default' to %vimVariableOptionsName%.
 echo.    -2^|--user		Start Vim with user .vimrc and plugins.
-echo.    			Adds 'user' to %vimVariableOptionsName%.
+echo.			Adds 'user' to %vimVariableOptionsName%.
 echo.    --source filespec	Source filespec before test execution.
 echo.    --runtime filespec	Source filespec relative to ~/.vim. Can be used to
-echo.    			load the script-under-test when using --pure.
+echo.			load the script-under-test when using --pure.
 echo.    --vimexecutable	Use passed Vim executable instead
 echo.        path\to\vim.exe	of the one found in %%PATH%%.
 echo.    --vimversion NN	Use Vim version N.N. ^(Must be in standard installation
-echo.    			directory %ProgramFiles%\vim\vimNN\.^)
+echo.			directory %ProgramFiles%\vim\vimNN\.^)
 echo.    -g^|--graphical	Use GUI version of Vim.
 echo.    --summaryonly	Do not show detailed transcript and differences,
-echo.    			during test run, only summary.
+echo.			during test run, only summary.
 echo.    -v^|--verbose	Show passed tests and more details during test
-echo.    			execution.
+echo.			execution.
 echo.    -d^|--debug		Test debugging mode: Adds 'debug' to %vimVariableOptionsName%
-echo.    			variable inside Vim ^(so that tests do not exit or can
-echo.    			produce additional debug info^).
+echo.			variable inside Vim ^(so that tests do not exit or can
+echo.			produce additional debug info^).
 exit /B 0
 
 :checkUnixTools
