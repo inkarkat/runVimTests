@@ -167,7 +167,7 @@ echoOk()
 echoStatusForced()
 {
     local -r status="${1}${2:+ (}${2}${2:+)}"
-    echo >&3 "${status}${3:+: }$3"
+    echo "${status}${3:+: }$3"
 }
 echoStatus()
 # $1 status
@@ -176,7 +176,7 @@ echoStatus()
 {
     printTestHeader "$testFile" "$testAbsoluteName"
     if [ "$isExecutionOutput" ]; then
-	echoStatusForced "$@"
+	echoStatusForced >&3 "$@"
     fi
 }
 echoSkip()
