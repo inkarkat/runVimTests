@@ -336,7 +336,7 @@ parseSignal()
 	*)		echo >&2 "ASSERT: Received unknown signal \"${1}\" in message output."; exit 3;;
     esac
     case "$1" in
-	SKIP*)		echoSkip "$1" "$2"
+	SKIP*)		echoSkip "$1" "$2";;
     esac
 }
 parseMessageOutputForSignals()
