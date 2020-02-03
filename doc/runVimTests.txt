@@ -441,7 +441,7 @@ https://github.com/inkarkat/vim-runVimTests/issues or email (address below).
 ==============================================================================
 HISTORY							 *runVimTests-history*
 
-1.30	RELEASEME
+1.30	03-Feb-2020
 - Add vimtest#AddDependency() and vimtest#features#SupportsNormalWithCount().
 - CHG: Print full absolute path to tests instead of just the test name itself.
   When running complete suites or tests with subdirectories, it is difficult
@@ -581,7 +581,7 @@ runVimTests.sh.
 Started development.
 
 ==============================================================================
-Copyright: (C) 2009-2019 Ingo Karkat
+Copyright: (C) 2009-2020 Ingo Karkat
 The VIM LICENSE applies to this plugin; see |copyright|.
 
 Maintainer:	Ingo Karkat <ingo@karkat.de>
