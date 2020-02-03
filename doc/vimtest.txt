@@ -149,7 +149,7 @@ TODO							       *vimtest-todo*
 ==============================================================================
 HISTORY							    *vimtest-history*
 
-1.30	RELEASEME
+1.30	03-Feb-2020
 - Add vimtest#AddDependency().
 - Add vimtest#features#SupportsNormalWithCount(). I had this in my private
   toolbox for quite some time; makes sense to publish, too.
@@ -175,7 +175,7 @@ First published version.
 Started development.
 
 ==============================================================================
-Copyright: (C) 2009-2017 Ingo Karkat
+Copyright: (C) 2009-2020 Ingo Karkat
 The VIM LICENSE applies to this plugin; see |copyright|.
 
 Maintainer:	Ingo Karkat <ingo@karkat.de>
