@@ -1,4 +1,7 @@
-*.msgresult
 *.msgout
+*.msgresult
 *.out
 *.tap
+doc/*.description
+doc/*.install
+tags
