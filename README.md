@@ -236,7 +236,9 @@ can use my own fork of version 0.3.0:
     https://github.com/inkarkat/VimTAP
 Note that nothing prevents you from using the latest, original version for
 your own tests. The default runVimTestsSetup.vim will automatically include
-VimTAP into 'runtimepath' if it's located in a repository next to runVimTests.
+VimTAP into 'runtimepath' if it's located in a repository next to runVimTests,
+in an adjacent pack plugin tree, or if the environment variable $VIMTAP\_HOME
+points to its base directory.
 
 The tests/ subdirectory contains example test suites and a self-test of the
 test framework. For a simple sanity check, execute:
@@ -434,6 +436,11 @@ https://github.com/inkarkat/vim-runVimTests/issues or email (address below).
 
 HISTORY
 ------------------------------------------------------------------------------
+
+##### 1.31    RELEASEME
+- VimTAP now also is automatically located if it's in an adjacent pack plugin
+  tree. Its location can be overridden via the $VIMTAP\_HOME environment
+  variable.
 
 ##### 1.30    03-Feb-2020
 - Add vimtest#AddDependency() and vimtest#features#SupportsNormalWithCount().
