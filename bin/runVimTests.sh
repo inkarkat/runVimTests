@@ -45,7 +45,7 @@ initialize()
     readonly scriptDir=$([ "${BASH_SOURCE[0]}" ] && absoluteScriptFile="$(readlinkWrapper "${BASH_SOURCE[0]}")" && dirname -- "$absoluteScriptFile" || exit 3)
     [ -d "$scriptDir" ] || { echo >&2 "ERROR: Cannot determine script directory!"; exit 3; }
 
-    skipsRecord=${TEMP:-/tmp}/skipsRecord.txt.$$
+    skipsRecord="${TMPDIR:-/tmp}/skipsRecord.txt.$$"
     [ -f "$skipsRecord" ] && { rm -- "$skipsRecord" || skipsRecord=; }
 
     # Prerequisite Vim script to match the message assumptions against the actual
