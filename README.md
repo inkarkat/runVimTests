@@ -265,6 +265,7 @@ runVimTests-testscripts!
 
 The Windows version requires (\* = optional) these ported Unix tools:
 - grep, sed, diff, sort(\*), uniq(\*)
+
 Windows binaries can be downloaded from the GnuWin32 project:
     http://gnuwin32.sourceforge.net/
 These binaries must be accessible through %PATH%. Alternatively, you can just
@@ -437,7 +438,7 @@ https://github.com/inkarkat/vim-runVimTests/issues or email (address below).
 HISTORY
 ------------------------------------------------------------------------------
 
-##### 1.31    RELEASEME
+##### 1.31    09-Nov-2024
 - VimTAP now also is automatically located if it's in an adjacent pack plugin
   tree. Its location can be overridden via the $VIMTAP\_HOME environment
   variable.
@@ -582,7 +583,7 @@ runVimTests.sh.
 - Started development.
 
 ------------------------------------------------------------------------------
-Copyright: (C) 2009-2020 Ingo Karkat -
+Copyright: (C) 2009-2024 Ingo Karkat -
 The [VIM LICENSE](http://vimdoc.sourceforge.net/htmldoc/uganda.html#license) applies to this plugin.
 
 Maintainer:     Ingo Karkat &lt;ingo@karkat.de&gt;
