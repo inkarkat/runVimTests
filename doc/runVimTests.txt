@@ -443,6 +443,12 @@ https://github.com/inkarkat/vim-runVimTests/issues or email (address below).
 ==============================================================================
 HISTORY							 *runVimTests-history*
 
+1.32	RELEASEME
+- BUG: With -1 / --default, user autoload functions are still picked up from
+  the ~/.vim/pack directory. For example. functions from my ingo-library are
+  still loaded, not just when vimtest#AddDependency() is used. Don't undo the
+  modification of 'packpath' done so far only temporarily during Vim startup.
+
 1.31	09-Nov-2024
 - VimTAP now also is automatically located if it's in an adjacent pack plugin
   tree. Its location can be overridden via the $VIMTAP_HOME environment

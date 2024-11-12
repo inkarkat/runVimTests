@@ -790,7 +790,7 @@ done
 [ "$vimMode" ] || vimMode='default'
 case $vimMode in
     pure)	vimArguments="-N -u NONE $vimArguments";;
-    default)	vimArguments="--cmd 'set rtp=\$VIM/vimfiles,\$VIMRUNTIME,\$VIM/vimfiles/after | if exists(\"+packpath\") | let &packpath = &rtp | endif' -N -u NORC -c 'set rtp& | if exists(\"+packpath\") | set packpath& | endif' $vimArguments";;
+    default)	vimArguments="--cmd 'set rtp=\$VIM/vimfiles,\$VIMRUNTIME,\$VIM/vimfiles/after | if exists(\"+packpath\") | let &packpath = &rtp | endif' -N -u NORC $vimArguments";;
 esac
 vimVariableOptionsValue="${vimMode},${vimVariableOptionsValue}"
 vimVariableOptionsValue="${vimVariableOptionsValue%,}"
