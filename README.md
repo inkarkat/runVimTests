@@ -232,7 +232,7 @@ The examples here use the API of version 0.3.0; version 0.4.0 of the plugin
 introduced compatibility-breaking changes, which I don't like; the functions
 are now cumbersome to use, and the added commands don't offer much
 convenience, but pollute the test environment in my opinion. If you like, you
-can use my own fork of version 0.3.0:
+can use my own fork of version 0.3.0; it also has additional assertions:
     https://github.com/inkarkat/VimTAP
 Note that nothing prevents you from using the latest, original version for
 your own tests. The default runVimTestsSetup.vim will automatically include
