@@ -19,9 +19,7 @@
 #   The VIM LICENSE applies to this script; see 'vim -c ":help copyright"'.
 ###############################################################################
 
-# Enable extended file pattern matching operators from ksh
-# (?(pattern-list), !(pattern-list), ...) in Bash.
-shopt -qs extglob
+shopt -qs extglob # Enable extended file pattern matching operators from ksh (?(pattern-list), !(pattern-list), ...) in Bash.
 
 # https://github.com/dominictarr/JSON.sh/pull/2#issuecomment-2526006
 readlinkEmulation()
@@ -798,7 +796,7 @@ vimArguments="$vimArguments --cmd \"let ${vimVariableOptionsName}='${vimVariable
 
 case "$output" in
     '')		exec 3>&1;;
-    \&[0-9])	eval "exec 3>$output";;
+    \&+([0-9]))	eval "exec 3>$output";;
     ?*)		exec 3>"$output";;
 esac
 
