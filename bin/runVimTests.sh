@@ -195,7 +195,7 @@ listSkipReasons()
 {
     [ ! "$skipsRecord" -o $cntSkip -eq 0 -o ! -f "$skipsRecord" ] && return
     sort --ignore-case -- "$skipsRecord" | uniq -i -c | sed 's/^ \{4\}/ /'
-    case ",${DEBUG}," in *,skipsRecord,*) ;; *) rm -- "$skipsRecord";; esac
+    ${DEBUG:+debugcustom --invert-match --for skipsRecord --} rm -f -- "$skipsRecord" 2>/dev/null
 }
 
 makePlural()
